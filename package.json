@@ -23,5 +23,8 @@
     "ts-node": ">=8.0.0",
     "typechain": "^8.1.0",
     "typescript": ">=4.5.0"
+  },
+  "dependencies": {
+    "@arbitrum/token-bridge-contracts": "1.1.0-alpha.1"
   }
 }
