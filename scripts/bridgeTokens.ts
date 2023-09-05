@@ -40,7 +40,7 @@ async function main() {
     l2l3TokenBridgeRetryableSize: 1000, // bytes
   };
   const gasPrice = (await ethSigner.provider!.getFeeData()).gasPrice!;
-  const gasResults = await teleporter.calculateRetryableGasResults(4 + 32*7, gasPrice, gasParams);
+  const gasResults = await teleporter.calculateRetryableGasResults(gasPrice, gasParams);
 
   const l1Token = ERC20__factory.connect(l1TokenAddress, ethSigner);
   const approveTx = await l1Token.approve(deployment.teleporter, ethers.MaxUint256);

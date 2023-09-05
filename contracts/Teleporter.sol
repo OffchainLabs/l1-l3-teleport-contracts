@@ -48,6 +48,8 @@ contract Teleporter is L1ArbitrumMessenger {
 
     bytes32 constant cloneableProxyHash = keccak256(type(ClonableBeaconProxy).creationCode);
 
+    uint256 public constant l2ReceiverFactoryCalldataSize = 4 + 7 * 32; // selector + 7 args
+
     address public l2ReceiverFactory;
     L1GatewayRouter public l1l2Router;
     IInbox public inbox;
@@ -60,7 +62,6 @@ contract Teleporter is L1ArbitrumMessenger {
     }
 
     function calculateRetryableGasResults(
-        uint256 l2ReceiverFactoryCalldataSize,
         uint256 l1BaseFee,
         RetryableGasParams calldata gasParams
     ) public view returns (RetryableGasResults memory results) {
@@ -116,20 +117,8 @@ contract Teleporter is L1ArbitrumMessenger {
         address l2Token = l1Gateway.calculateL2TokenAddress(address(l1Token));
 
         // msg.value accounting checks
-        // we create the bridgeToL3Calldata here to see its size and therefore how much the retryable submission will cost
-        bytes memory l2ReceiverFactoryCalldata = abi.encodeWithSelector(
-            L2ReceiverFactory.bridgeToL3.selector,
-            msg.sender,
-            l2l3Router,
-            l2Token,
-            to,
-            amount,
-            gasParams.l2l3TokenBridgeGasLimit,
-            gasParams.l3GasPrice
-        );
-
         RetryableGasResults memory gasResults =
-            calculateRetryableGasResults(l2ReceiverFactoryCalldata.length, block.basefee, gasParams);
+            calculateRetryableGasResults(block.basefee, gasParams);
 
         require(msg.value >= gasResults.total, "insufficient msg.value");
 
@@ -153,6 +142,16 @@ contract Teleporter is L1ArbitrumMessenger {
         );
 
         // tell the L2ReceiverFactory to create a receiver and bridge for bob
+        bytes memory l2ReceiverFactoryCalldata = abi.encodeWithSelector(
+            L2ReceiverFactory.bridgeToL3.selector,
+            msg.sender,
+            l2l3Router,
+            l2Token,
+            to,
+            amount,
+            gasParams.l2l3TokenBridgeGasLimit,
+            gasParams.l3GasPrice
+        );
         sendTxToL2CustomRefund({
             _inbox: address(inbox),
             _to: l2ReceiverFactory,
