@@ -37,14 +37,10 @@ contract L2ReceiverFactory is ProxySetter {
         uint256 l2l3TicketGasLimit,
         uint256 l3GasPrice
     ) external payable {
-        // if contract for bob doesn't exist, create and initialize it (w/ bob as salt)
-        // call bob's contract to bridge to l3
-
         require(msg.sender == AddressAliasHelper.applyL1ToL2Alias(l1Teleporter), "only l1 teleporter");
 
         L2Receiver l2Receiver = _tryCreateL2Receiver(l1Owner);
 
-        // bridge to l3
         l2Receiver.bridgeToL3{value: msg.value}(l2l3Router, l2Token, to, amount, l2l3TicketGasLimit, l3GasPrice);
     }
 

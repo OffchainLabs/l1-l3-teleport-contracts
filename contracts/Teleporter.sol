@@ -18,9 +18,9 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {L2ReceiverFactory} from "./L2ReceiverFactory.sol";
 
 // deploy one of these on L1 for each L2
-// bob calls teleport:
-// - pulls in tokens and sends them over the bridge to bob's L2Receiver
-// - tells the L2ReceiverFactory (via retryable) to create a receiver and bridge for bob
+// user calls teleport:
+// - pulls in tokens and sends them over the bridge to user's L2Receiver
+// - tells the L2ReceiverFactory (via retryable) to create a receiver and bridge for user
 contract Teleporter is L1ArbitrumMessenger {
     struct RetryableGasParams {
         uint256 l2GasPrice;
@@ -122,7 +122,7 @@ contract Teleporter is L1ArbitrumMessenger {
 
         require(msg.value >= gasResults.total, "insufficient msg.value");
 
-        // pull in tokens from bob
+        // pull in tokens from user
         l1Token.transferFrom(msg.sender, address(this), amount);
 
         // approve gateway
@@ -141,7 +141,7 @@ contract Teleporter is L1ArbitrumMessenger {
             abi.encode(gasResults.l1l2TokenBridgeSubmissionCost, bytes(""))
         );
 
-        // tell the L2ReceiverFactory to create a receiver and bridge for bob
+        // tell the L2ReceiverFactory to create a receiver and bridge for user
         bytes memory l2ReceiverFactoryCalldata = abi.encodeWithSelector(
             L2ReceiverFactory.bridgeToL3.selector,
             msg.sender,
