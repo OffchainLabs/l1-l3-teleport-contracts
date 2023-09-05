@@ -20,9 +20,9 @@ contract L2ReceiverFactory is ProxySetter {
     bytes32 constant cloneableProxyHash = keccak256(type(ClonableBeaconProxy).creationCode);
 
     address public override beacon;
-    address l1Teleporter;
+    address public l1Teleporter;
 
-    function initialize(address _l1Teleporter, address _beacon) public {
+    function initialize(address _l1Teleporter, address _beacon) external {
         require(l1Teleporter == address(0), "ALREADY_INIT");
         l1Teleporter = _l1Teleporter;
         beacon = _beacon;
@@ -48,8 +48,8 @@ contract L2ReceiverFactory is ProxySetter {
         l2Receiver.bridgeToL3{value: msg.value}(l2l3Router, l2Token, to, amount, l2l3TicketGasLimit, l3GasPrice);
     }
 
-    function calculateExpectedAddress(bytes32 salt) public view returns (address) {
-        return Create2.computeAddress(salt, cloneableProxyHash, address(this));
+    function calculateL2ReceiverAddress(address l1Owner) public view returns (address) {
+        return Create2.computeAddress(bytes20(l1Owner), cloneableProxyHash, address(this));
     }
 
     function createL2Receiver(address l1Owner) public returns (L2Receiver) {
@@ -59,7 +59,7 @@ contract L2ReceiverFactory is ProxySetter {
     }
 
     function _tryCreateL2Receiver(address l1Owner) internal returns (L2Receiver) {
-        address calculatedAddress = calculateExpectedAddress(bytes20(l1Owner));
+        address calculatedAddress = calculateL2ReceiverAddress(l1Owner);
 
         uint256 size;
         assembly {
