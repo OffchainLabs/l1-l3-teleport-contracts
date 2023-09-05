@@ -1,8 +1,12 @@
 {
   "name": "l1-l3-teleport",
   "version": "1.0.0",
-  "main": "index.js",
-  "license": "MIT",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "deploy:teleporter": "hardhat compile && ts-node ./scripts/deployTeleport.ts",
+    "bridge": "ts-node ./scripts/bridgeTokens.ts"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
@@ -16,6 +20,7 @@
     "@types/mocha": ">=9.1.0",
     "@types/node": ">=16.0.0",
     "chai": "^4.2.0",
+    "dotenv": "^16.3.1",
     "ethers": "^6.4.0",
     "hardhat": "^2.17.2",
     "hardhat-gas-reporter": "^1.0.8",

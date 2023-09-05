@@ -10,8 +10,6 @@ import "@arbitrum/token-bridge-contracts/contracts/tokenbridge/libraries/Address
 
 import "@arbitrum/token-bridge-contracts/contracts/tokenbridge/libraries/ClonableBeaconProxy.sol";
 
-// import {Inbox} from "@arbitrum/nitro-contracts/src/bridge/Inbox.sol";
-
 // deploy one of these on L1 for each L2
 // bob calls teleport:
 // - pulls in tokens and sends them over the bridge to bob's L2Receiver
