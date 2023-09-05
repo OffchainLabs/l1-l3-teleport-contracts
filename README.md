@@ -16,3 +16,9 @@ __Bridging__
     2. Call `L2Receiver.bridgeToL3{value: msg.value}`
 5. `L2Receiver.bridgeToL3`
     1. Send the specified amount of tokens through the bridge to L3. The contract's entire balance minus execution fee is sent as submission fee in order to forward all the extra ETH to L3.
+
+## TODO
+
+* Custom fee token L3's
+* Unit tests
+* Better deployment and E2E tests
