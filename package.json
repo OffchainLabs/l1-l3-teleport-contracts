@@ -5,9 +5,11 @@
   "license": "Apache-2.0",
   "scripts": {
     "deploy:teleporter": "hardhat compile && ts-node ./scripts/deployTeleport.ts",
-    "bridge": "ts-node ./scripts/bridgeTokens.ts"
+    "bridge": "ts-node ./scripts/bridgeTokens.ts",
+    "test:happy-e2e": "hardhat compile && ts-node ./test/happyPathE2E.ts"
   },
   "devDependencies": {
+    "@arbitrum/sdk": "^3.1.10",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",

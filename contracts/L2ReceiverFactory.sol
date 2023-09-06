@@ -19,13 +19,12 @@ import {L2Receiver} from "./L2Receiver.sol";
 contract L2ReceiverFactory is ProxySetter {
     bytes32 constant cloneableProxyHash = keccak256(type(ClonableBeaconProxy).creationCode);
 
-    address public override beacon;
-    address public l1Teleporter;
+    address public immutable override beacon;
+    address public immutable l1Teleporter;
 
-    function initialize(address _l1Teleporter, address _beacon) external {
-        require(l1Teleporter == address(0), "ALREADY_INIT");
-        l1Teleporter = _l1Teleporter;
+    constructor(address _beacon, address _l1Teleporter) {
         beacon = _beacon;
+        l1Teleporter = _l1Teleporter;
     }
 
     function bridgeToL3(

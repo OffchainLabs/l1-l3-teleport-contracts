@@ -1,6 +1,9 @@
 {
-    "teleporter": "0xE0e17F85379ea81cB2dd2b8A9C04e160eE8c59A5",
-    "receiverFactory": "0x06653DFAE988bB482cE436524f1931fCcB636751",
-    "receiverImpl": "0xBe5897534803CFBdD66c868D02705632de535924",
-    "beacon": "0x4F0c1fe4689F62c0a7580EEFA6845bFDde413bDb"
+  "teleporterAddress": "0x33E8d0ea80Dc577818088039a0c95E0229FF5246",
+  "receiverFactoryAddress": "0xfdB2930fF24F73e8d8F63eBF214210bcA2809023",
+  "receiverImplAddress": "0x78a02Df5ba3Fbd32A678E96865d9749f4F84cad1",
+  "beaconAddress": "0x935EcdeC28d979567A62f774A3CB2c82bC91Ec01",
+  "l2ChainIds": [
+    421613
+  ]
 }

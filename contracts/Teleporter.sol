@@ -50,18 +50,26 @@ contract Teleporter is L1ArbitrumMessenger {
 
     uint256 public constant l2ReceiverFactoryCalldataSize = 4 + 7 * 32; // selector + 7 args
 
-    address public l2ReceiverFactory;
-    L1GatewayRouter public l1l2Router;
-    IInbox public inbox;
+    // address is the same on each L2, deployed with CREATE2
+    address public immutable l2ReceiverFactory;
 
-    function initialize(address _l2ReceiverFactory, L1GatewayRouter _l1l2Router, IInbox _inbox) external {
-        require(l2ReceiverFactory == address(0), "ALREADY_INIT");
+    constructor(address _l2ReceiverFactory) {
         l2ReceiverFactory = _l2ReceiverFactory;
-        l1l2Router = _l1l2Router;
-        inbox = _inbox;
     }
 
+    // address public l2ReceiverFactory;
+    // L1GatewayRouter public l1l2Router;
+    // IInbox public inbox;
+
+    // function initialize(address _l2ReceiverFactory, L1GatewayRouter _l1l2Router, IInbox _inbox) external {
+    //     require(l2ReceiverFactory == address(0), "ALREADY_INIT");
+    //     l2ReceiverFactory = _l2ReceiverFactory;
+    //     l1l2Router = _l1l2Router;
+    //     inbox = _inbox;
+    // }
+
     function calculateRetryableGasResults(
+        IInbox inbox,
         uint256 l1BaseFee,
         RetryableGasParams calldata gasParams
     ) public view returns (RetryableGasResults memory results) {
@@ -102,10 +110,11 @@ contract Teleporter is L1ArbitrumMessenger {
 
     // todo: maybe this should take the l1Gateway as param instead of using the router?
     function teleport(
-        address l2l3Router,
         IERC20 l1Token,
         address to,
         uint256 amount,
+        L1GatewayRouter l1l2Router,
+        address l2l3Router,
         RetryableGasParams calldata gasParams
     ) external payable {
         address l2Receiver = predictReceiverAddress(msg.sender);
@@ -116,9 +125,12 @@ contract Teleporter is L1ArbitrumMessenger {
         // get l2 token
         address l2Token = l1Gateway.calculateL2TokenAddress(address(l1Token));
 
+        // get inbox
+        IInbox inbox = IInbox(l1Gateway.inbox());
+
         // msg.value accounting checks
         RetryableGasResults memory gasResults =
-            calculateRetryableGasResults(block.basefee, gasParams);
+            calculateRetryableGasResults(inbox, block.basefee, gasParams);
 
         require(msg.value >= gasResults.total, "insufficient msg.value");
 
