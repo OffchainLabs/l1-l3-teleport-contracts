@@ -6,9 +6,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract Beacon is Ownable {
     address public implementation;
 
-    constructor(address _implementation, address _owner) {
+    constructor(address _implementation) {
         implementation = _implementation;
-        _transferOwnership(_owner);
+        // Beacon is meant to be deployed with a deterministic CREATE2 factory, so set the owner to the deployer
+        _transferOwnership(tx.origin);
     }
 
     function upgradeTo(address newImplementation) external onlyOwner {

@@ -9,6 +9,10 @@ export function assertDefined<T>(x: T | undefined, msg = "value is undefined"): 
   return x;
 }
 
+export function getEnv(name: string, msg = `${name} is undefined`): string {
+  return assertDefined(process.env[name], msg);
+}
+
 export async function create2<T extends ContractFactory>(
   factory: T,
   constructorArgs: Parameters<T["getDeployTransaction"]>,
@@ -31,24 +35,4 @@ export async function create2<T extends ContractFactory>(
   const address = ethers.getCreate2Address(CREATE2_FACTORY, salt, ethers.keccak256(initCode));
 
   return address;
-}
-
-export async function stopwatch<T>(promise: Promise<T>, msg = ""): Promise<T> {
-  let elapsedSeconds = 0;
-  const intervalId = setInterval(() => {
-    elapsedSeconds++;
-    const minutes = Math.floor(elapsedSeconds / 60);
-    const seconds = elapsedSeconds % 60;
-    const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    process.stdout.write(`\r${msg === "" ? "" : msg.trim() + " "}${formattedTime}...`);
-  }, 1000);
-
-  try {
-    const result = await promise;
-    clearInterval(intervalId);
-    return result;
-  } catch (err) {
-    clearInterval(intervalId);
-    throw err;
-  }
 }

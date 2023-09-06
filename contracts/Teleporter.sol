@@ -57,17 +57,6 @@ contract Teleporter is L1ArbitrumMessenger {
         l2ReceiverFactory = _l2ReceiverFactory;
     }
 
-    // address public l2ReceiverFactory;
-    // L1GatewayRouter public l1l2Router;
-    // IInbox public inbox;
-
-    // function initialize(address _l2ReceiverFactory, L1GatewayRouter _l1l2Router, IInbox _inbox) external {
-    //     require(l2ReceiverFactory == address(0), "ALREADY_INIT");
-    //     l2ReceiverFactory = _l2ReceiverFactory;
-    //     l1l2Router = _l1l2Router;
-    //     inbox = _inbox;
-    // }
-
     function calculateRetryableGasResults(
         IInbox inbox,
         uint256 l1BaseFee,
