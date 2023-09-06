@@ -18,17 +18,17 @@ const l1TokenAddress = "0xdb7Bb8253d96803c089cb15f2df7226144c97B03";
 const l2l3RouterAddress = "0xCb0Fe28c36a60Cf6254f4dd74c13B0fe98FFE5Db";
 
 async function main() {
-  const ETH_URL = assertDefined(process.env.ETH_URL);
+  const L1_URL = assertDefined(process.env.L1_URL);
   const PRIVATE_KEY = assertDefined(process.env.PRIVATE_KEY);
 
-  const ethSigner = new ethers.Wallet(
+  const l1Signer = new ethers.Wallet(
     PRIVATE_KEY, 
-    new ethers.JsonRpcProvider(ETH_URL)
+    new ethers.JsonRpcProvider(L1_URL)
   );
 
   console.log("starting...");
 
-  const teleporter = Teleporter__factory.connect(deployment.teleporter, ethSigner);
+  const teleporter = Teleporter__factory.connect(deployment.teleporter, l1Signer);
 
   const gasParams = {
     l2GasPrice: ethers.parseUnits("0.1", "gwei"),
@@ -39,10 +39,10 @@ async function main() {
     l1l2TokenBridgeRetryableSize: 1000, // bytes
     l2l3TokenBridgeRetryableSize: 1000, // bytes
   };
-  const gasPrice = (await ethSigner.provider!.getFeeData()).gasPrice!;
+  const gasPrice = (await l1Signer.provider!.getFeeData()).gasPrice!;
   const gasResults = await teleporter.calculateRetryableGasResults(gasPrice, gasParams);
 
-  const l1Token = ERC20__factory.connect(l1TokenAddress, ethSigner);
+  const l1Token = ERC20__factory.connect(l1TokenAddress, l1Signer);
   const approveTx = await l1Token.approve(deployment.teleporter, ethers.MaxUint256);
   await approveTx.wait();
 
@@ -51,7 +51,7 @@ async function main() {
   const teleportTx = await teleporter.teleport(
     l2l3RouterAddress,
     l1TokenAddress,
-    ethSigner.address,
+    l1Signer.address,
     ethers.parseEther("0.01"),
     gasParams,
     {

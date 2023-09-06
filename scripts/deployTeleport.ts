@@ -20,42 +20,42 @@ export type TeleporterDeploy = {
 };
 
 async function main() {
-  const ETH_URL = assertDefined(process.env.ETH_URL);
-  const ARB_URL = assertDefined(process.env.ARB_URL);
-  const ETH_INBOX = assertDefined(process.env.ETH_INBOX);
-  const ETH_ROUTER = assertDefined(process.env.ETH_ROUTER);
+  const L1_URL = assertDefined(process.env.L1_URL);
+  const L2_URL = assertDefined(process.env.L2_URL);
+  const L1_L2_INBOX = assertDefined(process.env.L1_L2_INBOX);
+  const L1_L2_ROUTER = assertDefined(process.env.L1_L2_ROUTER);
   const PRIVATE_KEY = assertDefined(process.env.PRIVATE_KEY);
 
-  const ethSigner = new ethers.Wallet(
+  const l1Signer = new ethers.Wallet(
     PRIVATE_KEY, 
-    new ethers.JsonRpcProvider(ETH_URL)
+    new ethers.JsonRpcProvider(L1_URL)
   );
-  const arbSigner = new ethers.Wallet(
+  const l2Signer = new ethers.Wallet(
     PRIVATE_KEY,
-    new ethers.JsonRpcProvider(ARB_URL)
+    new ethers.JsonRpcProvider(L2_URL)
   );
 
   console.log("starting...");
   
-  const teleporter = await new Teleporter__factory(ethSigner).deploy();
+  const teleporter = await new Teleporter__factory(l1Signer).deploy();
   await teleporter.deploymentTransaction()!.wait();
   const teleporterAddress = await teleporter.getAddress();
 
   console.log(`Teleporter deployed to ${teleporterAddress}`);
 
-  const l2ReceiverFactory = await new L2ReceiverFactory__factory(arbSigner).deploy();
+  const l2ReceiverFactory = await new L2ReceiverFactory__factory(l2Signer).deploy();
   await l2ReceiverFactory.deploymentTransaction()!.wait();
   const l2ReceiverFactoryAddress = await l2ReceiverFactory.getAddress();
 
   console.log(`L2ReceiverFactory deployed to ${l2ReceiverFactoryAddress}`);
 
-  const l2ReceiverImpl = await new L2Receiver__factory(arbSigner).deploy();
+  const l2ReceiverImpl = await new L2Receiver__factory(l2Signer).deploy();
   await l2ReceiverImpl.deploymentTransaction()!.wait();
   const l2ReceiverImplAddress = await l2ReceiverImpl.getAddress();
 
   console.log(`L2ReceiverImpl deployed to ${l2ReceiverImplAddress}`);
 
-  const beacon = await new Beacon__factory(arbSigner).deploy(l2ReceiverImplAddress);
+  const beacon = await new Beacon__factory(l2Signer).deploy(l2ReceiverImplAddress);
   await beacon.deploymentTransaction()!.wait();
   const beaconAddress = await beacon.getAddress();
 
@@ -63,8 +63,8 @@ async function main() {
 
   const teleporterInitTx = await teleporter.initialize(
     l2ReceiverFactoryAddress,
-    ETH_ROUTER,
-    ETH_INBOX
+    L1_L2_ROUTER,
+    L1_L2_INBOX
   );
   await teleporterInitTx.wait();
 
