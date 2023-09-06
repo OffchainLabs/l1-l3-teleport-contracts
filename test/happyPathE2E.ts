@@ -9,8 +9,6 @@ import { Teleporter__factory } from "../typechain-types";
 import { assertDefined } from "../scripts/helpers/utils";
 import { teleport } from "../scripts/helpers/teleport";
 
-import { addDefaultLocalNetwork, L1TransactionReceipt, L1ToL2MessageStatus } from '@arbitrum/sdk';
-
 function getTestConfig() {
   return {
     l2l3Router: assertDefined(process.env.L3_ROUTER, "L3_ROUTER is undefined"),
