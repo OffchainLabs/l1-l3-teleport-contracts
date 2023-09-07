@@ -50,9 +50,12 @@ contract L2Receiver {
         );
     }
 
-    function rescue(address target, uint256 value, bytes calldata data) external {
+    function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external {
         require(msg.sender == AddressAliasHelper.applyL1ToL2Alias(l1Owner), "only l1 owner");
-        (bool success,) = target.call{value: value}(data);
-        require(success, "call failed");
+        require(targets.length == values.length && values.length == datas.length, "length mismatch");
+        for (uint256 i = 0; i < targets.length; i++) {
+            (bool success,) = targets[i].call{value: values[i]}(datas[i]);
+            require(success, "call failed");
+        }
     }
 }
