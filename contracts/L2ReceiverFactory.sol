@@ -22,6 +22,8 @@ contract L2ReceiverFactory is ProxySetter {
     address public immutable override beacon;
     address public immutable l1Teleporter;
 
+    error OnlyL1Teleporter();
+
     constructor(address _beacon, address _l1Teleporter) {
         beacon = _beacon;
         l1Teleporter = _l1Teleporter;
@@ -36,7 +38,7 @@ contract L2ReceiverFactory is ProxySetter {
         uint256 l2l3TicketGasLimit,
         uint256 l3GasPrice
     ) external payable {
-        require(msg.sender == AddressAliasHelper.applyL1ToL2Alias(l1Teleporter), "only l1 teleporter");
+        if (msg.sender != AddressAliasHelper.applyL1ToL2Alias(l1Teleporter)) revert OnlyL1Teleporter();
 
         L2Receiver l2Receiver = _tryCreateL2Receiver(l1Owner);
 

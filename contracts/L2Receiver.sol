@@ -12,8 +12,14 @@ contract L2Receiver {
     address l1Owner;
     address deployer;
 
+    error AlreadyInitialized();
+    error OnlyL1OwnerOrDeployer();
+    error OnlyL1Owner();
+    error LengthMismatch();
+    error CallFailed(address to, uint256 value, bytes data);
+
     function initialize(address _l1Owner) external {
-        require(l1Owner == address(0), "ALREADY_INIT");
+        if (l1Owner != address(0)) revert AlreadyInitialized();
         l1Owner = _l1Owner;
         deployer = msg.sender;
     }
@@ -26,11 +32,7 @@ contract L2Receiver {
         uint256 l2l3TicketGasLimit,
         uint256 l3GasPrice
     ) external payable {
-        // bridge to l3
-        require(
-            msg.sender == deployer || msg.sender == AddressAliasHelper.applyL1ToL2Alias(l1Owner),
-            "only l1 owner or deployer"
-        );
+        if (msg.sender != deployer && msg.sender != AddressAliasHelper.applyL1ToL2Alias(l1Owner)) revert OnlyL1OwnerOrDeployer();
 
         // get gateway
         address l2l3Gateway = l2l3Router.getGateway(address(l2Token));
@@ -51,11 +53,12 @@ contract L2Receiver {
     }
 
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external {
-        require(msg.sender == AddressAliasHelper.applyL1ToL2Alias(l1Owner), "only l1 owner");
-        require(targets.length == values.length && values.length == datas.length, "length mismatch");
+        if (msg.sender != AddressAliasHelper.applyL1ToL2Alias(l1Owner)) revert OnlyL1Owner();
+        if (targets.length != values.length || values.length != datas.length) revert LengthMismatch();
+
         for (uint256 i = 0; i < targets.length; i++) {
             (bool success,) = targets[i].call{value: values[i]}(datas[i]);
-            require(success, "call failed");
+            if (!success) revert CallFailed(targets[i], values[i], datas[i]);
         }
     }
 }

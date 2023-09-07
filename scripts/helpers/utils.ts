@@ -1,5 +1,6 @@
 import { ContractFactory, Wallet, ethers } from "ethers";
 
+// https://github.com/Arachnid/deterministic-deployment-proxy
 const CREATE2_FACTORY = "0x4e59b44847b379578588920cA78FbF26c0B4956C";
 
 export function assertDefined<T>(x: T | undefined, msg = "value is undefined"): T {

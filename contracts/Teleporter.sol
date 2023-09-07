@@ -53,6 +53,8 @@ contract Teleporter is L1ArbitrumMessenger {
     // address is the same on each L2, deployed with CREATE2
     address public immutable l2ReceiverFactory;
 
+    error InsufficientValue(uint256 required, uint256 provided);
+
     constructor(address _l2ReceiverFactory) {
         l2ReceiverFactory = _l2ReceiverFactory;
     }
@@ -121,7 +123,7 @@ contract Teleporter is L1ArbitrumMessenger {
         RetryableGasResults memory gasResults =
             calculateRetryableGasResults(inbox, block.basefee, gasParams);
 
-        require(msg.value >= gasResults.total, "insufficient msg.value");
+        if (msg.value < gasResults.total) revert InsufficientValue(gasResults.total, msg.value);
 
         // pull in tokens from user
         l1Token.transferFrom(msg.sender, address(this), amount);
