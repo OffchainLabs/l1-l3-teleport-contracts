@@ -17,6 +17,14 @@ __Bridging__
 5. `L2Receiver.bridgeToL3`
     1. Send the specified amount of tokens through the bridge to L3. The contract's entire balance minus execution fee is sent as submission fee in order to forward all the extra ETH to L3.
 
+__Deployment Procedure__
+1. Predict the address of `Teleporter` on L1, it will be deployed via CREATE1
+2. Using the predicted teleporter address, deploy the following with the CREATE2 Factory at `0x4e59b44847b379578588920cA78FbF26c0B4956C`
+    1. The `L2Receiver` implementation
+    2. The `Beacon` (transfer ownership after deployment)
+    3. The `L2ReceiverFactory`
+3. Deploy the `Teleporter` on L1
+
 ## TODO
 
 * Custom fee token L3's

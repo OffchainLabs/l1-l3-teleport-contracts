@@ -5,7 +5,6 @@
   "license": "Apache-2.0",
   "scripts": {
     "deploy:teleporter": "hardhat compile && ts-node ./scripts/deployTeleport.ts",
-    "bridge": "ts-node ./scripts/bridgeTokens.ts",
     "test:happy-e2e": "hardhat compile && ts-node ./test/happyPathE2E.ts"
   },
   "devDependencies": {
