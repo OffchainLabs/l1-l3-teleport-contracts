@@ -22,6 +22,18 @@ contract L2ForwarderFactory is ProxySetter {
     address public immutable override beacon;
     address public immutable l1Teleporter;
 
+    event CreatedL2Forwarder(address indexed l1Owner, address l2Forwarder);
+    event CalledL2Forwarder(
+        address indexed l1Owner,
+        address l2Forwarder,
+        address l2l3Router,
+        address l2Token,
+        address to,
+        uint256 amount,
+        uint256 l2l3TicketGasLimit,
+        uint256 l3GasPrice
+    );
+
     error OnlyL1Teleporter();
 
     constructor(address _beacon, address _l1Teleporter) {
@@ -29,7 +41,7 @@ contract L2ForwarderFactory is ProxySetter {
         l1Teleporter = _l1Teleporter;
     }
 
-    function bridgeToL3(
+    function callForwarder(
         address l1Owner,
         L1GatewayRouter l2l3Router,
         IERC20 l2Token,
@@ -52,6 +64,9 @@ contract L2ForwarderFactory is ProxySetter {
     function createL2Forwarder(address l1Owner) public returns (L2Forwarder) {
         L2Forwarder l2Forwarder = L2Forwarder(address(new ClonableBeaconProxy{ salt: bytes20(l1Owner) }()));
         l2Forwarder.initialize(l1Owner);
+
+        emit CreatedL2Forwarder(l1Owner, address(l2Forwarder));
+
         return l2Forwarder;
     }
 

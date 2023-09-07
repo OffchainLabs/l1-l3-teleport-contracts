@@ -53,6 +53,15 @@ contract Teleporter is L1ArbitrumMessenger {
     // address is the same on each L2, deployed with CREATE2
     address public immutable l2ForwarderFactory;
 
+    event Teleported(
+        address indexed l1Owner,
+        address l1Token,
+        address l1l2Router,
+        address l2l3Router,
+        address to,
+        uint256 amount
+    );
+
     error InsufficientValue(uint256 required, uint256 provided);
 
     constructor(address _l2ForwarderFactory) {
@@ -146,7 +155,7 @@ contract Teleporter is L1ArbitrumMessenger {
 
         // tell the L2ForwarderFactory to create a forwarder and bridge for user
         bytes memory l2ForwarderFactoryCalldata = abi.encodeWithSelector(
-            L2ForwarderFactory.bridgeToL3.selector,
+            L2ForwarderFactory.callForwarder.selector,
             msg.sender,
             l2l3Router,
             l2Token,
@@ -167,6 +176,15 @@ contract Teleporter is L1ArbitrumMessenger {
             _maxGas: gasParams.l2ForwarderFactoryGasLimit,
             _gasPriceBid: gasParams.l2GasPrice,
             _data: l2ForwarderFactoryCalldata
+        });
+
+        emit Teleported({
+            l1Owner: msg.sender,
+            l1Token: address(l1Token),
+            l1l2Router: address(l1l2Router),
+            l2l3Router: l2l3Router,
+            to: to,
+            amount: amount
         });
     }
 

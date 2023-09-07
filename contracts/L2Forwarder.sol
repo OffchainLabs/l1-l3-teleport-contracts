@@ -9,8 +9,24 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // there is one of these for every account that bridges from L1 to L3
 // they are created by the L2ForwarderFactory
 contract L2Forwarder {
-    address l1Owner;
-    address deployer;
+    address public l1Owner;
+    address public deployer;
+
+    event BridgedToL3(
+        address indexed l2Token,
+        address indexed router,
+        address indexed to,
+        uint256 amount,
+        uint256 gasLimit,
+        uint256 gasPrice,
+        uint256 submissionCost
+    );
+
+    event Rescued(
+        address[] targets,
+        uint256[] values,
+        bytes[] datas
+    );
 
     error AlreadyInitialized();
     error OnlyL1OwnerOrDeployer();
@@ -29,8 +45,8 @@ contract L2Forwarder {
         IERC20 l2Token,
         address to,
         uint256 amount,
-        uint256 l2l3TicketGasLimit,
-        uint256 l3GasPrice
+        uint256 gasLimit,
+        uint256 gasPrice
     ) external payable {
         if (msg.sender != deployer && msg.sender != AddressAliasHelper.applyL1ToL2Alias(l1Owner)) revert OnlyL1OwnerOrDeployer();
 
@@ -41,15 +57,18 @@ contract L2Forwarder {
         l2Token.approve(l2l3Gateway, amount);
 
         // send tokens through the bridge to intended recipient (send all the ETH we have too, we could have more than msg.value b/c of fee refunds)
+        uint256 submissionCost = address(this).balance - gasLimit * gasPrice;
         l2l3Router.outboundTransferCustomRefund{value: address(this).balance}(
             address(l2Token),
             to,
             to,
             amount,
-            l2l3TicketGasLimit,
-            l3GasPrice,
-            abi.encode(address(this).balance - l2l3TicketGasLimit * l3GasPrice, bytes(""))
+            gasLimit,
+            gasPrice,
+            abi.encode(submissionCost, bytes(""))
         );
+
+        emit BridgedToL3(address(l2Token), address(l2l3Router), to, amount, gasLimit, gasPrice, submissionCost);
     }
 
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external {
@@ -60,5 +79,7 @@ contract L2Forwarder {
             (bool success,) = targets[i].call{value: values[i]}(datas[i]);
             if (!success) revert CallFailed(targets[i], values[i], datas[i]);
         }
+
+        emit Rescued(targets, values, datas);
     }
 }
