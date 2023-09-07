@@ -7,8 +7,8 @@ import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/Addres
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // there is one of these for every account that bridges from L1 to L3
-// they are created by the L2ReceiverFactory
-contract L2Receiver {
+// they are created by the L2ForwarderFactory
+contract L2Forwarder {
     address l1Owner;
     address deployer;
 

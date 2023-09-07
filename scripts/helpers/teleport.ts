@@ -6,7 +6,7 @@ export async function teleport(teleporter: Teleporter, token: ERC20, l2: Config[
   const gasParams = {
     l2GasPrice: ethers.parseUnits("0.1", "gwei"),
     l3GasPrice: ethers.parseUnits("0.1", "gwei"),
-    l2ReceiverFactoryGasLimit: 1_000_000,
+    l2ForwarderFactoryGasLimit: 1_000_000,
     l1l2TokenBridgeGasLimit: 1_000_000,
     l2l3TokenBridgeGasLimit: 1_000_000,
     l1l2TokenBridgeRetryableSize: 1000, // bytes

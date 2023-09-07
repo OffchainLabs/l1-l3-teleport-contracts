@@ -2,14 +2,14 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { BytesLike, ethers } from "ethers";
-import { Beacon__factory, L2ReceiverFactory__factory, L2Receiver__factory, Teleporter__factory } from "../../typechain-types";
+import { Beacon__factory, L2ForwarderFactory__factory, L2Forwarder__factory, Teleporter__factory } from "../../typechain-types";
 import { create2 } from "./utils";
 import { Config } from "../../config/config";
 
 export type TeleporterDeployment = {
   teleporterAddress: string;
-  receiverFactoryAddress: string;
-  receiverImplAddress: string;
+  forwarderFactoryAddress: string;
+  forwarderImplAddress: string;
   beaconAddress: string;
 
   l2ChainIds: number[];
@@ -23,19 +23,19 @@ async function deployL2Contracts(l2: Config['l2s'][0], create2Salt: Uint8Array, 
 
   const chainId = Number((await l2Signer.provider!.getNetwork()).chainId);
   
-  const l2ReceiverImplAddress = await create2(
-    new L2Receiver__factory(),
+  const l2ForwarderImplAddress = await create2(
+    new L2Forwarder__factory(),
     [],
     create2Salt,
     l2Signer
   );
 
-  console.log(`L2Receiver implementation @ ${l2ReceiverImplAddress} on chain ${chainId}`);
+  console.log(`L2Forwarder implementation @ ${l2ForwarderImplAddress} on chain ${chainId}`);
 
   const beaconAddress = await create2(
     new Beacon__factory(),
     [
-      l2ReceiverImplAddress
+      l2ForwarderImplAddress
     ],
     create2Salt,
     l2Signer
@@ -47,8 +47,8 @@ async function deployL2Contracts(l2: Config['l2s'][0], create2Salt: Uint8Array, 
 
   console.log(`Beacon @ ${beaconAddress} on chain ${chainId}`);
 
-  const l2ReceiverFactoryAddress = await create2(
-    new L2ReceiverFactory__factory(),
+  const l2ForwarderFactoryAddress = await create2(
+    new L2ForwarderFactory__factory(),
     [
       beaconAddress,
       l1TeleporterAddress
@@ -57,12 +57,12 @@ async function deployL2Contracts(l2: Config['l2s'][0], create2Salt: Uint8Array, 
     l2Signer
   );
 
-  console.log(`L2ReceiverFactory @ ${l2ReceiverFactoryAddress} on chain ${chainId}`);
+  console.log(`L2ForwarderFactory @ ${l2ForwarderFactoryAddress} on chain ${chainId}`);
   
   return {
     chainId,
-    l2ReceiverFactoryAddress,
-    l2ReceiverImplAddress,
+    l2ForwarderFactoryAddress,
+    l2ForwarderImplAddress,
     beaconAddress,
   };
 }
@@ -89,8 +89,8 @@ export async function deployTeleportContracts(config: Config): Promise<Teleporte
 
   // make sure all L2 deployments have the same addresses
   for (const l2Deployment of l2Deployments) {
-    if (l2Deployment.l2ReceiverFactoryAddress !== l2Deployments[0].l2ReceiverFactoryAddress
-      || l2Deployment.l2ReceiverImplAddress !== l2Deployments[0].l2ReceiverImplAddress
+    if (l2Deployment.l2ForwarderFactoryAddress !== l2Deployments[0].l2ForwarderFactoryAddress
+      || l2Deployment.l2ForwarderImplAddress !== l2Deployments[0].l2ForwarderImplAddress
       || l2Deployment.beaconAddress !== l2Deployments[0].beaconAddress
     ) {
       throw new Error("L2 deployments have different addresses");
@@ -100,7 +100,7 @@ export async function deployTeleportContracts(config: Config): Promise<Teleporte
   // deploy the teleporter
   console.log('Deploying teleporter...');
   const teleporter = await new Teleporter__factory(l1Signer).deploy(
-    l2Deployments[0].l2ReceiverFactoryAddress
+    l2Deployments[0].l2ForwarderFactoryAddress
   );
   await teleporter.waitForDeployment();
   const teleporterAddress = await teleporter.getAddress();
@@ -111,8 +111,8 @@ export async function deployTeleportContracts(config: Config): Promise<Teleporte
 
   return {
     teleporterAddress,
-    receiverFactoryAddress: l2Deployments[0].l2ReceiverFactoryAddress,
-    receiverImplAddress: l2Deployments[0].l2ReceiverImplAddress,
+    forwarderFactoryAddress: l2Deployments[0].l2ForwarderFactoryAddress,
+    forwarderImplAddress: l2Deployments[0].l2ForwarderImplAddress,
     beaconAddress: l2Deployments[0].beaconAddress,
     l2ChainIds: l2Deployments.map((l2) => l2.chainId)
   }

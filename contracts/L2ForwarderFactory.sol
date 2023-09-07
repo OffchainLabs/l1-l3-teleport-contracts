@@ -12,11 +12,11 @@ import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/Addres
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import {L2Receiver} from "./L2Receiver.sol";
+import {L2Forwarder} from "./L2Forwarder.sol";
 
 // this contract is deployed to every L2 in advance
-// it receives commands from the teleporter to create and call l2 receivers
-contract L2ReceiverFactory is ProxySetter {
+// it receives commands from the teleporter to create and call L2Forwarders
+contract L2ForwarderFactory is ProxySetter {
     bytes32 constant cloneableProxyHash = keccak256(type(ClonableBeaconProxy).creationCode);
 
     address public immutable override beacon;
@@ -40,23 +40,23 @@ contract L2ReceiverFactory is ProxySetter {
     ) external payable {
         if (msg.sender != AddressAliasHelper.applyL1ToL2Alias(l1Teleporter)) revert OnlyL1Teleporter();
 
-        L2Receiver l2Receiver = _tryCreateL2Receiver(l1Owner);
+        L2Forwarder l2Forwarder = _tryCreateL2Forwarder(l1Owner);
 
-        l2Receiver.bridgeToL3{value: msg.value}(l2l3Router, l2Token, to, amount, l2l3TicketGasLimit, l3GasPrice);
+        l2Forwarder.bridgeToL3{value: msg.value}(l2l3Router, l2Token, to, amount, l2l3TicketGasLimit, l3GasPrice);
     }
 
-    function calculateL2ReceiverAddress(address l1Owner) public view returns (address) {
+    function calculateL2ForwarderAddress(address l1Owner) public view returns (address) {
         return Create2.computeAddress(bytes20(l1Owner), cloneableProxyHash, address(this));
     }
 
-    function createL2Receiver(address l1Owner) public returns (L2Receiver) {
-        L2Receiver l2Receiver = L2Receiver(address(new ClonableBeaconProxy{ salt: bytes20(l1Owner) }()));
-        l2Receiver.initialize(l1Owner);
-        return l2Receiver;
+    function createL2Forwarder(address l1Owner) public returns (L2Forwarder) {
+        L2Forwarder l2Forwarder = L2Forwarder(address(new ClonableBeaconProxy{ salt: bytes20(l1Owner) }()));
+        l2Forwarder.initialize(l1Owner);
+        return l2Forwarder;
     }
 
-    function _tryCreateL2Receiver(address l1Owner) internal returns (L2Receiver) {
-        address calculatedAddress = calculateL2ReceiverAddress(l1Owner);
+    function _tryCreateL2Forwarder(address l1Owner) internal returns (L2Forwarder) {
+        address calculatedAddress = calculateL2ForwarderAddress(l1Owner);
 
         uint256 size;
         assembly {
@@ -64,10 +64,10 @@ contract L2ReceiverFactory is ProxySetter {
         }
         if (size > 0) {
             // contract already exists
-            return L2Receiver(calculatedAddress);
+            return L2Forwarder(calculatedAddress);
         }
 
         // contract doesn't exist, create it
-        return createL2Receiver(l1Owner);
+        return createL2Forwarder(l1Owner);
     }
 }
