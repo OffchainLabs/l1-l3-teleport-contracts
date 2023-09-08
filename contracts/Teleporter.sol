@@ -58,12 +58,7 @@ contract Teleporter is L1ArbitrumMessenger {
     /// @param  to          L3 address that will receive the tokens
     /// @param  amount      Amount of tokens being teleported
     event Teleported(
-        address indexed l1Owner,
-        address l1Token,
-        address l1l2Router,
-        address l2l3Router,
-        address to,
-        uint256 amount
+        address indexed l1Owner, address l1Token, address l1l2Router, address l2l3Router, address to, uint256 amount
     );
 
     /// @notice Thrown when the value sent to teleport() is less than the total cost of all retryables.
@@ -94,8 +89,7 @@ contract Teleporter is L1ArbitrumMessenger {
         address inbox = L1GatewayRouter(l1l2Router).inbox();
 
         // msg.value accounting checks
-        RetryableGasCosts memory gasResults =
-            calculateRetryableGasCosts(inbox, block.basefee, gasParams);
+        RetryableGasCosts memory gasResults = calculateRetryableGasCosts(inbox, block.basefee, gasParams);
 
         if (msg.value < gasResults.total) revert InsufficientValue(gasResults.total, msg.value);
 
@@ -160,11 +154,11 @@ contract Teleporter is L1ArbitrumMessenger {
     /// @param  inbox       L2's Inbox
     /// @param  l1BaseFee   L1's base fee
     /// @param  gasParams   Gas parameters for each retryable ticket
-    function calculateRetryableGasCosts(
-        address inbox,
-        uint256 l1BaseFee,
-        RetryableGasParams calldata gasParams
-    ) public view returns (RetryableGasCosts memory results) {
+    function calculateRetryableGasCosts(address inbox, uint256 l1BaseFee, RetryableGasParams calldata gasParams)
+        public
+        view
+        returns (RetryableGasCosts memory results)
+    {
         // submission costs:
         // on L1: l1l2TokenBridgeSubmissionCost, l2ForwarderFactorySubmissionCost
         // on L2: l2l3TokenBridgeSubmissionCost

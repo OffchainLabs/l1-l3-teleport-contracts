@@ -6,7 +6,7 @@ import {L1GatewayRouter} from
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// @notice Forwarder contract for bridging tokens from L1 to L3. 
+/// @notice Forwarder contract for bridging tokens from L1 to L3.
 ///         Tokens and a small amount of ETH are sent to this contract during the first leg of a teleportation,
 ///         in the second leg the L2ForwarderFactory calls bridgeToL3 on this contract to send the tokens to L3.
 ///         Each address on L1 that wants to bridge tokens to L3 has one of these.
@@ -41,11 +41,7 @@ contract L2Forwarder {
     /// @param  targets The addresses that were called
     /// @param  values  The values that were sent
     /// @param  datas   The calldata that was sent
-    event Rescued(
-        address[] targets,
-        uint256[] values,
-        bytes[] datas
-    );
+    event Rescued(address[] targets, uint256[] values, bytes[] datas);
 
     /// @notice Thrown when initialize is called after initialization
     error AlreadyInitialized();
@@ -75,14 +71,10 @@ contract L2Forwarder {
     /// @param  amount      The amount of tokens being forwarded
     /// @param  gasLimit    The gas limit for the retryable to L3
     /// @param  gasPrice    The gas price for the retryable to L3
-    function bridgeToL3(
-        address token,
-        address router,
-        address to,
-        uint256 amount,
-        uint256 gasLimit,
-        uint256 gasPrice
-    ) external payable {
+    function bridgeToL3(address token, address router, address to, uint256 amount, uint256 gasLimit, uint256 gasPrice)
+        external
+        payable
+    {
         if (msg.sender != deployer) revert OnlyDeployer();
 
         // get gateway
@@ -91,18 +83,12 @@ contract L2Forwarder {
         // approve gateway
         IERC20(token).approve(l2l3Gateway, amount);
 
-        // send tokens through the bridge to intended recipient 
+        // send tokens through the bridge to intended recipient
         // (send all the ETH we have too, we could have more than msg.value b/c of fee refunds)
         // overestimate submission cost to ensure all ETH is sent through
         uint256 submissionCost = address(this).balance - gasLimit * gasPrice;
         L1GatewayRouter(router).outboundTransferCustomRefund{value: address(this).balance}(
-            token,
-            to,
-            to,
-            amount,
-            gasLimit,
-            gasPrice,
-            abi.encode(submissionCost, bytes(""))
+            token, to, to, amount, gasLimit, gasPrice, abi.encode(submissionCost, bytes(""))
         );
 
         emit BridgedToL3(token, router, to, amount, gasLimit, gasPrice, submissionCost);
