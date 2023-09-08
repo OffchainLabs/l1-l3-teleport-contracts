@@ -3,15 +3,20 @@ pragma solidity ^0.8.13;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+/// @notice Beacon contract for ClonableBeaconProxy contracts
 contract Beacon is Ownable {
+    /// @notice The implementation to be used by beacon proxies
     address public implementation;
 
+    /// @notice Creates the beacon with the specified implementation
+    /// @dev    Will also set the owner of this beacon to tx.origin since this contract is meant to be deployed via CREATE2 factory
     constructor(address _implementation) {
         implementation = _implementation;
-        // Beacon is meant to be deployed with a deterministic CREATE2 factory, so set the owner to the deployer
         _transferOwnership(tx.origin);
     }
 
+    /// @notice Set the implementation for the beacon proxies.
+    ///         Can only be called by the owner.
     function upgradeTo(address newImplementation) external onlyOwner {
         implementation = newImplementation;
     }

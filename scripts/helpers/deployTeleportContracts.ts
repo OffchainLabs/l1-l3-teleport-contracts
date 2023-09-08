@@ -13,6 +13,7 @@ export type TeleporterDeployment = {
   beaconAddress: string;
 
   l2ChainIds: number[];
+  l2Create2Salt: string;
 }
 
 async function deployL2Contracts(l2: Config['l2s'][0], create2Salt: Uint8Array, l1TeleporterAddress: string, privKey: string) {
@@ -114,6 +115,7 @@ export async function deployTeleportContracts(config: Config): Promise<Teleporte
     forwarderFactoryAddress: l2Deployments[0].l2ForwarderFactoryAddress,
     forwarderImplAddress: l2Deployments[0].l2ForwarderImplAddress,
     beaconAddress: l2Deployments[0].beaconAddress,
-    l2ChainIds: l2Deployments.map((l2) => l2.chainId)
+    l2ChainIds: l2Deployments.map((l2) => l2.chainId),
+    l2Create2Salt: ethers.hexlify(create2Salt),
   }
 }

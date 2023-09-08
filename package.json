@@ -4,7 +4,7 @@
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
-    "deploy:teleporter": "hardhat compile && ts-node ./scripts/deployTeleport.ts",
+    "deploy": "hardhat compile && ts-node ./scripts/deploy.ts",
     "test:happy-e2e": "hardhat compile && ts-node ./test/happyPathE2E.ts"
   },
   "devDependencies": {
