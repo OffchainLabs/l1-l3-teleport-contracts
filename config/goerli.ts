@@ -8,7 +8,7 @@ const config: Config = {
       rpcUrl: getEnv("ARB_GOERLI_URL"),
       inbox: getEnv("ARB_GOERLI_INBOX"),
       router: getEnv("ARB_GOERLI_ROUTER"),
-      upExec: "0x0000000000000000000000000000000000000001" // todo
+      upExec: getEnv("ARB_GOERLI_EXECUTOR")
     }
   ],
   privateKey: getEnv("PRIVATE_KEY"),
