@@ -43,18 +43,18 @@ contract L2ForwarderFactory is ProxySetter {
 
     function callForwarder(
         address l1Owner,
-        L1GatewayRouter l2l3Router,
-        IERC20 l2Token,
+        address token,
+        address router,
         address to,
         uint256 amount,
-        uint256 l2l3TicketGasLimit,
-        uint256 l3GasPrice
+        uint256 gasLimit,
+        uint256 gasPrice
     ) external payable {
         if (msg.sender != AddressAliasHelper.applyL1ToL2Alias(l1Teleporter)) revert OnlyL1Teleporter();
 
         L2Forwarder l2Forwarder = _tryCreateL2Forwarder(l1Owner);
 
-        l2Forwarder.bridgeToL3{value: msg.value}(l2l3Router, l2Token, to, amount, l2l3TicketGasLimit, l3GasPrice);
+        l2Forwarder.bridgeToL3{value: msg.value}(token, router, to, amount, gasLimit, gasPrice);
     }
 
     function calculateL2ForwarderAddress(address l1Owner) public view returns (address) {

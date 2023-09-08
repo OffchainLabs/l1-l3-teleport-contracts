@@ -16,10 +16,10 @@ export async function teleport(teleporter: Teleporter, token: ERC20, l2: Config[
 
   const teleportTx = await teleporter.teleport(
     await token.getAddress(),
-    l1Signer.address, // todo: change to a rando
-    ethers.parseEther("100"),
     l2.router,
     l2l3Router,
+    l1Signer.address, // todo: change to a rando
+    ethers.parseEther("100"),
     gasParams,
     {
       value: gasResults.total

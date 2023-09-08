@@ -41,8 +41,8 @@ contract L2Forwarder {
     }
 
     function bridgeToL3(
-        L1GatewayRouter l2l3Router,
-        IERC20 l2Token,
+        address token,
+        address router,
         address to,
         uint256 amount,
         uint256 gasLimit,
@@ -51,15 +51,16 @@ contract L2Forwarder {
         if (msg.sender != deployer && msg.sender != AddressAliasHelper.applyL1ToL2Alias(l1Owner)) revert OnlyL1OwnerOrDeployer();
 
         // get gateway
-        address l2l3Gateway = l2l3Router.getGateway(address(l2Token));
+        address l2l3Gateway = L1GatewayRouter(router).getGateway(token);
 
         // approve gateway
-        l2Token.approve(l2l3Gateway, amount);
+        IERC20(token).approve(l2l3Gateway, amount);
 
         // send tokens through the bridge to intended recipient (send all the ETH we have too, we could have more than msg.value b/c of fee refunds)
+        // overestimate submission cost to ensure all ETH is sent through
         uint256 submissionCost = address(this).balance - gasLimit * gasPrice;
-        l2l3Router.outboundTransferCustomRefund{value: address(this).balance}(
-            address(l2Token),
+        L1GatewayRouter(router).outboundTransferCustomRefund{value: address(this).balance}(
+            token,
             to,
             to,
             amount,
@@ -68,7 +69,7 @@ contract L2Forwarder {
             abi.encode(submissionCost, bytes(""))
         );
 
-        emit BridgedToL3(address(l2Token), address(l2l3Router), to, amount, gasLimit, gasPrice, submissionCost);
+        emit BridgedToL3(token, router, to, amount, gasLimit, gasPrice, submissionCost);
     }
 
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external {

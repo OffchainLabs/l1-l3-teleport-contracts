@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { BytesLike, ethers } from "ethers";
+import { ethers } from "ethers";
 import { Beacon__factory, L2ForwarderFactory__factory, L2Forwarder__factory, Teleporter__factory } from "../../typechain-types";
 import { create2 } from "./utils";
 import { Config } from "../../config/config";

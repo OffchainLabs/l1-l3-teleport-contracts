@@ -69,7 +69,7 @@ contract Teleporter is L1ArbitrumMessenger {
     }
 
     function calculateRetryableGasResults(
-        IInbox inbox,
+        address inbox,
         uint256 l1BaseFee,
         RetryableGasParams calldata gasParams
     ) public view returns (RetryableGasResults memory results) {
@@ -88,11 +88,11 @@ contract Teleporter is L1ArbitrumMessenger {
 
         // calculate submission costs
         results.l1l2TokenBridgeSubmissionCost =
-            inbox.calculateRetryableSubmissionFee(gasParams.l1l2TokenBridgeRetryableSize, l1BaseFee);
+            IInbox(inbox).calculateRetryableSubmissionFee(gasParams.l1l2TokenBridgeRetryableSize, l1BaseFee);
         results.l2ForwarderFactorySubmissionCost =
-            inbox.calculateRetryableSubmissionFee(l2ForwarderFactoryCalldataSize, l1BaseFee);
+            IInbox(inbox).calculateRetryableSubmissionFee(l2ForwarderFactoryCalldataSize, l1BaseFee);
         results.l2l3TokenBridgeSubmissionCost =
-            inbox.calculateRetryableSubmissionFee(gasParams.l2l3TokenBridgeRetryableSize, gasParams.l2GasPrice);
+            IInbox(inbox).calculateRetryableSubmissionFee(gasParams.l2l3TokenBridgeRetryableSize, gasParams.l2GasPrice);
 
         // calculate gas cost for ticket #1 (the l1-l2 token bridge retryable)
         results.l1l2TokenBridgeGasCost = gasParams.l2GasPrice * gasParams.l1l2TokenBridgeGasLimit;
@@ -108,25 +108,24 @@ contract Teleporter is L1ArbitrumMessenger {
             + results.l2l3TokenBridgeGasCost;
     }
 
-    // todo: maybe this should take the l1Gateway as param instead of using the router?
     function teleport(
-        IERC20 l1Token,
+        address l1Token,
+        address l1l2Router,
+        address l2l3Router,
         address to,
         uint256 amount,
-        L1GatewayRouter l1l2Router,
-        address l2l3Router,
         RetryableGasParams calldata gasParams
     ) external payable {
-        address l2Forwarder = predictForwarderAddress(msg.sender);
+        address l2Forwarder = l2ForwarderAddress(msg.sender);
 
         // get gateway
-        IL1ArbitrumGateway l1Gateway = IL1ArbitrumGateway(l1l2Router.getGateway(address(l1Token)));
+        address l1Gateway = L1GatewayRouter(l1l2Router).getGateway(l1Token);
 
         // get l2 token
-        address l2Token = l1Gateway.calculateL2TokenAddress(address(l1Token));
+        address l2Token = IL1ArbitrumGateway(l1Gateway).calculateL2TokenAddress(l1Token);
 
         // get inbox
-        IInbox inbox = IInbox(l1Gateway.inbox());
+        address inbox = IL1ArbitrumGateway(l1Gateway).inbox();
 
         // msg.value accounting checks
         RetryableGasResults memory gasResults =
@@ -135,13 +134,13 @@ contract Teleporter is L1ArbitrumMessenger {
         if (msg.value < gasResults.total) revert InsufficientValue(gasResults.total, msg.value);
 
         // pull in tokens from user
-        l1Token.transferFrom(msg.sender, address(this), amount);
+        IERC20(l1Token).transferFrom(msg.sender, address(this), amount);
 
         // approve gateway
-        l1Token.approve(address(l1Gateway), amount);
+        IERC20(l1Token).approve(address(l1Gateway), amount);
 
         // send tokens through the bridge to predicted forwarder
-        l1l2Router.outboundTransferCustomRefund{
+        L1GatewayRouter(l1l2Router).outboundTransferCustomRefund{
             value: gasResults.l1l2TokenBridgeGasCost + gasResults.l1l2TokenBridgeSubmissionCost
         }(
             address(l1Token),
@@ -157,8 +156,8 @@ contract Teleporter is L1ArbitrumMessenger {
         bytes memory l2ForwarderFactoryCalldata = abi.encodeWithSelector(
             L2ForwarderFactory.callForwarder.selector,
             msg.sender,
-            l2l3Router,
             l2Token,
+            l2l3Router,
             to,
             amount,
             gasParams.l2l3TokenBridgeGasLimit,
@@ -188,7 +187,7 @@ contract Teleporter is L1ArbitrumMessenger {
         });
     }
 
-    function predictForwarderAddress(address l1Owner) public view returns (address) {
+    function l2ForwarderAddress(address l1Owner) public view returns (address) {
         return Create2.computeAddress(bytes20(l1Owner), cloneableProxyHash, l2ForwarderFactory);
     }
 }

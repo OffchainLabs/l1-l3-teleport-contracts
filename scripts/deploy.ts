@@ -5,7 +5,7 @@ import { deployTeleportContracts } from "./helpers/deployTeleportContracts";
 import config from "../config/goerli";
 
 async function main() {
-  const deployment = await deployTeleportContracts(config, true);
+  const deployment = await deployTeleportContracts(config);
   
   await fs.writeFile(
     './deployments/goerli.json',
