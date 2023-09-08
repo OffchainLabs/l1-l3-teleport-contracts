@@ -35,7 +35,7 @@ It is assumed that the first leg will always succeed, either through auto-redemp
 
 If multiple teleportations are in flight, it does not matter if retryables are redeemed out of order as long as there are no calls to `L2Forwarder.rescue`.
 
-If a call to `rescue` is made, any pending second leg retryables should be cancelled in the same call to avoid race conditions and recover any ETH. 
+If a call to `rescue` is made, any pending second leg retryables should be cancelled in the same call to avoid race conditions and recover any ETH. First and third leg retryables should obviously never be cancelled.
 
 ## TODO
 

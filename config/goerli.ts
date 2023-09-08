@@ -6,9 +6,7 @@ const config: Config = {
   l2s: [
     {
       rpcUrl: getEnv("ARB_GOERLI_URL"),
-      inbox: getEnv("ARB_GOERLI_INBOX"),
-      router: getEnv("ARB_GOERLI_ROUTER"),
-      upExec: getEnv("ARB_GOERLI_EXECUTOR")
+      beaconOwner: getEnv("ARB_GOERLI_BEACON_OWNER")
     }
   ],
   privateKey: getEnv("PRIVATE_KEY"),

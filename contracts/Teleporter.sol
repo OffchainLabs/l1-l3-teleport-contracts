@@ -17,26 +17,21 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 
-// deploy one of these on L1 for each L2
-// user calls teleport:
-// - pulls in tokens and sends them over the bridge to user's L2Forwarder
-// - tells the L2ForwarderFactory (via retryable) to create a forwarder and bridge for user
+/// @notice Teleports tokens from L1 to L3.
 contract Teleporter is L1ArbitrumMessenger {
+    /// @notice Gas parameters for each retryable ticket.
     struct RetryableGasParams {
         uint256 l2GasPrice;
         uint256 l3GasPrice;
-        // gas limit for retryable calling L2ForwarderFactory.bridgeToL3
         uint256 l2ForwarderFactoryGasLimit;
-        // gas limit for l1 to l2 token bridge retryable
         uint256 l1l2TokenBridgeGasLimit;
-        // gas limit for l2 to l3 token bridge retryable
         uint256 l2l3TokenBridgeGasLimit;
         uint256 l1l2TokenBridgeRetryableSize;
         uint256 l2l3TokenBridgeRetryableSize;
     }
 
-    // todo: needs a better name
-    struct RetryableGasResults {
+    /// @notice Gas and submission costs for each retryable ticket.
+    struct RetryableGasCosts {
         uint256 l1l2TokenBridgeSubmissionCost;
         uint256 l2ForwarderFactorySubmissionCost;
         uint256 l2l3TokenBridgeSubmissionCost;
@@ -48,11 +43,20 @@ contract Teleporter is L1ArbitrumMessenger {
 
     bytes32 constant cloneableProxyHash = keccak256(type(ClonableBeaconProxy).creationCode);
 
-    uint256 public constant l2ForwarderFactoryCalldataSize = 4 + 7 * 32; // selector + 7 args
+    /// @dev Calldata size of L2ForwarderFactory.callForwarder (selector + 7 args).
+    ///      Necessary to calculate the submission cost of the retryable ticket to L2ForwarderFactory.
+    uint256 public constant l2ForwarderFactoryCalldataSize = 4 + 7 * 32;
 
-    // address is the same on each L2, deployed with CREATE2
+    /// @notice Address of the L2ForwarderFactory. It is the same on all L2s.
     address public immutable l2ForwarderFactory;
 
+    /// @notice Emitted when a teleportation is initiated.
+    /// @param  l1Owner     L1 address that initiated the teleportation
+    /// @param  l1Token     L1 token being teleported
+    /// @param  l1l2Router  L1 to L2 token bridge router
+    /// @param  l2l3Router  L2 to L3 token bridge router
+    /// @param  to          L3 address that will receive the tokens
+    /// @param  amount      Amount of tokens being teleported
     event Teleported(
         address indexed l1Owner,
         address l1Token,
@@ -62,17 +66,105 @@ contract Teleporter is L1ArbitrumMessenger {
         uint256 amount
     );
 
+    /// @notice Thrown when the value sent to teleport() is less than the total cost of all retryables.
     error InsufficientValue(uint256 required, uint256 provided);
 
     constructor(address _l2ForwarderFactory) {
         l2ForwarderFactory = _l2ForwarderFactory;
     }
 
-    function calculateRetryableGasResults(
+    /// @notice Start a teleportation. Value sent must be >= the total cost of all retryables.
+    ///         Extra ETH is sent as l2CallValue to the L2ForwarderFactory, which will be sent through the L2Forwarder to L3.
+    /// @param  l1Token     L1 token being teleported
+    /// @param  l1l2Router  L1 to L2 token bridge router
+    /// @param  l2l3Router  L2 to L3 token bridge router
+    /// @param  to          L3 address that will receive the tokens
+    /// @param  amount      Amount of tokens being teleported
+    /// @param  gasParams   Gas parameters for each retryable ticket
+    /// @dev    2 retryables will be created: one to bridge tokens to the L2Forwarder, and one to call the L2ForwarderFactory.
+    function teleport(
+        address l1Token,
+        address l1l2Router,
+        address l2l3Router,
+        address to,
+        uint256 amount,
+        RetryableGasParams calldata gasParams
+    ) external payable {
+        // get inbox
+        address inbox = L1GatewayRouter(l1l2Router).inbox();
+
+        // msg.value accounting checks
+        RetryableGasCosts memory gasResults =
+            calculateRetryableGasCosts(inbox, block.basefee, gasParams);
+
+        if (msg.value < gasResults.total) revert InsufficientValue(gasResults.total, msg.value);
+
+        // pull in tokens from caller
+        IERC20(l1Token).transferFrom(msg.sender, address(this), amount);
+
+        // approve gateway
+        IERC20(l1Token).approve(L1GatewayRouter(l1l2Router).getGateway(l1Token), amount);
+
+        // calculate forwarder address of caller
+        address l2Forwarder = l2ForwarderAddress(msg.sender);
+
+        // send tokens through the bridge to predicted forwarder
+        L1GatewayRouter(l1l2Router).outboundTransferCustomRefund{
+            value: gasResults.l1l2TokenBridgeGasCost + gasResults.l1l2TokenBridgeSubmissionCost
+        }(
+            address(l1Token),
+            l2Forwarder,
+            l2Forwarder,
+            amount,
+            gasParams.l1l2TokenBridgeGasLimit,
+            gasParams.l2GasPrice,
+            abi.encode(gasResults.l1l2TokenBridgeSubmissionCost, bytes(""))
+        );
+
+        // call the L2ForwarderFactory
+        bytes memory l2ForwarderFactoryCalldata = abi.encodeWithSelector(
+            L2ForwarderFactory.callForwarder.selector,
+            msg.sender,
+            L1GatewayRouter(l1l2Router).calculateL2TokenAddress(l1Token),
+            l2l3Router,
+            to,
+            amount,
+            gasParams.l2l3TokenBridgeGasLimit,
+            gasParams.l3GasPrice
+        );
+        sendTxToL2CustomRefund({
+            _inbox: address(inbox),
+            _to: l2ForwarderFactory,
+            _refundTo: l2Forwarder,
+            _user: l2Forwarder,
+            _l1CallValue: address(this).balance, // send everything left
+            _l2CallValue: address(this).balance - gasResults.l2ForwarderFactorySubmissionCost
+                - gasResults.l2ForwarderFactoryGasCost,
+            _maxSubmissionCost: gasResults.l2ForwarderFactorySubmissionCost,
+            _maxGas: gasParams.l2ForwarderFactoryGasLimit,
+            _gasPriceBid: gasParams.l2GasPrice,
+            _data: l2ForwarderFactoryCalldata
+        });
+
+        emit Teleported({
+            l1Owner: msg.sender,
+            l1Token: address(l1Token),
+            l1l2Router: address(l1l2Router),
+            l2l3Router: l2l3Router,
+            to: to,
+            amount: amount
+        });
+    }
+
+    /// @notice Given some gas parameters, calculate the gas and submission costs for each retryable ticket.
+    /// @param  inbox       L2's Inbox
+    /// @param  l1BaseFee   L1's base fee
+    /// @param  gasParams   Gas parameters for each retryable ticket
+    function calculateRetryableGasCosts(
         address inbox,
         uint256 l1BaseFee,
         RetryableGasParams calldata gasParams
-    ) public view returns (RetryableGasResults memory results) {
+    ) public view returns (RetryableGasCosts memory results) {
         // submission costs:
         // on L1: l1l2TokenBridgeSubmissionCost, l2ForwarderFactorySubmissionCost
         // on L2: l2l3TokenBridgeSubmissionCost
@@ -108,85 +200,7 @@ contract Teleporter is L1ArbitrumMessenger {
             + results.l2l3TokenBridgeGasCost;
     }
 
-    function teleport(
-        address l1Token,
-        address l1l2Router,
-        address l2l3Router,
-        address to,
-        uint256 amount,
-        RetryableGasParams calldata gasParams
-    ) external payable {
-        address l2Forwarder = l2ForwarderAddress(msg.sender);
-
-        // get gateway
-        address l1Gateway = L1GatewayRouter(l1l2Router).getGateway(l1Token);
-
-        // get l2 token
-        address l2Token = IL1ArbitrumGateway(l1Gateway).calculateL2TokenAddress(l1Token);
-
-        // get inbox
-        address inbox = IL1ArbitrumGateway(l1Gateway).inbox();
-
-        // msg.value accounting checks
-        RetryableGasResults memory gasResults =
-            calculateRetryableGasResults(inbox, block.basefee, gasParams);
-
-        if (msg.value < gasResults.total) revert InsufficientValue(gasResults.total, msg.value);
-
-        // pull in tokens from user
-        IERC20(l1Token).transferFrom(msg.sender, address(this), amount);
-
-        // approve gateway
-        IERC20(l1Token).approve(address(l1Gateway), amount);
-
-        // send tokens through the bridge to predicted forwarder
-        L1GatewayRouter(l1l2Router).outboundTransferCustomRefund{
-            value: gasResults.l1l2TokenBridgeGasCost + gasResults.l1l2TokenBridgeSubmissionCost
-        }(
-            address(l1Token),
-            l2Forwarder,
-            l2Forwarder,
-            amount,
-            gasParams.l1l2TokenBridgeGasLimit,
-            gasParams.l2GasPrice,
-            abi.encode(gasResults.l1l2TokenBridgeSubmissionCost, bytes(""))
-        );
-
-        // tell the L2ForwarderFactory to create a forwarder and bridge for user
-        bytes memory l2ForwarderFactoryCalldata = abi.encodeWithSelector(
-            L2ForwarderFactory.callForwarder.selector,
-            msg.sender,
-            l2Token,
-            l2l3Router,
-            to,
-            amount,
-            gasParams.l2l3TokenBridgeGasLimit,
-            gasParams.l3GasPrice
-        );
-        sendTxToL2CustomRefund({
-            _inbox: address(inbox),
-            _to: l2ForwarderFactory,
-            _refundTo: l2Forwarder,
-            _user: l2Forwarder,
-            _l1CallValue: address(this).balance, // send everything left
-            _l2CallValue: address(this).balance - gasResults.l2ForwarderFactorySubmissionCost
-                - gasResults.l2ForwarderFactoryGasCost,
-            _maxSubmissionCost: gasResults.l2ForwarderFactorySubmissionCost,
-            _maxGas: gasParams.l2ForwarderFactoryGasLimit,
-            _gasPriceBid: gasParams.l2GasPrice,
-            _data: l2ForwarderFactoryCalldata
-        });
-
-        emit Teleported({
-            l1Owner: msg.sender,
-            l1Token: address(l1Token),
-            l1l2Router: address(l1l2Router),
-            l2l3Router: l2l3Router,
-            to: to,
-            amount: amount
-        });
-    }
-
+    /// @notice Calculate the address of the L2Forwarder for the given L1 owner.
     function l2ForwarderAddress(address l1Owner) public view returns (address) {
         return Create2.computeAddress(bytes20(l1Owner), cloneableProxyHash, l2ForwarderFactory);
     }

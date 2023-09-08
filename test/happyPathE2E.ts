@@ -11,6 +11,7 @@ import { teleport } from "../scripts/helpers/teleport";
 
 function getTestConfig() {
   return {
+    l1l2Router: getEnv("ARB_GOERLI_ROUTER"),
     l2l3Router: getEnv("L3_ROUTER"),
     l3RpcUrl: getEnv("L3_URL"),
   }
@@ -37,7 +38,7 @@ async function main() {
   const teleportTx = await teleport(
     teleporter,
     mockToken,
-    config.l2s[0],
+    testConfig.l1l2Router,
     testConfig.l2l3Router,
     l1Signer
   );
@@ -45,7 +46,7 @@ async function main() {
   console.log(`Teleport tx: ${teleportTx.hash}`);
 
   // get L3 token address
-  const l2TokenAddr = await L1GatewayRouter__factory.connect(config.l2s[0].router, l1Signer).calculateL2TokenAddress(await mockToken.getAddress());
+  const l2TokenAddr = await L1GatewayRouter__factory.connect(testConfig.l1l2Router, l1Signer).calculateL2TokenAddress(await mockToken.getAddress());
   const l3TokenAddr = await L1GatewayRouter__factory.connect(testConfig.l2l3Router, l2Provider).calculateL2TokenAddress(l2TokenAddr);
 
   // create a promise that polls the L3 token balance

@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { ethers } from "ethers";
+import { Wallet, ethers } from "ethers";
 import { Beacon__factory, L2ForwarderFactory__factory, L2Forwarder__factory, Teleporter__factory } from "../../typechain-types";
 import { create2 } from "./utils";
 import { Config } from "../../config/config";
@@ -16,12 +16,7 @@ export type TeleporterDeployment = {
   l2Create2Salt: string;
 }
 
-async function deployL2Contracts(l2: Config['l2s'][0], create2Salt: Uint8Array, l1TeleporterAddress: string, privKey: string) {
-  const l2Signer = new ethers.Wallet(
-    privKey,
-    new ethers.JsonRpcProvider(l2.rpcUrl)
-  );
-
+async function deployL2Contracts(l1TeleporterAddress: string, beaconOwner: string, create2Salt: Uint8Array, l2Signer: Wallet) {
   const chainId = Number((await l2Signer.provider!.getNetwork()).chainId);
   
   const l2ForwarderImplAddress = await create2(
@@ -42,9 +37,9 @@ async function deployL2Contracts(l2: Config['l2s'][0], create2Salt: Uint8Array, 
     l2Signer
   );
 
-  // transfer ownership of beacon to upExec
+  // transfer ownership of beacon
   const beacon = Beacon__factory.connect(beaconAddress, l2Signer);
-  await (await beacon.transferOwnership(l2.upExec)).wait();
+  await (await beacon.transferOwnership(beaconOwner)).wait();
 
   console.log(`Beacon @ ${beaconAddress} on chain ${chainId}`);
 
@@ -85,7 +80,11 @@ export async function deployTeleportContracts(config: Config): Promise<Teleporte
   const create2Salt = ethers.randomBytes(32);
 
   const l2Deployments = await Promise.all(config.l2s.map((l2) => {
-    return deployL2Contracts(l2, create2Salt, predictedTeleporterAddress, config.privateKey);
+    const l2Signer = new ethers.Wallet(
+      config.privateKey,
+      new ethers.JsonRpcProvider(l2.rpcUrl)
+    );
+    return deployL2Contracts(predictedTeleporterAddress, l2.beaconOwner, create2Salt, l2Signer);
   }));
 
   // make sure all L2 deployments have the same addresses

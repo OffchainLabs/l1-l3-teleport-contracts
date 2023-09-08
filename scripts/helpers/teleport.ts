@@ -1,8 +1,9 @@
 import { AddressLike, Wallet, ethers } from "ethers";
-import { ERC20, Teleporter } from "../../typechain-types";
-import { Config } from "../../config/config";
+import { ERC20, L1GatewayRouter__factory, Teleporter } from "../../typechain-types";
 
-export async function teleport(teleporter: Teleporter, token: ERC20, l2: Config["l2s"][0], l2l3Router: AddressLike, l1Signer: Wallet) {
+export async function teleport(teleporter: Teleporter, token: ERC20, l1l2Router: AddressLike, l2l3Router: AddressLike, l1Signer: Wallet) {
+  const inbox = await L1GatewayRouter__factory.connect(l1l2Router.toString(), l1Signer).inbox();
+
   const gasParams = {
     l2GasPrice: ethers.parseUnits("0.1", "gwei"),
     l3GasPrice: ethers.parseUnits("0.1", "gwei"),
@@ -12,13 +13,14 @@ export async function teleport(teleporter: Teleporter, token: ERC20, l2: Config[
     l1l2TokenBridgeRetryableSize: 1000, // bytes
     l2l3TokenBridgeRetryableSize: 1000, // bytes
   };
-  const gasResults = await teleporter.calculateRetryableGasResults(l2.inbox, (await l1Signer.provider!.getFeeData()).gasPrice!, gasParams);
+
+  const gasResults = await teleporter.calculateRetryableGasCosts(inbox, (await l1Signer.provider!.getFeeData()).gasPrice!, gasParams);
 
   const teleportTx = await teleporter.teleport(
     await token.getAddress(),
-    l2.router,
+    l1l2Router,
     l2l3Router,
-    l1Signer.address, // todo: change to a rando
+    l1Signer.address,
     ethers.parseEther("100"),
     gasParams,
     {
