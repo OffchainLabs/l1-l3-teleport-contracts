@@ -19,25 +19,25 @@ import {L2Forwarder} from "./L2Forwarder.sol";
 contract L2ForwarderFactory is ProxySetter {
     bytes32 constant cloneableProxyHash = keccak256(type(ClonableBeaconProxy).creationCode);
 
-    /// @notice The Beacon setting the L2Forwarder implementation for all proxy instances
+    /// @notice Beacon setting the L2Forwarder implementation for all proxy instances
     address public immutable override beacon;
-    /// @notice The Teleporter contract on L1
+    /// @notice Teleporter contract on L1
     address public immutable l1Teleporter;
 
     /// @notice Emitted when a new L2Forwarder is created
-    /// @param  l1Owner     The L2Forwarder's owner's address on L1
-    /// @param  l2Forwarder The address of the new L2Forwarder
+    /// @param  l1Owner     L2Forwarder's owner's address on L1
+    /// @param  l2Forwarder Address of the new L2Forwarder
     event CreatedL2Forwarder(address indexed l1Owner, address l2Forwarder);
 
     /// @notice Emitted when an L2Forwarder is called to bridge tokens to L3
-    /// @param  l1Owner         The L2Forwarder's owner's address on L1
-    /// @param  l2Forwarder     The L2Forwarder
-    /// @param  router          The token bridge router to L3
-    /// @param  token           The token being bridged
-    /// @param  to              The recipient on L3
-    /// @param  amount          The amount of tokens being bridged
-    /// @param  gasLimit        The gas limit for the token bridge retryable to L3
-    /// @param  gasPrice        The gas price for the token bridge retryable to L3
+    /// @param  l1Owner         L2Forwarder's owner's address on L1
+    /// @param  l2Forwarder     L2Forwarder
+    /// @param  router          Token bridge router to L3
+    /// @param  token           Token being bridged
+    /// @param  to              Recipient on L3
+    /// @param  amount          Amount of tokens being bridged
+    /// @param  gasLimit        Gas limit for the token bridge retryable to L3
+    /// @param  gasPrice        Gas price for the token bridge retryable to L3
     event CalledL2Forwarder(
         address indexed l1Owner,
         address l2Forwarder,
@@ -52,8 +52,8 @@ contract L2ForwarderFactory is ProxySetter {
     /// @notice Thrown when non-teleporter attempts to call callForwarder
     error OnlyL1Teleporter();
 
-    /// @param _beacon         The Beacon setting the L2Forwarder implementation for all proxy instances
-    /// @param _l1Teleporter   The Teleporter contract on L1
+    /// @param _beacon         Beacon setting the L2Forwarder implementation for all proxy instances
+    /// @param _l1Teleporter   Teleporter contract on L1
     constructor(address _beacon, address _l1Teleporter) {
         beacon = _beacon;
         l1Teleporter = _l1Teleporter;
@@ -61,13 +61,13 @@ contract L2ForwarderFactory is ProxySetter {
 
     /// @notice Calls an L2Forwarder to bridge tokens to L3. Will create the L2Forwarder first if it doesn't exist.
     ///         Can only be called via retryable from the Teleporter on L1.
-    /// @param  l1Owner     The address bridging tokens to L3
-    /// @param  token       The token being bridged
-    /// @param  router      The token bridge router to L3
-    /// @param  to          The recipient on L3
-    /// @param  amount      The amount of tokens being bridged
-    /// @param  gasLimit    The gas limit for the token bridge retryable to L3
-    /// @param  gasPrice    The gas price for the token bridge retryable to L3
+    /// @param  l1Owner     Address bridging tokens to L3
+    /// @param  token       Token being bridged
+    /// @param  router      Token bridge router to L3
+    /// @param  to          Recipient on L3
+    /// @param  amount      Amount of tokens being bridged
+    /// @param  gasLimit    Gas limit for the token bridge retryable to L3
+    /// @param  gasPrice    Gas price for the token bridge retryable to L3
     function callForwarder(
         address l1Owner,
         address token,
@@ -85,7 +85,7 @@ contract L2ForwarderFactory is ProxySetter {
     }
 
     /// @notice Creates an L2Forwarder for the given L1 owner. There is no access control.
-    /// @param  l1Owner The L2Forwarder's owner's address on L1
+    /// @param  l1Owner L2Forwarder's owner's address on L1
     function createL2Forwarder(address l1Owner) public returns (L2Forwarder) {
         L2Forwarder l2Forwarder = L2Forwarder(address(new ClonableBeaconProxy{ salt: bytes20(l1Owner) }()));
         l2Forwarder.initialize(l1Owner);

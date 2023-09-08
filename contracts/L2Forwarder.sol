@@ -20,13 +20,13 @@ contract L2Forwarder {
     address public deployer;
 
     /// @notice Emitted when tokens are forwarded to an L3
-    /// @param  token           The token being forwarded
-    /// @param  router          The token bridge router to L3
-    /// @param  to              The address on L3 that will receive the tokens and extra ETH
-    /// @param  amount          The amount of tokens being forwarded
-    /// @param  gasLimit        The gas limit for the retryable to L3
-    /// @param  gasPrice        The gas price for the retryable to L3
-    /// @param  submissionCost  The submission cost for the retryable to L3
+    /// @param  token           Token being forwarded
+    /// @param  router          Token bridge router to L3
+    /// @param  to              Address on L3 that will receive the tokens and extra ETH
+    /// @param  amount          Amount of tokens being forwarded
+    /// @param  gasLimit        Gas limit for the retryable to L3
+    /// @param  gasPrice        Gas price for the retryable to L3
+    /// @param  submissionCost  Submission cost for the retryable to L3
     event BridgedToL3(
         address indexed token,
         address indexed router,
@@ -38,9 +38,9 @@ contract L2Forwarder {
     );
 
     /// @notice Emitted after a successful call to rescue
-    /// @param  targets The addresses that were called
-    /// @param  values  The values that were sent
-    /// @param  datas   The calldata that was sent
+    /// @param  targets Addresses that were called
+    /// @param  values  Values that were sent
+    /// @param  datas   Calldata that was sent
     event Rescued(address[] targets, uint256[] values, bytes[] datas);
 
     /// @notice Thrown when initialize is called after initialization
@@ -65,12 +65,12 @@ contract L2Forwarder {
 
     /// @notice Forward tokens to L3. Can only be called by the deployer (L2ForwarderFactory).
     ///         Will forward entire ETH balance to L3.
-    /// @param  token       The token being forwarded
-    /// @param  router      The token bridge router to L3
-    /// @param  to          The address on L3 that will receive the tokens and extra ETH
-    /// @param  amount      The amount of tokens being forwarded
-    /// @param  gasLimit    The gas limit for the retryable to L3
-    /// @param  gasPrice    The gas price for the retryable to L3
+    /// @param  token       Token being forwarded
+    /// @param  router      Token bridge router to L3
+    /// @param  to          Address on L3 that will receive the tokens and extra ETH
+    /// @param  amount      Amount of tokens being forwarded
+    /// @param  gasLimit    Gas limit for the retryable to L3
+    /// @param  gasPrice    Gas price for the retryable to L3
     function bridgeToL3(address token, address router, address to, uint256 amount, uint256 gasLimit, uint256 gasPrice)
         external
         payable
@@ -96,10 +96,10 @@ contract L2Forwarder {
 
     /// @notice Allows the L1 owner of this L2Forwarder to make arbitrary calls.
     ///         If the second leg of a teleportation fails, the L1 owner can call this to rescue their tokens.
-    ///         To avoid race conditions, failing second legs that could later succeed should be cancelled when rescuing tokens.
-    /// @param  targets The addresses that will be called
-    /// @param  values  The values that will be sent
-    /// @param  datas   The calldata that will be sent
+    ///         To avoid race conditions and retreive any ETH, failing second legs should be cancelled when rescuing tokens.
+    /// @param  targets Addresses to call
+    /// @param  values  Values to send
+    /// @param  datas   Calldata to send
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external {
         if (msg.sender != AddressAliasHelper.applyL1ToL2Alias(l1Owner)) revert OnlyL1Owner();
         if (targets.length != values.length || values.length != datas.length) revert LengthMismatch();

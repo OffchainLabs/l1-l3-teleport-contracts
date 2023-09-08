@@ -5,7 +5,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @notice Beacon contract for ClonableBeaconProxy contracts
 contract Beacon is Ownable {
-    /// @notice The implementation to be used by beacon proxies
+    /// @notice Implementation to be used by beacon proxies
     address public implementation;
 
     /// @notice Creates the beacon with the specified implementation
