@@ -71,7 +71,7 @@ contract Teleporter is L1ArbitrumMessenger {
         l2ForwarderFactory = _l2ForwarderFactory;
     }
 
-    /// @notice Start a teleportation. Value sent must be >= the total cost of all retryables. 
+    /// @notice Start a teleportation. Value sent must be >= the total cost of all retryables.
     ///         Any extra ETH will be sent to the receiver on L3.
     /// @param  l1Token     L1 token being teleported
     /// @param  l1l2Router  L1 to L2 token bridge router
@@ -120,15 +120,17 @@ contract Teleporter is L1ArbitrumMessenger {
         );
 
         // call the L2ForwarderFactory
-        bytes memory l2ForwarderFactoryCalldata = abi.encodeWithSelector(
-            L2ForwarderFactory.callForwarder.selector,
-            msg.sender,
-            L1GatewayRouter(l1l2Router).calculateL2TokenAddress(l1Token),
-            l2l3Router,
-            to,
-            amount,
-            gasParams.l2l3TokenBridgeGasLimit,
-            gasParams.l3GasPrice
+        bytes memory l2ForwarderFactoryCalldata = abi.encodeCall(
+            L2ForwarderFactory.callForwarder,
+            (
+                msg.sender,
+                L1GatewayRouter(l1l2Router).calculateL2TokenAddress(l1Token),
+                l2l3Router,
+                to,
+                amount,
+                gasParams.l2l3TokenBridgeGasLimit,
+                gasParams.l3GasPrice
+            )
         );
         sendTxToL2CustomRefund({
             _inbox: address(inbox),
