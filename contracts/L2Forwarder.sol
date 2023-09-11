@@ -5,6 +5,7 @@ import {L1GatewayRouter} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @notice Forwarder contract for bridging tokens from L1 to L3.
 ///         Tokens and a small amount of ETH are sent to this contract during the first leg of a teleportation,
@@ -13,6 +14,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 ///         L2Forwarder addresses will be the same on each L2 for a given L1 address.
 ///         To get the address of the L2Forwarder for an L1 address, call Teleporter.l2ForwarderAddress.
 contract L2Forwarder {
+    using SafeERC20 for IERC20;
+
     /// @notice L1 address that owns this L2Forwarder
     address public l1Owner;
 
@@ -81,7 +84,7 @@ contract L2Forwarder {
         address l2l3Gateway = L1GatewayRouter(router).getGateway(token);
 
         // approve gateway
-        IERC20(token).approve(l2l3Gateway, amount);
+        IERC20(token).safeApprove(l2l3Gateway, amount);
 
         // send tokens through the bridge to intended recipient
         // (send all the ETH we have too, we could have more than msg.value b/c of fee refunds)

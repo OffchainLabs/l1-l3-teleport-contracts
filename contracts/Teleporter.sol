@@ -13,12 +13,15 @@ import {IL1ArbitrumGateway} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/IL1ArbitrumGateway.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 
 /// @notice Teleports tokens from L1 to L3.
 contract Teleporter is L1ArbitrumMessenger {
+    using SafeERC20 for IERC20;
+
     /// @notice Gas parameters for each retryable ticket.
     struct RetryableGasParams {
         uint256 l2GasPrice;
@@ -95,10 +98,10 @@ contract Teleporter is L1ArbitrumMessenger {
         if (msg.value < gasResults.total) revert InsufficientValue(gasResults.total, msg.value);
 
         // pull in tokens from caller
-        IERC20(l1Token).transferFrom(msg.sender, address(this), amount);
+        IERC20(l1Token).safeTransferFrom(msg.sender, address(this), amount);
 
         // approve gateway
-        IERC20(l1Token).approve(L1GatewayRouter(l1l2Router).getGateway(l1Token), amount);
+        IERC20(l1Token).safeApprove(L1GatewayRouter(l1l2Router).getGateway(l1Token), amount);
 
         // calculate forwarder address of caller
         address l2Forwarder = l2ForwarderAddress(msg.sender);

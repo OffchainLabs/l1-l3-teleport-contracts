@@ -9,7 +9,6 @@ import {L1GatewayRouter} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {L2Forwarder} from "./L2Forwarder.sol";
