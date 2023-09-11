@@ -17,7 +17,7 @@ contract L2Forwarder {
     address public l1Owner;
 
     /// @notice L2ForwarderFactory that created this L2Forwarder
-    address public deployer;
+    address public factory;
 
     /// @notice Emitted when tokens are forwarded to an L3
     /// @param  token           Token being forwarded
@@ -45,8 +45,8 @@ contract L2Forwarder {
 
     /// @notice Thrown when initialize is called after initialization
     error AlreadyInitialized();
-    /// @notice Thrown when a non-deployer (L2ForwarderFactory) calls bridgeToL3
-    error OnlyDeployer();
+    /// @notice Thrown when a non-factory calls bridgeToL3
+    error OnlyFactory();
     /// @notice Thrown when a non-owner calls rescue
     error OnlyL1Owner();
     /// @notice Thrown when the length of targets, values, and datas are not equal in a call to rescue
@@ -56,14 +56,14 @@ contract L2Forwarder {
 
     /// @notice Initialize this L2Forwarder
     /// @param  _l1Owner The L1 address that owns this L2Forwarder
-    /// @dev    Can only be called once. It will also set the deployer to the caller.
+    /// @dev    Can only be called once. It will also set the factory to the caller.
     function initialize(address _l1Owner) external {
         if (l1Owner != address(0)) revert AlreadyInitialized();
         l1Owner = _l1Owner;
-        deployer = msg.sender;
+        factory = msg.sender;
     }
 
-    /// @notice Forward tokens to L3. Can only be called by the deployer (L2ForwarderFactory).
+    /// @notice Forward tokens to L3. Can only be called by the factory (L2ForwarderFactory).
     ///         Will forward entire ETH balance to L3.
     /// @param  token       Token being forwarded
     /// @param  router      Token bridge router to L3
@@ -75,7 +75,7 @@ contract L2Forwarder {
         external
         payable
     {
-        if (msg.sender != deployer) revert OnlyDeployer();
+        if (msg.sender != factory) revert OnlyFactory();
 
         // get gateway
         address l2l3Gateway = L1GatewayRouter(router).getGateway(token);
@@ -96,7 +96,7 @@ contract L2Forwarder {
 
     /// @notice Allows the L1 owner of this L2Forwarder to make arbitrary calls.
     ///         If the second leg of a teleportation fails, the L1 owner can call this to rescue their tokens.
-    ///         To avoid race conditions and retreive any ETH, failing second legs should be cancelled when rescuing tokens.
+    ///         When transferring tokens, failing second leg retryables should be cancelled to avoid race conditions and retreive any ETH.
     /// @param  targets Addresses to call
     /// @param  values  Values to send
     /// @param  datas   Calldata to send

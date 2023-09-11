@@ -2,9 +2,10 @@
 pragma solidity ^0.8.13;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 
 /// @notice Beacon contract for ClonableBeaconProxy contracts
-contract Beacon is Ownable {
+contract Beacon is Ownable, IBeacon {
     /// @notice Implementation to be used by beacon proxies
     address public implementation;
 

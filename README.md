@@ -20,7 +20,7 @@ In short, there are 3 legs of an L1 -> L3 teleportation:
 1. User approves `Teleporter` to spend their tokens
 2. User calls `Teleporter.teleport`
     1. Computes the user's `L2Forwarder` address
-    2. Sends tokens (and excess fees/value) over the bridge to their `L2Forwarder`
+    2. Sends tokens over the bridge to their `L2Forwarder`
     3. Sends a retryable to call `L2ForwarderFactory.callForwarder` with all excess `msg.value` sent as `l2CallValue`
 3. Retryable 1 is redeemed: tokens and a little bit of ETH land in the `L2Forwarder` address (which may or may not be a contract yet)
 4. Retryable 2 is redeemed: `L2ForwarderFactory.callForwarder`
@@ -37,7 +37,10 @@ If multiple teleportations are in flight, it does not matter if retryables are r
 
 If a call to `rescue` is made, any pending second leg retryables should be cancelled in the same call to avoid race conditions and recover any ETH. First and third leg retryables should obviously never be cancelled.
 
-## TODO
+## TODO / Questions
 
 * Custom fee token L3's
 * Unit tests
+* Rescue testnet test
+* Should the `Beacon` even be owned? Instead of a separate `Beacon`, should the factory be the beacon?
+* `L2Receiver.factory` could be immutable if there is an `L2Deploy` contract to deploy the `Beacon`, `L2Forwarder` implementation, and `L2ForwarderFactory`

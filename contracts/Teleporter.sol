@@ -45,7 +45,7 @@ contract Teleporter is L1ArbitrumMessenger {
 
     /// @dev Calldata size of L2ForwarderFactory.callForwarder (selector + 7 args).
     ///      Necessary to calculate the submission cost of the retryable ticket to L2ForwarderFactory.
-    uint256 public constant l2ForwarderFactoryCalldataSize = 4 + 7 * 32;
+    uint256 constant l2ForwarderFactoryCalldataSize = 4 + 7 * 32;
 
     /// @notice Address of the L2ForwarderFactory. It is the same on all L2s.
     address public immutable l2ForwarderFactory;
@@ -68,8 +68,8 @@ contract Teleporter is L1ArbitrumMessenger {
         l2ForwarderFactory = _l2ForwarderFactory;
     }
 
-    /// @notice Start a teleportation. Value sent must be >= the total cost of all retryables.
-    ///         Extra ETH is sent as l2CallValue to the L2ForwarderFactory, which will be sent through the L2Forwarder to L3.
+    /// @notice Start a teleportation. Value sent must be >= the total cost of all retryables. 
+    ///         Any extra ETH will be sent to the receiver on L3.
     /// @param  l1Token     L1 token being teleported
     /// @param  l1l2Router  L1 to L2 token bridge router
     /// @param  l2l3Router  L2 to L3 token bridge router
@@ -77,6 +77,7 @@ contract Teleporter is L1ArbitrumMessenger {
     /// @param  amount      Amount of tokens being teleported
     /// @param  gasParams   Gas parameters for each retryable ticket
     /// @dev    2 retryables will be created: one to bridge tokens to the L2Forwarder, and one to call the L2ForwarderFactory.
+    ///         Extra ETH is sent as l2CallValue to the L2ForwarderFactory, which will be sent through the L2Forwarder to L3.
     function teleport(
         address l1Token,
         address l1l2Router,
