@@ -109,15 +109,15 @@ contract Teleporter is L1ArbitrumMessenger {
         // send tokens through the bridge to predicted forwarder
         L1GatewayRouter(l1l2Router).outboundTransferCustomRefund{
             value: gasResults.l1l2TokenBridgeGasCost + gasResults.l1l2TokenBridgeSubmissionCost
-        }(
-            address(l1Token),
-            l2Forwarder,
-            l2Forwarder,
-            amount,
-            gasParams.l1l2TokenBridgeGasLimit,
-            gasParams.l2GasPrice,
-            abi.encode(gasResults.l1l2TokenBridgeSubmissionCost, bytes(""))
-        );
+        }({
+            _token: address(l1Token),
+            _refundTo: l2Forwarder,
+            _to: l2Forwarder,
+            _amount: amount,
+            _maxGas: gasParams.l1l2TokenBridgeGasLimit,
+            _gasPriceBid: gasParams.l2GasPrice,
+            _data: abi.encode(gasResults.l1l2TokenBridgeSubmissionCost, bytes(""))
+        });
 
         // call the L2ForwarderFactory
         bytes memory l2ForwarderFactoryCalldata = abi.encodeCall(
@@ -165,15 +165,6 @@ contract Teleporter is L1ArbitrumMessenger {
         view
         returns (RetryableGasCosts memory results)
     {
-        // submission costs:
-        // on L1: l1l2TokenBridgeSubmissionCost, l2ForwarderFactorySubmissionCost
-        // on L2: l2l3TokenBridgeSubmissionCost
-
-        // gas costs:
-        // on L1: none
-        // on L2: l1l2TokenBridgeGasCost, l2ForwarderFactoryGasCost
-        // on L3: l2l3TokenBridgeGasCost
-
         // msg.value >= l2GasPrice * (l1l2TokenBridgeGasLimit + l2ForwarderFactoryGasLimit)
         //            + l3GasPrice * (l2l3TokenBridgeGasLimit)
         //            + l1l2TokenBridgeSubmissionCost + l2l3TokenBridgeSubmissionCost + l2ForwarderFactorySubmissionCost
