@@ -5,9 +5,11 @@
   "license": "Apache-2.0",
   "scripts": {
     "deploy": "hardhat compile && ts-node ./scripts/deploy.ts",
-    "test:happy-e2e": "hardhat compile && ts-node ./test/happyPathE2E.ts"
+    "test:happy-e2e": "hardhat compile && ts-node ./test/happyPathE2E.ts",
+    "test:rescue": "hardhat compile && ts-node ./test/testRescue.ts"
   },
   "devDependencies": {
+    "@arbitrum/sdk": "^3.1.10",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",
