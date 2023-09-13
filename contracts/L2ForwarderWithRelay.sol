@@ -19,7 +19,7 @@ contract L2ForwarderFactoryWithRelayer {
 
     function deployAndBridge(
         bytes32 salt,
-        address _l1Owner,
+        address _owner,
         address _token,
         address _router,
         address _to,
@@ -29,13 +29,13 @@ contract L2ForwarderFactoryWithRelayer {
         uint256 _relayerPayment
     ) external {
         L2ForwarderWithRelayer forwarder =
-            deploy(salt, _l1Owner, _token, _router, _to, _amount, _gasLimit, _gasPrice, _relayerPayment);
+            deploy(salt, _owner, _token, _router, _to, _amount, _gasLimit, _gasPrice, _relayerPayment);
         forwarder.bridgeToL3();
     }
 
     function deploy(
         bytes32 salt,
-        address _l1Owner,
+        address _owner,
         address _token,
         address _router,
         address _to,
@@ -45,13 +45,13 @@ contract L2ForwarderFactoryWithRelayer {
         uint256 _relayerPayment
     ) public returns (L2ForwarderWithRelayer) {
         return new L2ForwarderWithRelayer{salt: salt}(
-            _l1Owner, _token, _router, _to, _amount, _gasLimit, _gasPrice, _relayerPayment
+            _owner, _token, _router, _to, _amount, _gasLimit, _gasPrice, _relayerPayment
         );
     }
 
     function l2ForwarderAddress(
         bytes32 salt,
-        address _l1Owner,
+        address _owner,
         address _token,
         address _router,
         address _to,
@@ -63,7 +63,7 @@ contract L2ForwarderFactoryWithRelayer {
         // get the initcode
         bytes memory initCode = SSTORE2.read(initCodePointer);
         bytes memory args = abi.encode(
-            _l1Owner,
+            _owner,
             _token,
             _router,
             _to,
@@ -81,7 +81,7 @@ contract L2ForwarderFactoryWithRelayer {
 contract L2ForwarderWithRelayer {
     using SafeERC20 for IERC20;
 
-    address immutable l1Owner;
+    address immutable owner;
     address immutable token;
     address immutable router;
     address immutable to;
@@ -102,14 +102,14 @@ contract L2ForwarderWithRelayer {
     error RelayerPaymentFailed();
 
     /// @notice Thrown when a non-owner calls rescue
-    error OnlyL1Owner();
+    error OnlyOwner();
     /// @notice Thrown when the length of targets, values, and datas are not equal in a call to rescue
     error LengthMismatch();
     /// @notice Thrown when an external call in rescue fails
     error CallFailed(address to, uint256 value, bytes data, bytes returnData);
 
     constructor(
-        address _l1Owner,
+        address _owner,
         address _token,
         address _router,
         address _to,
@@ -118,7 +118,7 @@ contract L2ForwarderWithRelayer {
         uint256 _gasPrice,
         uint256 _relayerPayment
     ) {
-        l1Owner = _l1Owner;
+        owner = _owner;
         token = _token;
         router = _router;
         to = _to;
@@ -159,7 +159,7 @@ contract L2ForwarderWithRelayer {
     /// @param  values  Values to send
     /// @param  datas   Calldata to send
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external {
-        if (msg.sender != AddressAliasHelper.applyL1ToL2Alias(l1Owner)) revert OnlyL1Owner();
+        if (msg.sender != owner) revert OnlyOwner();
         if (targets.length != values.length || values.length != datas.length) revert LengthMismatch();
 
         for (uint256 i = 0; i < targets.length; i++) {
