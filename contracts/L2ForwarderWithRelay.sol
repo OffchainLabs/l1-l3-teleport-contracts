@@ -8,15 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import {SSTORE2} from "lib/solmate/src/utils/SSTORE2.sol";
-
 contract L2ForwarderFactoryWithRelayer {
-    address immutable initCodePointer;
-    
-    constructor() {
-        initCodePointer = SSTORE2.write(type(L2ForwarderWithRelayer).creationCode);
-    }
-
     function deployAndBridge(
         bytes32 salt,
         address _owner,
@@ -60,8 +52,6 @@ contract L2ForwarderFactoryWithRelayer {
         uint256 _gasPrice,
         uint256 _relayerPayment
     ) external view returns (address) {
-        // get the initcode
-        bytes memory initCode = SSTORE2.read(initCodePointer);
         bytes memory args = abi.encode(
             _owner,
             _token,
@@ -73,8 +63,10 @@ contract L2ForwarderFactoryWithRelayer {
             _relayerPayment
         );
 
+        bytes32 initCodeHash = keccak256(bytes.concat(type(L2ForwarderWithRelayer).creationCode, args));
+
         // calculate the address
-        return Create2.computeAddress(salt, keccak256(bytes.concat(initCode, args)));
+        return Create2.computeAddress(salt, initCodeHash);
     }
 }
 
