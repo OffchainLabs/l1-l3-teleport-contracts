@@ -6,7 +6,8 @@
   "scripts": {
     "deploy": "hardhat compile && ts-node ./scripts/deploy.ts",
     "test:happy-e2e": "hardhat compile && ts-node ./test/happyPathE2E.ts",
-    "test:rescue": "hardhat compile && ts-node ./test/testRescue.ts"
+    "test:rescue": "hardhat compile && ts-node ./test/testRescue.ts",
+    "test:relayer": "hardhat compile && ts-node ./test/testRelayerDesignE2E.ts"
   },
   "devDependencies": {
     "@arbitrum/sdk": "^3.1.10",
