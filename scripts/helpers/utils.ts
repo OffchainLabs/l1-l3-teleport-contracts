@@ -1,4 +1,6 @@
 import { ContractFactory, Wallet, ethers } from "ethers";
+import { promises as fs } from "fs";
+import { TeleporterDeployment } from "./deployTeleportContracts";
 
 // https://github.com/Arachnid/deterministic-deployment-proxy
 const CREATE2_FACTORY = "0x4e59b44847b379578588920cA78FbF26c0B4956C";
@@ -36,4 +38,8 @@ export async function create2<T extends ContractFactory>(
   const address = ethers.getCreate2Address(CREATE2_FACTORY, salt, ethers.keccak256(initCode));
 
   return address;
+}
+
+export async function getDeployment(network: 'goerli'): Promise<TeleporterDeployment> {
+  return fs.readFile(`./deployments/${network}.json`, "utf8").then(JSON.parse);
 }

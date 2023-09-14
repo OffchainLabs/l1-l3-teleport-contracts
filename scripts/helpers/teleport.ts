@@ -1,7 +1,7 @@
 import { AddressLike, Wallet, ethers } from "ethers";
 import { ERC20, L1GatewayRouter__factory, Teleporter } from "../../typechain-types";
 
-export async function teleport(teleporter: Teleporter, token: ERC20, l1l2Router: AddressLike, l2l3Router: AddressLike, l1Signer: Wallet) {
+export async function teleport(teleporter: Teleporter, token: ERC20, l1l2Router: AddressLike, l2l3Router: AddressLike, amount: bigint, l1Signer: Wallet) {
   const inbox = await L1GatewayRouter__factory.connect(l1l2Router.toString(), l1Signer).inbox();
 
   const gasParams = {
@@ -21,7 +21,7 @@ export async function teleport(teleporter: Teleporter, token: ERC20, l1l2Router:
     l1l2Router,
     l2l3Router,
     l1Signer.address,
-    ethers.parseEther("100"),
+    amount,
     gasParams,
     {
       value: gasResults.total
