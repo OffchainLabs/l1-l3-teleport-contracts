@@ -81,7 +81,6 @@ contract L2ForwarderWithRelayer {
     uint256 immutable gasLimit;
     uint256 immutable gasPrice;
     uint256 immutable relayerPayment;
-    address immutable relayer;
 
     event BridgedToL3();
 
@@ -118,7 +117,6 @@ contract L2ForwarderWithRelayer {
         gasLimit = _gasLimit;
         gasPrice = _gasPrice;
         relayerPayment = _relayerPayment;
-        relayer = tx.origin;
     }
 
     function bridgeToL3() external {
@@ -137,7 +135,7 @@ contract L2ForwarderWithRelayer {
             token, to, to, amount, gasLimit, gasPrice, abi.encode(submissionCost, bytes(""))
         );
 
-        (bool paymentSuccess,) = relayer.call{value: relayerPayment}("");
+        (bool paymentSuccess,) = tx.origin.call{value: relayerPayment}("");
 
         if (!paymentSuccess) revert RelayerPaymentFailed();
 
