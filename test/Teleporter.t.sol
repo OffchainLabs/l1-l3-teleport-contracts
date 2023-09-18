@@ -11,14 +11,10 @@ import {L1ArbitrumGateway} from "@arbitrum/token-bridge-contracts/contracts/toke
 import {Bridge} from "@arbitrum/nitro-contracts/src/bridge/Bridge.sol";
 import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ForkTest} from "./Fork.t.sol";
 
 
-contract TeleporterTest is Test {
-    L1GatewayRouter l1l2Router = L1GatewayRouter(0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef);
-    IInbox inbox = IInbox(l1l2Router.inbox());
-    L1ArbitrumGateway defaultGateway = L1ArbitrumGateway(l1l2Router.defaultGateway());
-    Bridge bridge = Bridge(address(inbox.bridge()));
-
+contract TeleporterTest is ForkTest {
     address l2l3Router = vm.addr(0x10);
 
     Teleporter teleporter;
@@ -41,6 +37,9 @@ contract TeleporterTest is Test {
     function setUp() public {
         teleporter = new Teleporter(l2ForwarderFactory);
         l1Token = IERC20(new MockToken("MOCK", "MOCK", 100 ether, address(this)));
+
+        // transfer 1 wei to the teleporter
+        l1Token.transfer(address(teleporter), 1);
 
         vm.deal(address(this), 100 ether);
     }
