@@ -81,6 +81,8 @@ contract L2ForwarderFactory is ProxySetter {
         L2Forwarder l2Forwarder = _tryCreateL2Forwarder(l1Owner);
 
         l2Forwarder.bridgeToL3{value: msg.value}(token, router, to, amount, gasLimit, gasPrice);
+
+        emit CalledL2Forwarder(l1Owner, address(l2Forwarder), router, token, to, amount, gasLimit, gasPrice);
     }
 
     /// @notice Creates an L2Forwarder for the given L1 owner. There is no access control.

@@ -46,13 +46,14 @@ contract TeleporterTest is ForkTest {
     function testCallForwarder() public {
         l2Token.transfer(predictedForwarder, 10 ether);
         vm.deal(predictedForwarder, 10 ether);
+        vm.deal(AddressAliasHelper.applyL1ToL2Alias(l1Teleporter), 1 ether);
 
         address to = address(0x3300);
 
         vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Teleporter));
         vm.expectCall(
             predictedForwarder,
-            0,
+            1 ether,
             abi.encodeCall(
                 L2Forwarder.bridgeToL3,
                 (
@@ -65,7 +66,7 @@ contract TeleporterTest is ForkTest {
                 )
             )
         );
-        factory.callForwarder({
+        factory.callForwarder{value: 1 ether}({
             l1Owner: l1Owner,
             token: address(l2Token),
             router: address(l1l2Router),
