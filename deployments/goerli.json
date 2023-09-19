@@ -1,10 +1,10 @@
 {
-  "teleporterAddress": "0xF6a59D758cEd4279bD77D44A0131EAF413e7c787",
-  "forwarderFactoryAddress": "0x5793A977ccbC20198C09130b6C0b351DDd9Af47b",
-  "forwarderImplAddress": "0xE2A63FEcD44C692fb966Ac2A1439970dA489597B",
-  "beaconAddress": "0x094cB09bE23785E7c4Ea7C777004A75855c2aeeb",
+  "teleporterAddress": "0xc3F644430d183A5f3Dc820821A76A6ac379003EF",
+  "forwarderFactoryAddress": "0xdAD9f8c618eb797D7241ABA99E7197B659fC2ea4",
+  "forwarderImplAddress": "0x4e4057B45A236Dc78021048c8114c9B35B8536F2",
+  "beaconAddress": "0xD8D5767B44c664066152354C35e8014a48A97c1f",
   "l2ChainIds": [
     421613
   ],
-  "l2Create2Salt": "0xa5745639f8c877c92ad0424341be9e171fcb732ab293c39d1bcd343056b883dc"
+  "l2Create2Salt": "0xfc16e8bcf54adaef19742f0059e54bcca8c89bdf6d786bc1e5c26cf0bdadc0c8"
 }

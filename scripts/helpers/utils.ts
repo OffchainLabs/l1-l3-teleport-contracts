@@ -21,7 +21,7 @@ export async function create2<T extends ContractFactory>(
   constructorArgs: Parameters<T["getDeployTransaction"]>,
   salt: Uint8Array,
   signer: Wallet
-): Promise<string> {
+) {
   const initCode = (await factory.getDeployTransaction(...constructorArgs)).data;
 
   const payload = ethers.concat([salt, initCode]);
@@ -37,7 +37,10 @@ export async function create2<T extends ContractFactory>(
 
   const address = ethers.getCreate2Address(CREATE2_FACTORY, salt, ethers.keccak256(initCode));
 
-  return address;
+  return {
+    address,
+    deployTx
+  };
 }
 
 export async function getDeployment(network: 'goerli'): Promise<TeleporterDeployment> {

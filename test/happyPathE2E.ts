@@ -20,8 +20,8 @@ function getTestConfig() {
 async function main() {
   const testConfig = getTestConfig();
 
-  // const deployment = await deployTeleportContracts(config);
-  const deployment = await getDeployment('goerli');
+  const deployment = await deployTeleportContracts(config);
+  // const deployment = await getDeployment('goerli');
   const l1Signer = new ethers.Wallet(
     config.privateKey,
     new ethers.JsonRpcProvider(config.l1RpcUrl)
