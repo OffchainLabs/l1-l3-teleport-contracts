@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import {L2Forwarder} from "./L2Forwarder.sol";
-import {Beacon} from "./Beacon.sol";
 import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 
 // from https://ethereum.stackexchange.com/a/139230

@@ -6,8 +6,6 @@ import {L1GatewayRouter} from
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {L1ArbitrumMessenger} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/L1ArbitrumMessenger.sol";
-import {ClonableBeaconProxy} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/libraries/ClonableBeaconProxy.sol";
 import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
 import {IL1ArbitrumGateway} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/IL1ArbitrumGateway.sol";
@@ -44,8 +42,6 @@ contract Teleporter is L2ForwarderPredictor {
         uint256 l2l3TokenBridgeGasCost;
         uint256 total;
     }
-
-    bytes32 constant cloneableProxyHash = keccak256(type(ClonableBeaconProxy).creationCode);
 
     /// @dev Calldata size of L2ForwarderFactory.callForwarder (selector + 7 args).
     ///      Necessary to calculate the submission cost of the retryable ticket to L2ForwarderFactory.

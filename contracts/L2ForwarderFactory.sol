@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.13;
 
-import {
-    ProxySetter,
-    ClonableBeaconProxy
-} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/libraries/ClonableBeaconProxy.sol";
-
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 import {L2Forwarder} from "./L2Forwarder.sol";
