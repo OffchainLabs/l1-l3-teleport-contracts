@@ -6,13 +6,12 @@ import {
     ClonableBeaconProxy
 } from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/libraries/ClonableBeaconProxy.sol";
 
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+
 import {L2Forwarder} from "./L2Forwarder.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 
-contract L2ForwarderFactory is L2ForwarderPredictor, ProxySetter {
-    /// @notice Beacon setting the L2Forwarder implementation for all proxy instances
-    address public immutable override beacon;
-
+contract L2ForwarderFactory is L2ForwarderPredictor {
     /// @notice Emitted when a new L2Forwarder is created
     event CreatedL2Forwarder(address indexed l2Forwarder, L2ForwarderParams params);
 
@@ -21,9 +20,7 @@ contract L2ForwarderFactory is L2ForwarderPredictor, ProxySetter {
         address indexed l2Forwarder, L2ForwarderParams params
     );
 
-    constructor(address _beacon) L2ForwarderPredictor(address(this)) {
-        beacon = _beacon;
-    }
+    constructor(address _impl) L2ForwarderPredictor(address(this), _impl) {}
 
     /// @notice Calls an L2Forwarder to bridge tokens to L3. Will create the L2Forwarder first if it doesn't exist.
     function callForwarder(L2ForwarderParams memory params) external {
@@ -36,7 +33,7 @@ contract L2ForwarderFactory is L2ForwarderPredictor, ProxySetter {
 
     /// @notice Creates an L2Forwarder for the given L1 owner. There is no access control.
     function createL2Forwarder(L2ForwarderParams memory params) public returns (L2Forwarder) {
-        L2Forwarder l2Forwarder = L2Forwarder(address(new ClonableBeaconProxy{ salt: _salt(params) }()));
+        L2Forwarder l2Forwarder = L2Forwarder(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(params)));
         l2Forwarder.initialize(params.l1Owner);
 
         emit CreatedL2Forwarder(address(l2Forwarder), params);

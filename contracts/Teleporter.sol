@@ -65,7 +65,8 @@ contract Teleporter is L2ForwarderPredictor {
     /// @notice Thrown when the value sent to teleport() is less than the total cost of all retryables.
     error InsufficientValue(uint256 required, uint256 provided);
 
-    constructor(address _l2ForwarderFactory) L2ForwarderPredictor(_l2ForwarderFactory) {}
+    constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation) 
+        L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation) {}
 
     /// @notice Start a teleportation. Value sent must be >= the total cost of all retryables.
     ///         Any extra ETH will be sent to the receiver on L3.
@@ -106,7 +107,7 @@ contract Teleporter is L2ForwarderPredictor {
         if (IERC20(l1Token).allowance(address(this), gateway) == 0) {
             IERC20(l1Token).safeApprove(gateway, type(uint256).max);
         }
-        
+
         // create L2ForwarderParams
         L2ForwarderParams memory l2ForwarderParams;
         {
@@ -153,7 +154,7 @@ contract Teleporter is L2ForwarderPredictor {
         );
 
         IInbox(inbox).createRetryableTicket{value: address(this).balance}({
-            to: factory,
+            to: l2ForwarderFactory,
             l2CallValue: 0,
             maxSubmissionCost: gasResults.l2ForwarderFactorySubmissionCost,
             excessFeeRefundAddress: l2Forwarder,

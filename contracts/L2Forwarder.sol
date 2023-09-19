@@ -33,7 +33,7 @@ contract L2Forwarder is L2ForwarderPredictor {
     /// @notice Thrown when bridgeToL3 is called with incorrect parameters
     error IncorrectParams();
 
-    constructor(address _factory) L2ForwarderPredictor(_factory) {}
+    constructor(address _factory) L2ForwarderPredictor(_factory, address(this)) {}
 
     /// @notice Initialize this L2Forwarder
     /// @param  _l1Owner The L1 address that owns this L2Forwarder
