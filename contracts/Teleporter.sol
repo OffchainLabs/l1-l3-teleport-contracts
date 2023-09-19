@@ -19,7 +19,7 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 
 /// @notice Teleports tokens from L1 to L3.
-contract Teleporter is L1ArbitrumMessenger {
+contract Teleporter {
     using SafeERC20 for IERC20;
 
     /// @notice Gas parameters for each retryable ticket.
@@ -100,8 +100,16 @@ contract Teleporter is L1ArbitrumMessenger {
         // pull in tokens from caller
         IERC20(l1Token).safeTransferFrom(msg.sender, address(this), amount);
 
+        // if we don't already have an extra wei of token, keep it for gas optimization
+        if (IERC20(l1Token).balanceOf(address(this)) == amount) {
+            amount--;
+        }
+
         // approve gateway
-        IERC20(l1Token).safeApprove(L1GatewayRouter(l1l2Router).getGateway(l1Token), amount);
+        address gateway = L1GatewayRouter(l1l2Router).getGateway(l1Token);
+        if (IERC20(l1Token).allowance(address(this), gateway) == 0) {
+            IERC20(l1Token).safeApprove(gateway, type(uint256).max);
+        }
 
         // calculate forwarder address of caller
         address l2Forwarder = l2ForwarderAddress(msg.sender);
@@ -132,18 +140,17 @@ contract Teleporter is L1ArbitrumMessenger {
                 gasParams.l3GasPrice
             )
         );
-        sendTxToL2CustomRefund({
-            _inbox: address(inbox),
-            _to: l2ForwarderFactory,
-            _refundTo: l2Forwarder,
-            _user: l2Forwarder,
-            _l1CallValue: address(this).balance, // send everything left
-            _l2CallValue: address(this).balance - gasResults.l2ForwarderFactorySubmissionCost
+
+        IInbox(inbox).createRetryableTicket{value: address(this).balance}({
+            to: l2ForwarderFactory,
+            l2CallValue: address(this).balance - gasResults.l2ForwarderFactorySubmissionCost
                 - gasResults.l2ForwarderFactoryGasCost,
-            _maxSubmissionCost: gasResults.l2ForwarderFactorySubmissionCost,
-            _maxGas: gasParams.l2ForwarderFactoryGasLimit,
-            _gasPriceBid: gasParams.l2GasPrice,
-            _data: l2ForwarderFactoryCalldata
+            maxSubmissionCost: gasResults.l2ForwarderFactorySubmissionCost,
+            excessFeeRefundAddress: l2Forwarder,
+            callValueRefundAddress: l2Forwarder,
+            gasLimit: gasParams.l2ForwarderFactoryGasLimit,
+            maxFeePerGas: gasParams.l2GasPrice,
+            data: l2ForwarderFactoryCalldata
         });
 
         emit Teleported({

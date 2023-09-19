@@ -5,8 +5,8 @@ import { deployTeleportContracts } from "../scripts/helpers/deployTeleportContra
 import config from "../config/goerli";
 import { deployMockToken } from "../scripts/helpers/deployMockToken";
 import { ethers } from "ethers";
-import { ERC20__factory, L1GatewayRouter__factory, Teleporter__factory } from "../typechain-types";
-import { getEnv } from "../scripts/helpers/utils";
+import { ERC20__factory, IERC20__factory, L1GatewayRouter__factory, Teleporter__factory } from "../typechain-types";
+import { getDeployment, getEnv } from "../scripts/helpers/utils";
 import { teleport } from "../scripts/helpers/teleport";
 
 function getTestConfig() {
@@ -20,7 +20,8 @@ function getTestConfig() {
 async function main() {
   const testConfig = getTestConfig();
 
-  const deployment = await deployTeleportContracts(config);
+  // const deployment = await deployTeleportContracts(config);
+  const deployment = await getDeployment('goerli');
   const l1Signer = new ethers.Wallet(
     config.privateKey,
     new ethers.JsonRpcProvider(config.l1RpcUrl)
@@ -30,20 +31,26 @@ async function main() {
 
   const teleporter = Teleporter__factory.connect(deployment.teleporterAddress, l1Signer);
 
-  const mockToken = await deployMockToken("MOCK", "MOCK", ethers.parseEther("100"), l1Signer);
-
+  console.log("Deploying mock token...");
+  const mockToken = await deployMockToken("MOCK", "MOCK", ethers.parseEther("1000"), l1Signer);
+  console.log(`Mock token deployed at ${await mockToken.getAddress()}`);
+  
   // approve teleporter to spend mockToken
-  await (await mockToken.approve(deployment.teleporterAddress, ethers.parseEther("100"))).wait();
+  await (await mockToken.approve(deployment.teleporterAddress, ethers.parseEther("1000"))).wait();
 
   const teleportTx = await teleport(
     teleporter,
     mockToken,
     testConfig.l1l2Router,
     testConfig.l2l3Router,
+    ethers.parseEther("1000"),
     l1Signer
   );
 
+  const teleportTxReceipt = (await teleportTx.wait())!;
+
   console.log(`Teleport tx: ${teleportTx.hash}`);
+  console.log(`Teleport tx gas used: ${teleportTxReceipt.gasUsed}`);
 
   // get L3 token address
   const l2TokenAddr = await L1GatewayRouter__factory.connect(testConfig.l1l2Router, l1Signer).calculateL2TokenAddress(await mockToken.getAddress());
