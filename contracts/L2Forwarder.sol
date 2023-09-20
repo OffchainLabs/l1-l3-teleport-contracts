@@ -20,6 +20,9 @@ contract L2Forwarder is L2ForwarderPredictor {
     /// @param  datas   Calldata that was sent
     event Rescued(address[] targets, uint256[] values, bytes[] datas);
 
+    /// @notice Emitted after a successful call to bridgeToL3
+    event BridgedToL3(L2ForwarderParams params);
+
     /// @notice Thrown when initialize is called after initialization
     error AlreadyInitialized();
     /// @notice Thrown when a non-owner calls rescue
@@ -66,6 +69,8 @@ contract L2Forwarder is L2ForwarderPredictor {
 
             if (!paymentSuccess) revert RelayerPaymentFailed();
         }
+
+        emit BridgedToL3(params);
     }
 
     /// @notice Allows the L1 owner of this L2Forwarder to make arbitrary calls.
