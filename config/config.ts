@@ -1,8 +1,5 @@
 export type Config = {
   l1RpcUrl: string;
-  l2s: {
-    rpcUrl: string;
-    beaconOwner: string;
-  }[];
+  l2RpcUrls: string[];
   privateKey: string;
 }

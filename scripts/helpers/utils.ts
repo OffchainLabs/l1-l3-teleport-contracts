@@ -22,9 +22,9 @@ export async function create2<T extends ContractFactory>(
   salt: Uint8Array,
   signer: Wallet
 ) {
-  const initCode = (await factory.getDeployTransaction(...constructorArgs)).data;
+  const initCode = factory.getDeployTransaction(...constructorArgs).data!;
 
-  const payload = ethers.concat([salt, initCode]);
+  const payload = ethers.utils.concat([salt, initCode]);
 
   const txRequest = {
     to: CREATE2_FACTORY,
@@ -35,7 +35,7 @@ export async function create2<T extends ContractFactory>(
   const deployTx = await signer.sendTransaction(txRequest);
   await deployTx.wait();
 
-  const address = ethers.getCreate2Address(CREATE2_FACTORY, salt, ethers.keccak256(initCode));
+  const address = ethers.utils.getCreate2Address(CREATE2_FACTORY, salt, ethers.utils.keccak256(initCode));
 
   return {
     address,

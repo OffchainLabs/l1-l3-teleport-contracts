@@ -1,10 +1,11 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { AbiCoder, Wallet, ethers } from "ethers";
-import { Beacon__factory, L2ContractsDeployer__factory, L2ForwarderFactory__factory, L2Forwarder__factory, Teleporter__factory } from "../../typechain-types";
+import { Wallet, ethers } from "ethers";
+import { L2ContractsDeployer__factory, L2ForwarderFactory__factory, L2Forwarder__factory, Teleporter__factory } from "../../typechain";
 import { create2 } from "./utils";
 import { Config } from "../../config/config";
+import { AbiCoder } from "ethers/lib/utils";
 
 export type TeleporterDeployment = {
   teleporterAddress: string;
@@ -17,7 +18,7 @@ export type TeleporterDeployment = {
 
 async function deployL2Contracts(create2Salt: Uint8Array, l2Signer: Wallet) {
   const deployment = await create2(
-    new L2ContractsDeployer__factory(), [], create2Salt, l2Signer
+    new L2ContractsDeployer__factory(l2Signer), [], create2Salt, l2Signer
   );
 
 
@@ -48,18 +49,18 @@ async function deployL2Contracts(create2Salt: Uint8Array, l2Signer: Wallet) {
 export async function deployTeleportContracts(config: Config): Promise<TeleporterDeployment> {
   const l1Signer = new ethers.Wallet(
     config.privateKey, 
-    new ethers.JsonRpcProvider(config.l1RpcUrl)
+    new ethers.providers.JsonRpcProvider(config.l1RpcUrl)
   );
 
 
   console.log('Deploying L2 contracts...');
 
-  const create2Salt = ethers.randomBytes(32);
+  const create2Salt = ethers.utils.randomBytes(32);
 
-  const l2Deployments = await Promise.all(config.l2s.map((l2) => {
+  const l2Deployments = await Promise.all(config.l2RpcUrls.map((l2Rpc) => {
     const l2Signer = new ethers.Wallet(
       config.privateKey,
-      new ethers.JsonRpcProvider(l2.rpcUrl)
+      new ethers.providers.JsonRpcProvider(l2Rpc)
     );
     return deployL2Contracts(create2Salt, l2Signer);
   }));
@@ -79,15 +80,14 @@ export async function deployTeleportContracts(config: Config): Promise<Teleporte
     l2Deployments[0].l2ForwarderFactoryAddress,
     l2Deployments[0].l2ForwarderImplAddress
   );
-  await teleporter.waitForDeployment();
-  const teleporterAddress = await teleporter.getAddress();
-  console.log(`Teleporter deployed to ${teleporterAddress}`)
+  await teleporter.deployed();
+  console.log(`Teleporter deployed to ${teleporter.address}`)
 
   return {
-    teleporterAddress,
+    teleporterAddress: teleporter.address,
     forwarderFactoryAddress: l2Deployments[0].l2ForwarderFactoryAddress,
     forwarderImplAddress: l2Deployments[0].l2ForwarderImplAddress,
     l2ChainIds: l2Deployments.map((l2) => l2.chainId),
-    l2Create2Salt: ethers.hexlify(create2Salt),
+    l2Create2Salt: ethers.utils.hexlify(create2Salt),
   }
 }
