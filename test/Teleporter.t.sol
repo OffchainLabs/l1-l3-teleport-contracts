@@ -12,20 +12,22 @@ import {L1ArbitrumGateway} from "@arbitrum/token-bridge-contracts/contracts/toke
 import {Bridge} from "@arbitrum/nitro-contracts/src/bridge/Bridge.sol";
 import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import {L1ArbitrumGateway} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ForkTest} from "./Fork.t.sol";
 
 
 contract TeleporterTest is ForkTest {
-    address l2l3Router = vm.addr(0x10);
+    address immutable l2l3Router = vm.addr(0x10);
 
     Teleporter teleporter;
     IERC20 l1Token;
 
-    address l2ForwarderFactory = address(0x1100);
-    address l2ForwarderImpl = address(0x2200);
+    address constant l2ForwarderFactory = address(0x1100);
+    address constant l2ForwarderImpl = address(0x2200);
 
-    address receiver = address(0x3300);
+    address constant receiver = address(0x3300);
+    uint256 constant amount = 1 ether;
 
     // from the default gateway
     event DepositInitiated(
@@ -62,8 +64,6 @@ contract TeleporterTest is ForkTest {
     }
 
     function testRetryableCreation() public {
-        uint256 amount = 1 ether;
-
         l1Token.transfer(address(this), amount);
 
         l1Token.approve(address(teleporter), amount);
@@ -71,8 +71,21 @@ contract TeleporterTest is ForkTest {
         (Teleporter.RetryableGasParams memory params, Teleporter.RetryableGasCosts memory costs) =
             _defaultParamsAndCosts();
 
-        uint256 valueToSend = 1 ether + costs.total;
+        _expectEvents();
+        teleporter.teleport{value: costs.total}({
+            l1Token: address(l1Token),
+            l1l2Router: address(l1l2Router),
+            l2l3Router: l2l3Router,
+            to: receiver,
+            amount: amount,
+            gasParams: params
+        });
+    }
 
+    function _expectEvents() internal {
+        (Teleporter.RetryableGasParams memory params, Teleporter.RetryableGasCosts memory costs) =
+            _defaultParamsAndCosts();
+        
         L2ForwarderPredictor.L2ForwarderParams memory l2ForwarderParams = L2ForwarderPredictor.L2ForwarderParams({
             owner: AddressAliasHelper.applyL1ToL2Alias(address(this)),
             token: l1l2Router.calculateL2TokenAddress(address(l1Token)),
@@ -86,14 +99,28 @@ contract TeleporterTest is ForkTest {
 
         uint256 msgCount = bridge.delayedMessageCount();
         address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
+        address counterpartGateway = L1GatewayRouter(l1l2Router.getGateway(address(l1Token))).counterpartGateway();
 
         bytes memory calldataToFactory = abi.encodeCall(
             L2ForwarderFactory.callForwarder,
             (l2ForwarderParams)
         );
 
+        _expectRetryable(
+            msgCount,
+            counterpartGateway,
+            0, // l2 call value
+            costs.total - costs.l2ForwarderFactoryGasCost - costs.l2ForwarderFactorySubmissionCost, // msg.value
+            costs.total - costs.l2ForwarderFactoryGasCost - costs.l2ForwarderFactorySubmissionCost - costs.l1l2TokenBridgeGasCost, // maxSubmissionCost
+            l2Forwarder, // excessFeeRefundAddress
+            AddressAliasHelper.applyL1ToL2Alias(address(teleporter)), // callValueRefundAddress
+            params.l1l2TokenBridgeGasLimit, // gasLimit
+            params.l2GasPrice, // maxFeePerGas
+            _getTokenBridgeRetryableCalldata(l2Forwarder) // data
+        );
+
+        // token bridge, indicating an actual bridge tx has been initiated
         vm.expectEmit(address(defaultGateway));
-        // token bridge
         emit DepositInitiated({
             l1Token: address(l1Token),
             _from: address(teleporter),
@@ -101,30 +128,60 @@ contract TeleporterTest is ForkTest {
             _sequenceNumber: msgCount,
             _amount: amount - 1 // since this is the first transfer, 1 wei will be kept by the teleporter
         });
-        vm.expectEmit(address(inbox));
-        // call to L2ForwarderFactory
-        emit InboxMessageDelivered(msgCount+1, abi.encodePacked(
-            uint256(uint160(l2ForwarderFactory)), // to
-            uint256(0), // l2 call value
+
+        _expectRetryable(
+            msgCount + 1,
+            l2ForwarderFactory, // to
+            0, // l2 call value
             costs.l2ForwarderFactoryGasCost + costs.l2ForwarderFactorySubmissionCost, // msg.value
             costs.l2ForwarderFactorySubmissionCost, // maxSubmissionCost
-            uint256(uint160(l2Forwarder)), // excessFeeRefundAddress
-            uint256(uint160(l2Forwarder)), // callValueRefundAddress
+            l2Forwarder, // excessFeeRefundAddress
+            l2Forwarder, // callValueRefundAddress
             params.l2ForwarderFactoryGasLimit, // gasLimit
             params.l2GasPrice, // maxFeePerGas
-            calldataToFactory.length, // data.length
             calldataToFactory // data
-        ));
-        teleporter.teleport{value: valueToSend}({
-            l1Token: address(l1Token),
-            l1l2Router: address(l1l2Router),
-            l2l3Router: l2l3Router,
-            to: receiver,
-            amount: amount,
-            gasParams: params
-        });
+        );
     }
 
+    function _expectRetryable(
+        uint256 msgCount,
+        address to,
+        uint256 l2CallValue,
+        uint256 msgValue,
+        uint256 maxSubmissionCost,
+        address excessFeeRefundAddress,
+        address callValueRefundAddress,
+        uint256 gasLimit,
+        uint256 maxFeePerGas,
+        bytes memory data
+    ) internal {
+        vm.expectEmit(address(inbox));
+        emit InboxMessageDelivered(msgCount, abi.encodePacked(
+            uint256(uint160(to)), // to
+            l2CallValue, // l2 call value
+            msgValue, // msg.value
+            maxSubmissionCost, // maxSubmissionCost
+            uint256(uint160(excessFeeRefundAddress)), // excessFeeRefundAddress
+            uint256(uint160(callValueRefundAddress)), // callValueRefundAddress
+            gasLimit, // gasLimit
+            maxFeePerGas, // maxFeePerGas
+            data.length, // data.length
+            data // data
+        ));
+    }
+
+    function _getTokenBridgeRetryableCalldata(address l2Forwarder) internal view returns (bytes memory) {
+        address l1Gateway = l1l2Router.getGateway(address(l1Token));
+        bytes memory l1l2TokenBridgeRetryableCalldata = L1ArbitrumGateway(l1Gateway).getOutboundCalldata({
+            _l1Token: address(l1Token),
+            _from: address(teleporter),
+            _to: l2Forwarder,
+            _amount: amount - 1, // since this is the first transfer, 1 wei will be kept by the teleporter
+            _data: ""
+        });
+        return l1l2TokenBridgeRetryableCalldata;
+    }
+    
     function _defaultParams() internal pure returns (Teleporter.RetryableGasParams memory) {
         return Teleporter.RetryableGasParams({
             l2GasPrice: 0.1 gwei,
