@@ -122,6 +122,7 @@ contract Teleporter is L2ForwarderPredictor {
 
         // calculate forwarder address of caller
         address l2Forwarder = l2ForwarderAddress(l2ForwarderParams);
+        
         {
             // total second retryable cost
             uint256 l2ForwarderFactoryCost = gasResults.l2ForwarderFactorySubmissionCost + gasResults.l2ForwarderFactoryGasCost;
