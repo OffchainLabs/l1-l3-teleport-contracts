@@ -29,7 +29,7 @@ contract L2ForwarderFactory is L2ForwarderPredictor {
     /// @notice Creates an L2Forwarder for the given L1 owner. There is no access control.
     function createL2Forwarder(L2ForwarderParams memory params) public returns (L2Forwarder) {
         L2Forwarder l2Forwarder = L2Forwarder(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(params)));
-        l2Forwarder.initialize(params.l1Owner);
+        l2Forwarder.initialize(params.owner);
 
         emit CreatedL2Forwarder(address(l2Forwarder), params);
 

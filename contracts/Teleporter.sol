@@ -109,7 +109,7 @@ contract Teleporter is L2ForwarderPredictor {
         {
             address l2Token = L1GatewayRouter(l1l2Router).calculateL2TokenAddress(l1Token);
             l2ForwarderParams = L2ForwarderParams({
-                l1Owner: msg.sender,
+                owner: AddressAliasHelper.applyL1ToL2Alias(msg.sender),
                 token: l2Token,
                 router: l2l3Router,
                 to: to,

@@ -5,7 +5,7 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 abstract contract L2ForwarderPredictor {
     struct L2ForwarderParams {
-        address l1Owner;
+        address owner;
         address token;
         address router;
         address to;

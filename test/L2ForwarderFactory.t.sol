@@ -22,8 +22,8 @@ contract TeleporterTest is Test {
 
     function testProperForwarderInitialization() public {
         L2ForwarderFactory.L2ForwarderParams memory params;
-        params.l1Owner = address(0x1111);
+        params.owner = address(0x1111);
         L2Forwarder forwarder = factory.createL2Forwarder(params);
-        assertEq(forwarder.l1Owner(), params.l1Owner);
+        assertEq(forwarder.owner(), params.owner);
     }
 }

@@ -11,8 +11,8 @@ import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 contract L2Forwarder is L2ForwarderPredictor {
     using SafeERC20 for IERC20;
 
-    /// @notice L1 address that owns this L2Forwarder
-    address public l1Owner;
+    /// @notice address that owns this L2Forwarder
+    address public owner;
 
     /// @notice Emitted after a successful call to rescue
     /// @param  targets Addresses that were called
@@ -26,7 +26,7 @@ contract L2Forwarder is L2ForwarderPredictor {
     /// @notice Thrown when initialize is called after initialization
     error AlreadyInitialized();
     /// @notice Thrown when a non-owner calls rescue
-    error OnlyL1Owner();
+    error OnlyOwner();
     /// @notice Thrown when the length of targets, values, and datas are not equal in a call to rescue
     error LengthMismatch();
     /// @notice Thrown when an external call in rescue fails
@@ -39,11 +39,11 @@ contract L2Forwarder is L2ForwarderPredictor {
     constructor(address _factory) L2ForwarderPredictor(_factory, address(this)) {}
 
     /// @notice Initialize this L2Forwarder
-    /// @param  _l1Owner The L1 address that owns this L2Forwarder
+    /// @param  _owner Address that owns this L2Forwarder
     /// @dev    Can only be called once.
-    function initialize(address _l1Owner) external {
-        if (l1Owner != address(0)) revert AlreadyInitialized();
-        l1Owner = _l1Owner;
+    function initialize(address _owner) external {
+        if (owner != address(0)) revert AlreadyInitialized();
+        owner = _owner;
     }
 
     function bridgeToL3(L2ForwarderParams memory params) external {
@@ -80,7 +80,7 @@ contract L2Forwarder is L2ForwarderPredictor {
     /// @param  values  Values to send
     /// @param  datas   Calldata to send
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external {
-        if (msg.sender != AddressAliasHelper.applyL1ToL2Alias(l1Owner)) revert OnlyL1Owner();
+        if (msg.sender != owner) revert OnlyOwner();
         if (targets.length != values.length || values.length != datas.length) revert LengthMismatch();
 
         for (uint256 i = 0; i < targets.length; i++) {
