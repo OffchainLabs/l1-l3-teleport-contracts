@@ -18,16 +18,19 @@ contract L2ContractsDeployer is ComputeCREATE1 {
         address factory
     );
 
+    address public immutable implementation;
+    address public immutable factory;
+
     constructor() {
-        address impl = contractAddressFrom(1);
-        address factory = contractAddressFrom(2);
+        implementation = contractAddressFrom(1);
+        factory = contractAddressFrom(2);
 
         address realImpl = address(new L2Forwarder(factory));
-        address realFactory = address(new L2ForwarderFactory(impl));
+        address realFactory = address(new L2ForwarderFactory(implementation));
 
-        require(impl == realImpl, "impl mismatch");
+        require(implementation == realImpl, "impl mismatch");
         require(factory == realFactory, "factory mismatch");
 
-        emit Deployed(impl, factory);
+        emit Deployed(implementation, factory);
     }
 }
