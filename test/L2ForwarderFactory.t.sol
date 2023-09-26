@@ -6,7 +6,7 @@ import {L2ContractsDeployer} from "../contracts/L2ContractsDeployer.sol";
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2Forwarder} from "../contracts/L2Forwarder.sol";
 
-contract TeleporterTest is Test {
+contract L2ForwarderFactoryTest is Test {
     L2ForwarderFactory factory;
 
     function setUp() public {
