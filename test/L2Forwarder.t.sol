@@ -5,16 +5,30 @@ import {Test, console2} from "forge-std/Test.sol";
 import {L2ContractsDeployer} from "../contracts/L2ContractsDeployer.sol";
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2Forwarder} from "../contracts/L2Forwarder.sol";
+import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
+import {MockToken} from "../contracts/mocks/MockToken.sol";
 import {ForkTest} from "./Fork.t.sol";
+
+import {L1GatewayRouter} from
+    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
+
+import {L1ArbitrumGateway} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
+
+import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 
 contract L2ForwarderTest is ForkTest {
     L2ForwarderFactory factory;
     L2Forwarder implementation;
 
+    address owner = address(0x1111);
+    address l3Recipient = address(0x2222);
+    MockToken l2Token;
+
     function setUp() public {
         L2ContractsDeployer deployer = new L2ContractsDeployer();
         factory = L2ForwarderFactory(deployer.factory());
         implementation = L2Forwarder(deployer.implementation());
+        l2Token = new MockToken("MOCK", "MOCK", 100 ether, address(this));
     }
     
     // make sure the implementation has correct implementation and factory addresses set
@@ -39,5 +53,74 @@ contract L2ForwarderTest is ForkTest {
     }
 
     // check that the L2Forwarder creates the correct bridge tx
-    
+    // and pays the relayer
+    function testHappyCase() public {
+        uint256 tokenAmount = 1 ether;
+        uint256 gasLimit = 1_000_000;
+        uint256 gasPrice = 0.1 gwei;
+        uint256 relayerPayment = 0.1 ether;
+        uint256 forwarderETHBalance = 1 ether;
+
+        L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
+            owner: owner,
+            token: address(l2Token),
+            router: address(l1l2Router),
+            to: l3Recipient,
+            amount: tokenAmount,
+            gasLimit: gasLimit,
+            gasPrice: gasPrice,
+            relayerPayment: relayerPayment
+        });
+
+        address forwarder = factory.l2ForwarderAddress(params);
+        
+        // give the forwarder some ETH, the first leg retryable would do this in practice
+        vm.deal(forwarder, forwarderETHBalance);
+
+        // give the forwarder some tokens, the first leg retryable would do this in practice
+        l2Token.transfer(forwarder, tokenAmount);
+
+        _expectHappyCaseEvents(
+            params,
+            forwarderETHBalance,
+            gasLimit,
+            gasPrice,
+            tokenAmount
+        );
+        factory.callForwarder(params);
+    }
+
+    function _expectHappyCaseEvents(
+        L2ForwarderPredictor.L2ForwarderParams memory params,
+        uint256 forwarderETHBalance,
+        uint256 gasLimit,
+        uint256 gasPrice,
+        uint256 tokenAmount
+    ) internal {
+        address forwarder = factory.l2ForwarderAddress(params);
+        _expectRetryable({
+            msgCount: bridge.delayedMessageCount(),
+            to: L1GatewayRouter(l1l2Router.getGateway(address(l2Token))).counterpartGateway(),
+            l2CallValue: 0,
+            msgValue: forwarderETHBalance - params.relayerPayment,
+            maxSubmissionCost: forwarderETHBalance - gasLimit * gasPrice - params.relayerPayment,
+            excessFeeRefundAddress: l3Recipient,
+            callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(forwarder),
+            gasLimit: gasLimit,
+            maxFeePerGas: gasPrice,
+            data: _getTokenBridgeRetryableCalldata(forwarder, tokenAmount)
+        });
+    }
+
+    function _getTokenBridgeRetryableCalldata(address l2Forwarder, uint256 tokenAmount) internal view returns (bytes memory) {
+        address l1Gateway = l1l2Router.getGateway(address(l2Token));
+        bytes memory l1l2TokenBridgeRetryableCalldata = L1ArbitrumGateway(l1Gateway).getOutboundCalldata({
+            _l1Token: address(l2Token),
+            _from: address(l2Forwarder),
+            _to: l3Recipient,
+            _amount: tokenAmount,
+            _data: ""
+        });
+        return l1l2TokenBridgeRetryableCalldata;
+    }
 }

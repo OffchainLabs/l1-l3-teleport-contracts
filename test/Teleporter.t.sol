@@ -29,18 +29,6 @@ contract TeleporterTest is ForkTest {
     address constant receiver = address(0x3300);
     uint256 constant amount = 1 ether;
 
-    // from the default gateway
-    event DepositInitiated(
-        address l1Token,
-        address indexed _from,
-        address indexed _to,
-        uint256 indexed _sequenceNumber,
-        uint256 _amount
-    );
-
-    // from inbox
-    event InboxMessageDelivered(uint256 indexed messageNum, bytes data);
-
     function setUp() public {
         teleporter = new Teleporter(l2ForwarderFactory, l2ForwarderImpl);
         l1Token = IERC20(new MockToken("MOCK", "MOCK", 100 ether, address(this)));
@@ -106,6 +94,7 @@ contract TeleporterTest is ForkTest {
             (l2ForwarderParams)
         );
 
+        // token bridge retryable
         _expectRetryable(
             msgCount,
             counterpartGateway,
@@ -129,6 +118,7 @@ contract TeleporterTest is ForkTest {
             _amount: amount - 1 // since this is the first transfer, 1 wei will be kept by the teleporter
         });
 
+        // call to the factory
         _expectRetryable(
             msgCount + 1,
             l2ForwarderFactory, // to
@@ -141,33 +131,6 @@ contract TeleporterTest is ForkTest {
             params.l2GasPrice, // maxFeePerGas
             calldataToFactory // data
         );
-    }
-
-    function _expectRetryable(
-        uint256 msgCount,
-        address to,
-        uint256 l2CallValue,
-        uint256 msgValue,
-        uint256 maxSubmissionCost,
-        address excessFeeRefundAddress,
-        address callValueRefundAddress,
-        uint256 gasLimit,
-        uint256 maxFeePerGas,
-        bytes memory data
-    ) internal {
-        vm.expectEmit(address(inbox));
-        emit InboxMessageDelivered(msgCount, abi.encodePacked(
-            uint256(uint160(to)), // to
-            l2CallValue, // l2 call value
-            msgValue, // msg.value
-            maxSubmissionCost, // maxSubmissionCost
-            uint256(uint160(excessFeeRefundAddress)), // excessFeeRefundAddress
-            uint256(uint160(callValueRefundAddress)), // callValueRefundAddress
-            gasLimit, // gasLimit
-            maxFeePerGas, // maxFeePerGas
-            data.length, // data.length
-            data // data
-        ));
     }
 
     function _getTokenBridgeRetryableCalldata(address l2Forwarder) internal view returns (bytes memory) {

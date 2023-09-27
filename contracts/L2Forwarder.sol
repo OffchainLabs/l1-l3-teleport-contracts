@@ -66,7 +66,6 @@ contract L2Forwarder is L2ForwarderPredictor {
         
         if (params.relayerPayment > 0) {
             (bool paymentSuccess,) = tx.origin.call{value: params.relayerPayment}("");
-
             if (!paymentSuccess) revert RelayerPaymentFailed();
         }
 
