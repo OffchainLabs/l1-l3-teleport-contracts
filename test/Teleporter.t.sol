@@ -87,7 +87,7 @@ contract TeleporterTest is ForkTest {
 
         uint256 msgCount = bridge.delayedMessageCount();
         address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
-        address counterpartGateway = L1GatewayRouter(l1l2Router.getGateway(address(l1Token))).counterpartGateway();
+        address counterpartGateway = defaultGateway.counterpartGateway();
 
         bytes memory calldataToFactory = abi.encodeCall(
             L2ForwarderFactory.callForwarder,

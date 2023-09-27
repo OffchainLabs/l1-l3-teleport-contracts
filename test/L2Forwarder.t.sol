@@ -80,6 +80,8 @@ contract L2ForwarderTest is ForkTest {
         // give the forwarder some tokens, the first leg retryable would do this in practice
         l2Token.transfer(forwarder, tokenAmount);
 
+        uint256 relayerBalanceBefore = tx.origin.balance;
+
         _expectHappyCaseEvents(
             params,
             forwarderETHBalance,
@@ -88,6 +90,54 @@ contract L2ForwarderTest is ForkTest {
             tokenAmount
         );
         factory.callForwarder(params);
+
+        // make sure the relayer was paid
+        assertEq(tx.origin.balance, relayerBalanceBefore + relayerPayment);
+
+        // make sure the forwarder has no ETH left
+        assertEq(address(forwarder).balance, 0);
+    }
+
+    function testRescue() public {
+        L2ForwarderPredictor.L2ForwarderParams memory params;
+        params.owner = owner;
+
+        // create the forwarder
+        L2Forwarder forwarder = factory.createL2Forwarder(params);
+
+        // create rescue params
+        address[] memory targets = new address[](1);
+        targets[0] = address(0x9999);
+        uint256[] memory values = new uint256[](1);
+        bytes[] memory datas = new bytes[](1);
+        datas[0] = hex"12345678";
+
+        // test access control
+        vm.expectRevert(L2Forwarder.OnlyOwner.selector);
+        forwarder.rescue(targets, values, datas);
+
+        // test length mismatch
+        vm.prank(owner);
+        vm.expectRevert(L2Forwarder.LengthMismatch.selector);
+        forwarder.rescue(targets, values, new bytes[](0));
+
+        // test call failure
+        values[0] = 1;
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(
+            L2Forwarder.CallFailed.selector,
+            targets[0],
+            values[0],
+            datas[0],
+            ""
+        ));
+        forwarder.rescue(targets, values, datas);
+        values[0] = 0;
+
+        // happy case
+        vm.prank(owner);
+        vm.expectCall(targets[0], datas[0]);
+        forwarder.rescue(targets, values, datas);
     }
 
     function _expectHappyCaseEvents(
@@ -98,9 +148,12 @@ contract L2ForwarderTest is ForkTest {
         uint256 tokenAmount
     ) internal {
         address forwarder = factory.l2ForwarderAddress(params);
+
+        uint256 msgCount = bridge.delayedMessageCount();
+
         _expectRetryable({
-            msgCount: bridge.delayedMessageCount(),
-            to: L1GatewayRouter(l1l2Router.getGateway(address(l2Token))).counterpartGateway(),
+            msgCount: msgCount,
+            to: defaultGateway.counterpartGateway(),
             l2CallValue: 0,
             msgValue: forwarderETHBalance - params.relayerPayment,
             maxSubmissionCost: forwarderETHBalance - gasLimit * gasPrice - params.relayerPayment,
@@ -109,6 +162,16 @@ contract L2ForwarderTest is ForkTest {
             gasLimit: gasLimit,
             maxFeePerGas: gasPrice,
             data: _getTokenBridgeRetryableCalldata(forwarder, tokenAmount)
+        });
+
+        // token bridge, indicating an actual bridge tx has been initiated
+        vm.expectEmit(address(defaultGateway));
+        emit DepositInitiated({
+            l1Token: address(l2Token),
+            _from: address(forwarder),
+            _to: l3Recipient,
+            _sequenceNumber: msgCount,
+            _amount: tokenAmount
         });
     }
 
