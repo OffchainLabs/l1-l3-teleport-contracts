@@ -12,7 +12,7 @@ contract ComputeCREATE1 {
 }
 
 // deploy this with the CREATE2 factory
-contract L2ContractsDeployer is ComputeCREATE1 {
+contract L2ForwarderContractsDeployer is ComputeCREATE1 {
     event Deployed(
         address implementation,
         address factory

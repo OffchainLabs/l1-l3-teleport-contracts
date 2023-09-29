@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { AbiCoder, Wallet, ethers } from "ethers";
-import { Beacon__factory, L2ContractsDeployer__factory, L2ForwarderFactory__factory, L2Forwarder__factory, Teleporter__factory } from "../../typechain-types";
+import { L2ForwarderContractsDeployer__factory, L2ForwarderFactory__factory, L2Forwarder__factory, Teleporter__factory } from "../../typechain-types";
 import { create2 } from "./utils";
 import { Config } from "../../config/config";
 
@@ -15,9 +15,10 @@ export type TeleporterDeployment = {
   l2Create2Salt: string;
 }
 
+// TODO: revisit all typescript in this repo
 async function deployL2Contracts(create2Salt: Uint8Array, l2Signer: Wallet) {
   const deployment = await create2(
-    new L2ContractsDeployer__factory(), [], create2Salt, l2Signer
+    new L2ForwarderContractsDeployer__factory(), [], create2Salt, l2Signer
   );
 
 

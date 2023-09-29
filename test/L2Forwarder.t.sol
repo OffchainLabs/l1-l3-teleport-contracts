@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {L2ContractsDeployer} from "../contracts/L2ContractsDeployer.sol";
+import {L2ForwarderContractsDeployer} from "../contracts/L2ForwarderContractsDeployer.sol";
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2Forwarder} from "../contracts/L2Forwarder.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
@@ -25,7 +25,7 @@ contract L2ForwarderTest is ForkTest {
     MockToken l2Token;
 
     function setUp() public {
-        L2ContractsDeployer deployer = new L2ContractsDeployer();
+        L2ForwarderContractsDeployer deployer = new L2ForwarderContractsDeployer();
         factory = L2ForwarderFactory(deployer.factory());
         implementation = L2Forwarder(deployer.implementation());
         l2Token = new MockToken("MOCK", "MOCK", 100 ether, address(this));
