@@ -13,6 +13,7 @@ abstract contract L2ForwarderPredictor {
         uint256 gasLimit;
         uint256 gasPrice;
         uint256 relayerPayment;
+        uint256 randomNonce;
     }
 
     address public immutable l2ForwarderFactory;
