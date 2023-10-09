@@ -3,44 +3,58 @@
 ### Summary
 
 In short, there are 3 legs of an L1 -> L3 teleportation:
-1. Send tokens from L1 to the `L2Forwarder`
-2. Create an `L2Forwarder` if it doesn't already exist and start the third leg
+1. Send tokens from L1 to a single use `L2Forwarder` whose address depends on its parameters
+2. Create the `L2Forwarder` if it doesn't already exist and start the third leg
 3. Send tokens and ETH from the `L2Forwarder` to the recipient on L3
 
 ### Deployment Procedure
-1. Predict the address of `Teleporter` on L1, it will be deployed via CREATE1
-2. Using the predicted teleporter address, deploy the following with the CREATE2 Factory at `0x4e59b44847b379578588920cA78FbF26c0B4956C`
-    1. The `L2Forwarder` implementation
-    2. The `Beacon` (transfer ownership after deployment)
-    3. The `L2ForwarderFactory`
-3. Deploy the `Teleporter` on L1
+1. Deploy `L2ForwarderContractsDeployer` using a generic CREATE2 factory such as `0x4e59b44847b379578588920cA78FbF26c0B4956C` on each L2. This will deploy the `L2ForwarderFactory` and `L2Forwarder` implementation. Use the same salt on each L2.
+2. Deploy `Teleporter` to L1, passing the L2 factory and implementation addresses to the constructor.
 
-### Detailed Teleportation Flow
+### Teleportation Flow
 
-1. User approves `Teleporter` to spend their tokens
-2. User calls `Teleporter.teleport`
-    1. Computes the user's `L2Forwarder` address
-    2. Sends tokens over the bridge to their `L2Forwarder`
-    3. Sends a retryable to call `L2ForwarderFactory.callForwarder` with all excess `msg.value` sent as `l2CallValue`
-3. Retryable 1 is redeemed: tokens and a little bit of ETH land in the `L2Forwarder` address (which may or may not be a contract yet)
+There are two ways to bridge ERC20 tokens from L1 to L3. Through the L1 `Teleporter` contract, or using a relayer on L2.
+Both routes work similarly, sending tokens to a precomputed single use `L2Forwarder` and creating/calling the `L2Forwarder` to send the tokens up to L3.
+
+When using the `Teleporter`, 2 L1 -> L2 retryables will be created: one bridging tokens and one calling the forwarder.
+
+When using an L2 relayer, the user calls the `L1GatewayRouter` directly to send tokens and ETH to the precomputed forwarder. The relayer then calls the forwarder and receives some ETH.
+
+#### Example Using the `Teleporter`
+
+1. User approves `Teleporter` to spend TOKEN
+2. User calls `Teleporter.teleport`:
+    1. Computes the single use `L2Forwarder` address
+    2. Sends tokens over the bridge to the `L2Forwarder`. Send extra `msg.value` by overestimating submission cost.
+    3. Creates a retryable to call `L2ForwarderFactory.callForwarder`
+3. Retryable 1 is redeemed: tokens and ETH land in the `L2Forwarder` address (which may or may not be a contract yet)
 4. Retryable 2 is redeemed: `L2ForwarderFactory.callForwarder`
-    1. Create and initialize the user's `L2Forwarder` via `ClonableBeaconProxy` if it does not already exist.
-    2. Call `L2Forwarder.bridgeToL3{value: msg.value}`
+    1. Create and initialize the user's `L2Forwarder` via `Clone` if it does not already exist.
+    2. Call `L2Forwarder.bridgeToL3{value: msg.value}(...)`
 5. `L2Forwarder.bridgeToL3`
     1. Send the specified amount of tokens through the bridge to L3. The contract's entire balance minus execution fee is sent as submission fee in order to forward all the extra ETH to L3.
 
+#### Example Using an L2 Relayer
+
+1. User approves TOKEN's L1 Gateway
+2. User computes `L2Forwarder` address off-chain
+3. User calls the `L1GatewayRouter` to send tokens to the `L2Forwarder`. Extra ETH required to pay the relayer and submit/execute L2 -> L3 retryable are sent through an overestimated submission fee.
+4. Once tokens and ETH land at the forwarder, a relayer calls `L2ForwarderFactory.callForwarder`, sending tokens up to L3 and receiving payment.
+
 ### Retryable Failures and Race Conditions
 
-It is assumed that the first leg will always succeed, either through auto-redemption or through manual redemption. Similarly, if the second leg succeeds, the third must also succeed.
+The first and third legs should always succeed (if auto redeem fails, manual redeem should succeed).
 
-If multiple teleportations are in flight, it does not matter if retryables are redeemed out of order as long as there are no calls to `L2Forwarder.rescue`.
+The second leg can fail for a number of reasons, mostly due to bad parameters:
+* Not enough ETH is sent to cover L2 -> L3 retryable submission cost + relayer payment
+* Incorrect `l2l3Router`, `token`, `amount`, etc
+* Races caused by reusing an `L2Forwarder` for more than one teleportation
 
-If a call to `rescue` is made, any pending second leg retryables should be cancelled in the same call to avoid race conditions and recover any ETH. First and third leg retryables should obviously never be cancelled.
+If the second leg fails for any reason, TOKEN and ETH will be stuck at the `L2Forwarder`. As long as the `owner` parameter of the forwarder is correct, the `owner` can call `rescue` on the forwarder to recover TOKEN and ETH.
 
-## TODO / Questions
+## TODO
 
-* Custom fee token L3's
-* Unit tests
-* Rescue testnet test
-* Should the `Beacon` even be owned? Instead of a separate `Beacon`, should the factory be the beacon?
-* `L2Receiver.factory` could be immutable if there is an `L2Deploy` contract to deploy the `Beacon`, `L2Forwarder` implementation, and `L2ForwarderFactory`
+* Proper integration tests using a local nitro testnode
+* Update / complete natspec
+* Review
+* Custom fee token L3's?
