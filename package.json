@@ -4,33 +4,10 @@
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
-    "deploy": "hardhat compile && ts-node ./scripts/deploy.ts",
-    "test:happy-e2e": "hardhat compile && ts-node ./test/happyPathE2E.ts",
-    "test:rescue": "hardhat compile && ts-node ./test/testRescue.ts",
-    "test:relayer": "hardhat compile && ts-node ./test/testRelayerDesignE2E.ts"
+    "test": "forge test --fork-url $CHAIN_1_URL -vvv"
   },
   "devDependencies": {
-    "@arbitrum/sdk": "^3.1.10",
-    "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
-    "@nomicfoundation/hardhat-ethers": "^3.0.0",
-    "@nomicfoundation/hardhat-foundry": "^1.1.1",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
-    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
-    "@nomicfoundation/hardhat-verify": "^1.0.0",
-    "@typechain/ethers-v6": "^0.4.0",
-    "@typechain/hardhat": "^8.0.0",
-    "@types/chai": "^4.2.0",
-    "@types/mocha": ">=9.1.0",
-    "@types/node": ">=16.0.0",
-    "chai": "^4.2.0",
-    "dotenv": "^16.3.1",
-    "ethers": "^6.4.0",
-    "hardhat": "^2.17.2",
-    "hardhat-gas-reporter": "^1.0.8",
-    "solidity-coverage": "^0.8.0",
-    "ts-node": ">=8.0.0",
-    "typechain": "^8.1.0",
-    "typescript": ">=4.5.0"
+    "hardhat": "^2.18.0"
   },
   "dependencies": {
     "@arbitrum/token-bridge-contracts": "1.1.0-alpha.1"

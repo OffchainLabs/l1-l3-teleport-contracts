@@ -6,3 +6,4 @@ test = 'test'
 cache_path  = 'cache_forge'
 solc_version = '0.8.13'
 optimizer_runs = 200
+fs_permissions = [{ access = "read-write", path = "./script-deploy-data"}]
