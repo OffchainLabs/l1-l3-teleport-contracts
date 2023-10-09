@@ -52,7 +52,7 @@ contract TeleporterTest is ForkTest {
         }));
     }
 
-    function testRetryableCreation() public {
+    function testHappyPath() public {
         l1Token.transfer(address(this), amount);
 
         l1Token.approve(address(teleporter), amount);
