@@ -70,7 +70,6 @@ forge script script/1_DeployL1Teleporter.s.sol --rpc-url $ETH_URL
 
 ## TODO
 
-* Proper integration tests using a local nitro testnode
 * Update / complete natspec
 * Review
 * Custom fee token L3's?
