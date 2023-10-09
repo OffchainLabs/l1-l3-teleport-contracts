@@ -41,14 +41,15 @@ contract TeleporterTest is ForkTest {
             _defaultParamsAndCosts();
 
         vm.expectRevert(abi.encodeWithSelector(Teleporter.InsufficientValue.selector, costs.total, costs.total - 1));
-        teleporter.teleport{value: costs.total - 1}({
+        teleporter.teleport{value: costs.total - 1}(Teleporter.TeleportParams({
             l1Token: address(l1Token),
             l1l2Router: address(l1l2Router),
             l2l3Router: l2l3Router,
             to: receiver,
             amount: 10 ether,
-            gasParams: params
-        });
+            gasParams: params,
+            randomNonce: 1
+        }));
     }
 
     function testRetryableCreation() public {
@@ -60,14 +61,15 @@ contract TeleporterTest is ForkTest {
             _defaultParamsAndCosts();
 
         _expectEvents();
-        teleporter.teleport{value: costs.total}({
+        teleporter.teleport{value: costs.total}(Teleporter.TeleportParams({
             l1Token: address(l1Token),
             l1l2Router: address(l1l2Router),
             l2l3Router: l2l3Router,
             to: receiver,
             amount: amount,
-            gasParams: params
-        });
+            gasParams: params,
+            randomNonce: 1
+        }));
     }
 
     function _expectEvents() internal {
@@ -82,7 +84,8 @@ contract TeleporterTest is ForkTest {
             amount: amount - 1, // since this is the first transfer, 1 wei will be kept by the teleporter
             gasLimit: params.l2l3TokenBridgeGasLimit,
             gasPrice: params.l3GasPrice,
-            relayerPayment: 0
+            relayerPayment: 0,
+            randomNonce: 1
         });
 
         uint256 msgCount = bridge.delayedMessageCount();
