@@ -52,6 +52,22 @@ The second leg can fail for a number of reasons, mostly due to bad parameters:
 
 If the second leg fails for any reason, TOKEN and ETH will be stuck at the `L2Forwarder`. As long as the `owner` parameter of the forwarder is correct, the `owner` can call `rescue` on the forwarder to recover TOKEN and ETH.
 
+### Testing and Deploying
+
+To test: 
+```
+forge test --fork-url $ETH_URL -vvv
+```
+
+To deploy:
+```
+# for all L2's
+forge script script/0_DeployL2Contracts.s.sol --rpc-url $L2_URL
+
+# for L1
+forge script script/1_DeployL1Teleporter.s.sol --rpc-url $ETH_URL
+```
+
 ## TODO
 
 * Proper integration tests using a local nitro testnode
