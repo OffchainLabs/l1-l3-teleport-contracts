@@ -4,21 +4,14 @@ pragma solidity ^0.8.13;
 import {L1GatewayRouter} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
-import {L1ArbitrumMessenger} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/L1ArbitrumMessenger.sol";
 import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
-import {IL1ArbitrumGateway} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/IL1ArbitrumGateway.sol";
-
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-
 import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 
 /// @title  Teleporter
-/// @notice Initiates L1 -> L3 transfers. 
+/// @notice Initiates L1 -> L3 transfers.
 ///         Creates 2 retryables: one to transfer tokens and ETH to an L2Forwarder, and one to call the L2ForwarderFactory.
 contract Teleporter is L2ForwarderPredictor {
     using SafeERC20 for IERC20;
@@ -38,7 +31,7 @@ contract Teleporter is L2ForwarderPredictor {
         address to;
         uint256 amount;
         RetryableGasParams gasParams;
-        uint256 randomNonce;    
+        uint256 randomNonce;
     }
 
     /// @notice Gas parameters for each retryable ticket.
@@ -81,16 +74,15 @@ contract Teleporter is L2ForwarderPredictor {
     /// @notice Thrown when the value sent to teleport() is less than the total cost of all retryables.
     error InsufficientValue(uint256 required, uint256 provided);
 
-    constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation) 
-        L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation) {}
+    constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation)
+        L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
+    {}
 
     /// @notice Start an L1 -> L3 transfer. msg.value sent must be >= the total cost of all retryables.
     ///         Any extra ETH will be sent to the receiver on L3.
     /// @dev    2 retryables will be created: one to send tokens and ETH to the L2Forwarder, and one to call the L2ForwarderFactory.
     ///         Extra ETH is sent through the first retryable as an overestimated submission fee.
-    function teleport(
-        TeleportParams memory params
-    ) external payable {
+    function teleport(TeleportParams memory params) external payable {
         // get inbox
         address inbox = L1GatewayRouter(params.l1l2Router).inbox();
 
@@ -118,7 +110,7 @@ contract Teleporter is L2ForwarderPredictor {
         {
             address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
             l2ForwarderParams = L2ForwarderParams({
-                // set owner to the aliased msg.sender. 
+                // set owner to the aliased msg.sender.
                 // As long as msg.sender can create retryables, they will be able to recover in case of failure
                 owner: AddressAliasHelper.applyL1ToL2Alias(msg.sender),
                 token: l2Token,
@@ -134,13 +126,15 @@ contract Teleporter is L2ForwarderPredictor {
 
         // calculate forwarder address of caller
         address l2Forwarder = l2ForwarderAddress(l2ForwarderParams);
-        
+
         {
             // total second retryable cost
-            uint256 l2ForwarderFactoryCost = gasResults.l2ForwarderFactorySubmissionCost + gasResults.l2ForwarderFactoryGasCost;
+            uint256 l2ForwarderFactoryCost =
+                gasResults.l2ForwarderFactorySubmissionCost + gasResults.l2ForwarderFactoryGasCost;
 
             // submission cost for first retryable
-            uint256 overestimatedL1L2TokenBridgeSubmissionCost = address(this).balance - l2ForwarderFactoryCost - gasResults.l1l2TokenBridgeGasCost;
+            uint256 overestimatedL1L2TokenBridgeSubmissionCost =
+                address(this).balance - l2ForwarderFactoryCost - gasResults.l1l2TokenBridgeGasCost;
 
             // send tokens through the bridge to predicted forwarder
             L1GatewayRouter(params.l1l2Router).outboundTransferCustomRefund{
@@ -157,10 +151,7 @@ contract Teleporter is L2ForwarderPredictor {
         }
 
         // call the L2ForwarderFactory
-        bytes memory l2ForwarderFactoryCalldata = abi.encodeCall(
-            L2ForwarderFactory.callForwarder,
-            (l2ForwarderParams)
-        );
+        bytes memory l2ForwarderFactoryCalldata = abi.encodeCall(L2ForwarderFactory.callForwarder, (l2ForwarderParams));
 
         IInbox(inbox).createRetryableTicket{value: address(this).balance}({
             to: l2ForwarderFactory,

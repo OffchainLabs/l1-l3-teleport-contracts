@@ -7,16 +7,14 @@ import {L2Forwarder} from "./L2Forwarder.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 
 /// @title  L2ForwarderFactory
-/// @notice Creates L2Forwarders and calls them to bridge tokens to L3. 
+/// @notice Creates L2Forwarders and calls them to bridge tokens to L3.
 ///         L2Forwarders are created via CREATE2 / clones.
 contract L2ForwarderFactory is L2ForwarderPredictor {
     /// @notice Emitted when a new L2Forwarder is created
     event CreatedL2Forwarder(address indexed l2Forwarder, L2ForwarderParams params);
 
     /// @notice Emitted when an L2Forwarder is called to bridge tokens to L3
-    event CalledL2Forwarder(
-        address indexed l2Forwarder, L2ForwarderParams params
-    );
+    event CalledL2Forwarder(address indexed l2Forwarder, L2ForwarderParams params);
 
     constructor(address _impl) L2ForwarderPredictor(address(this), _impl) {}
 

@@ -4,7 +4,8 @@ pragma solidity ^0.8.13;
 import {Test, console2} from "forge-std/Test.sol";
 import {L1GatewayRouter} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
-import {L1ArbitrumGateway} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
+import {L1ArbitrumGateway} from
+    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
 import {Bridge} from "@arbitrum/nitro-contracts/src/bridge/Bridge.sol";
 import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
 
@@ -16,11 +17,7 @@ contract ForkTest is Test {
 
     // from the default gateway
     event DepositInitiated(
-        address l1Token,
-        address indexed _from,
-        address indexed _to,
-        uint256 indexed _sequenceNumber,
-        uint256 _amount
+        address l1Token, address indexed _from, address indexed _to, uint256 indexed _sequenceNumber, uint256 _amount
     );
 
     // from inbox
@@ -39,17 +36,20 @@ contract ForkTest is Test {
         bytes memory data
     ) internal {
         vm.expectEmit(address(inbox));
-        emit InboxMessageDelivered(msgCount, abi.encodePacked(
-            uint256(uint160(to)), // to
-            l2CallValue, // l2 call value
-            msgValue, // msg.value
-            maxSubmissionCost, // maxSubmissionCost
-            uint256(uint160(excessFeeRefundAddress)), // excessFeeRefundAddress
-            uint256(uint160(callValueRefundAddress)), // callValueRefundAddress
-            gasLimit, // gasLimit
-            maxFeePerGas, // maxFeePerGas
-            data.length, // data.length
-            data // data
-        ));
+        emit InboxMessageDelivered(
+            msgCount,
+            abi.encodePacked(
+                uint256(uint160(to)), // to
+                l2CallValue, // l2 call value
+                msgValue, // msg.value
+                maxSubmissionCost, // maxSubmissionCost
+                uint256(uint160(excessFeeRefundAddress)), // excessFeeRefundAddress
+                uint256(uint160(callValueRefundAddress)), // callValueRefundAddress
+                gasLimit, // gasLimit
+                maxFeePerGas, // maxFeePerGas
+                data.length, // data.length
+                data // data
+            )
+        );
     }
 }

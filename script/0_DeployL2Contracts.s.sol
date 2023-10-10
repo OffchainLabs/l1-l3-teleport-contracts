@@ -15,7 +15,8 @@ contract DeployL2Contracts is Script {
 
         vm.serializeBytes32("deployment", "salt", bytes32(salt));
         vm.serializeAddress("deployment", "L2ForwarderFactory", address(deployer.factory()));
-        string memory finalJson = vm.serializeAddress("deployment", "L2ForwarderImplementation", address(deployer.implementation()));
+        string memory finalJson =
+            vm.serializeAddress("deployment", "L2ForwarderImplementation", address(deployer.implementation()));
 
         vm.writeJson(finalJson, "./script-deploy-data/l2.json");
     }

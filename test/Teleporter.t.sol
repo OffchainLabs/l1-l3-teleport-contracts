@@ -6,16 +6,11 @@ import {Teleporter} from "../contracts/Teleporter.sol";
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
 import {MockToken} from "../contracts/mocks/MockToken.sol";
-import {L1GatewayRouter} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
-import {L1ArbitrumGateway} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
-import {Bridge} from "@arbitrum/nitro-contracts/src/bridge/Bridge.sol";
-import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
-import {L1ArbitrumGateway} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
+import {L1ArbitrumGateway} from
+    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ForkTest} from "./Fork.t.sol";
-
 
 contract TeleporterTest is ForkTest {
     address immutable l2l3Router = vm.addr(0x10);
@@ -41,15 +36,17 @@ contract TeleporterTest is ForkTest {
             _defaultParamsAndCosts();
 
         vm.expectRevert(abi.encodeWithSelector(Teleporter.InsufficientValue.selector, costs.total, costs.total - 1));
-        teleporter.teleport{value: costs.total - 1}(Teleporter.TeleportParams({
-            l1Token: address(l1Token),
-            l1l2Router: address(l1l2Router),
-            l2l3Router: l2l3Router,
-            to: receiver,
-            amount: 10 ether,
-            gasParams: params,
-            randomNonce: 1
-        }));
+        teleporter.teleport{value: costs.total - 1}(
+            Teleporter.TeleportParams({
+                l1Token: address(l1Token),
+                l1l2Router: address(l1l2Router),
+                l2l3Router: l2l3Router,
+                to: receiver,
+                amount: 10 ether,
+                gasParams: params,
+                randomNonce: 1
+            })
+        );
     }
 
     function testHappyPathEvents() public {
@@ -61,15 +58,17 @@ contract TeleporterTest is ForkTest {
             _defaultParamsAndCosts();
 
         _expectEvents();
-        teleporter.teleport{value: costs.total}(Teleporter.TeleportParams({
-            l1Token: address(l1Token),
-            l1l2Router: address(l1l2Router),
-            l2l3Router: l2l3Router,
-            to: receiver,
-            amount: amount,
-            gasParams: params,
-            randomNonce: 1
-        }));
+        teleporter.teleport{value: costs.total}(
+            Teleporter.TeleportParams({
+                l1Token: address(l1Token),
+                l1l2Router: address(l1l2Router),
+                l2l3Router: l2l3Router,
+                to: receiver,
+                amount: amount,
+                gasParams: params,
+                randomNonce: 1
+            })
+        );
 
         // make sure the teleporter has no ETH balance
         assertEq(address(teleporter).balance, 0);
@@ -78,7 +77,7 @@ contract TeleporterTest is ForkTest {
     function _expectEvents() internal {
         (Teleporter.RetryableGasParams memory params, Teleporter.RetryableGasCosts memory costs) =
             _defaultParamsAndCosts();
-        
+
         L2ForwarderPredictor.L2ForwarderParams memory l2ForwarderParams = L2ForwarderPredictor.L2ForwarderParams({
             owner: AddressAliasHelper.applyL1ToL2Alias(address(this)),
             token: l1l2Router.calculateL2TokenAddress(address(l1Token)),
@@ -95,10 +94,7 @@ contract TeleporterTest is ForkTest {
         address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
         address counterpartGateway = defaultGateway.counterpartGateway();
 
-        bytes memory calldataToFactory = abi.encodeCall(
-            L2ForwarderFactory.callForwarder,
-            (l2ForwarderParams)
-        );
+        bytes memory calldataToFactory = abi.encodeCall(L2ForwarderFactory.callForwarder, (l2ForwarderParams));
 
         // token bridge retryable
         _expectRetryable(
@@ -106,7 +102,8 @@ contract TeleporterTest is ForkTest {
             counterpartGateway,
             0, // l2 call value
             costs.total - costs.l2ForwarderFactoryGasCost - costs.l2ForwarderFactorySubmissionCost, // msg.value
-            costs.total - costs.l2ForwarderFactoryGasCost - costs.l2ForwarderFactorySubmissionCost - costs.l1l2TokenBridgeGasCost, // maxSubmissionCost
+            costs.total - costs.l2ForwarderFactoryGasCost - costs.l2ForwarderFactorySubmissionCost
+                - costs.l1l2TokenBridgeGasCost, // maxSubmissionCost
             l2Forwarder, // excessFeeRefundAddress
             AddressAliasHelper.applyL1ToL2Alias(address(teleporter)), // callValueRefundAddress
             params.l1l2TokenBridgeGasLimit, // gasLimit
@@ -150,7 +147,7 @@ contract TeleporterTest is ForkTest {
         });
         return l1l2TokenBridgeRetryableCalldata;
     }
-    
+
     function _defaultParams() internal pure returns (Teleporter.RetryableGasParams memory) {
         return Teleporter.RetryableGasParams({
             l2GasPrice: 0.1 gwei,

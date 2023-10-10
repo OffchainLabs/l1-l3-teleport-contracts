@@ -5,13 +5,10 @@ import {L2Forwarder} from "./L2Forwarder.sol";
 import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 
 /// @title  L2ForwarderContractsDeployer
-/// @notice Deploys the L2Forwarder implementation and factory contracts. 
+/// @notice Deploys the L2Forwarder implementation and factory contracts.
 ///         This contract should be deployed with a generic CREATE2 factory to the same address on each L2.
 contract L2ForwarderContractsDeployer {
-    event Deployed(
-        address implementation,
-        address factory
-    );
+    event Deployed(address implementation, address factory);
 
     address public immutable implementation;
     address public immutable factory;
@@ -32,6 +29,10 @@ contract L2ForwarderContractsDeployer {
     /// @notice Computes the address of a contract deployed from this address with a given nonce.
     ///         Adapted from https://ethereum.stackexchange.com/a/139230
     function _contractAddressFrom(uint256 nonce) internal view returns (address) {
-        return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), address(this), bytes1(uint8(nonce)))))));
+        return address(
+            uint160(
+                uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), address(this), bytes1(uint8(nonce)))))
+            )
+        );
     }
 }

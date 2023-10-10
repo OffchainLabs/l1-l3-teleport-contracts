@@ -3,7 +3,6 @@ pragma solidity ^0.8.13;
 
 import {L1GatewayRouter} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
-import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
@@ -69,9 +68,15 @@ contract L2Forwarder is L2ForwarderPredictor {
         uint256 balanceSubRelayerPayment = address(this).balance - params.relayerPayment;
         uint256 submissionCost = balanceSubRelayerPayment - params.gasLimit * params.gasPrice;
         L1GatewayRouter(params.router).outboundTransferCustomRefund{value: balanceSubRelayerPayment}(
-            params.token, params.to, params.to, params.amount, params.gasLimit, params.gasPrice, abi.encode(submissionCost, bytes(""))
+            params.token,
+            params.to,
+            params.to,
+            params.amount,
+            params.gasLimit,
+            params.gasPrice,
+            abi.encode(submissionCost, bytes(""))
         );
-        
+
         if (params.relayerPayment > 0) {
             (bool paymentSuccess,) = tx.origin.call{value: params.relayerPayment}("");
             if (!paymentSuccess) revert RelayerPaymentFailed();

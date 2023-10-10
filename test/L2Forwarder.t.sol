@@ -8,12 +8,8 @@ import {L2Forwarder} from "../contracts/L2Forwarder.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
 import {MockToken} from "../contracts/mocks/MockToken.sol";
 import {ForkTest} from "./Fork.t.sol";
-
-import {L1GatewayRouter} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
-
-import {L1ArbitrumGateway} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
-
+import {L1ArbitrumGateway} from
+    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 
 contract L2ForwarderTest is ForkTest {
@@ -30,7 +26,7 @@ contract L2ForwarderTest is ForkTest {
         implementation = L2Forwarder(deployer.implementation());
         l2Token = new MockToken("MOCK", "MOCK", 100 ether, address(this));
     }
-    
+
     // make sure the implementation has correct implementation and factory addresses set
     // this is needed to predict the address of the L2Forwarder based on parameters
     function testProperConstruction() public {
@@ -74,7 +70,7 @@ contract L2ForwarderTest is ForkTest {
         });
 
         address forwarder = factory.l2ForwarderAddress(params);
-        
+
         // give the forwarder some ETH, the first leg retryable would do this in practice
         vm.deal(forwarder, forwarderETHBalance);
 
@@ -83,13 +79,7 @@ contract L2ForwarderTest is ForkTest {
 
         uint256 relayerBalanceBefore = tx.origin.balance;
 
-        _expectHappyCaseEvents(
-            params,
-            forwarderETHBalance,
-            gasLimit,
-            gasPrice,
-            tokenAmount
-        );
+        _expectHappyCaseEvents(params, forwarderETHBalance, gasLimit, gasPrice, tokenAmount);
         factory.callForwarder(params);
 
         // make sure the relayer was paid
@@ -125,13 +115,7 @@ contract L2ForwarderTest is ForkTest {
         // test call failure
         values[0] = 1;
         vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(
-            L2Forwarder.CallFailed.selector,
-            targets[0],
-            values[0],
-            datas[0],
-            ""
-        ));
+        vm.expectRevert(abi.encodeWithSelector(L2Forwarder.CallFailed.selector, targets[0], values[0], datas[0], ""));
         forwarder.rescue(targets, values, datas);
         values[0] = 0;
 
@@ -176,7 +160,11 @@ contract L2ForwarderTest is ForkTest {
         });
     }
 
-    function _getTokenBridgeRetryableCalldata(address l2Forwarder, uint256 tokenAmount) internal view returns (bytes memory) {
+    function _getTokenBridgeRetryableCalldata(address l2Forwarder, uint256 tokenAmount)
+        internal
+        view
+        returns (bytes memory)
+    {
         address l1Gateway = l1l2Router.getGateway(address(l2Token));
         bytes memory l1l2TokenBridgeRetryableCalldata = L1ArbitrumGateway(l1Gateway).getOutboundCalldata({
             _l1Token: address(l2Token),
