@@ -30,7 +30,7 @@ When using an L2 relayer, the user calls the `L1GatewayRouter` directly to send 
 3. Retryable 1 is redeemed: tokens and ETH land in the `L2Forwarder` address (which may or may not be a contract yet)
 4. Retryable 2 is redeemed: `L2ForwarderFactory.callForwarder`
     1. Create and initialize the user's `L2Forwarder` via `Clone` if it does not already exist.
-    2. Call `L2Forwarder.bridgeToL3{value: msg.value}(...)`
+    2. Call `L2Forwarder.bridgeToL3(...)`
 5. `L2Forwarder.bridgeToL3`
     1. Send the specified amount of tokens through the bridge to L3. The contract's entire balance minus execution fee is sent as submission fee in order to forward all the extra ETH to L3.
 
@@ -47,10 +47,14 @@ The first and third legs should always succeed (if auto redeem fails, manual red
 
 The second leg can fail for a number of reasons, mostly due to bad parameters:
 * Not enough ETH is sent to cover L2 -> L3 retryable submission cost + relayer payment
-* Incorrect `l2l3Router`, `token`, `amount`, etc
+* Incorrect `l2l3Router`, `token`, etc
 * Races caused by reusing an `L2Forwarder` for more than one teleportation
 
-If the second leg fails for any reason, TOKEN and ETH will be stuck at the `L2Forwarder`. As long as the `owner` parameter of the forwarder is correct, the `owner` can call `rescue` on the forwarder to recover TOKEN and ETH.
+If for some reason the second leg cannot be redeemed, TOKEN and ETH will be stuck at the `L2Forwarder`. As long as the `owner` parameter of the forwarder is correct, the `owner` can call `rescue` on the forwarder to recover TOKEN and ETH.
+
+It is possible that two L1 -> L3 transfers use the same `L2Forwarder` if they have the same `L2ForwarderParams`. 
+
+Because of this, it is also possible that the second and third leg of one of the transfers are not executed. It's okay if there are two simultaneous transfers A and B, where steps A1-B1-A2-A3 are executed since TOKEN and ETH from both A1 and B1 are transferred during A2.
 
 ### Testing and Deploying
 
