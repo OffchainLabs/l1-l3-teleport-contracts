@@ -29,6 +29,7 @@ contract L2ForwarderContractsDeployer {
     /// @notice Computes the address of a contract deployed from this address with a given nonce.
     ///         Adapted from https://ethereum.stackexchange.com/a/139230
     function _contractAddressFrom(uint256 nonce) internal view returns (address) {
+        require(nonce > 0x00 && nonce <= 0x7f, "unsupported nonce");
         return address(
             uint160(
                 uint256(keccak256(abi.encodePacked(bytes1(0xd6), bytes1(0x94), address(this), bytes1(uint8(nonce)))))

@@ -23,7 +23,7 @@ contract L2ForwarderTest is ForkTest {
     function setUp() public {
         L2ForwarderContractsDeployer deployer = new L2ForwarderContractsDeployer();
         factory = L2ForwarderFactory(deployer.factory());
-        implementation = L2Forwarder(deployer.implementation());
+        implementation = L2Forwarder(payable(deployer.implementation()));
         l2Token = new MockToken("MOCK", "MOCK", 100 ether, address(this));
     }
 

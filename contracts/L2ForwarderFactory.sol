@@ -11,7 +11,7 @@ import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 ///         L2Forwarders are created via CREATE2 / clones.
 contract L2ForwarderFactory is L2ForwarderPredictor {
     /// @notice Emitted when a new L2Forwarder is created
-    event CreatedL2Forwarder(address indexed l2Forwarder, L2ForwarderParams params);
+    event CreatedL2Forwarder(address indexed l2Forwarder, address indexed owner, L2ForwarderParams params);
 
     /// @notice Emitted when an L2Forwarder is called to bridge tokens to L3
     event CalledL2Forwarder(address indexed l2Forwarder, L2ForwarderParams params);
@@ -31,10 +31,10 @@ contract L2ForwarderFactory is L2ForwarderPredictor {
     /// @notice Creates an L2Forwarder for the given parameters.
     /// @param  params Parameters for the L2Forwarder
     function createL2Forwarder(L2ForwarderParams memory params) public returns (L2Forwarder) {
-        L2Forwarder l2Forwarder = L2Forwarder(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(params)));
+        L2Forwarder l2Forwarder = L2Forwarder(payable(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(params))));
         l2Forwarder.initialize(params.owner);
 
-        emit CreatedL2Forwarder(address(l2Forwarder), params);
+        emit CreatedL2Forwarder(address(l2Forwarder), params.owner, params);
 
         return l2Forwarder;
     }
@@ -49,7 +49,7 @@ contract L2ForwarderFactory is L2ForwarderPredictor {
         }
         if (size > 0) {
             // contract already exists
-            return L2Forwarder(calculatedAddress);
+            return L2Forwarder(payable(calculatedAddress));
         }
 
         // contract doesn't exist, create it

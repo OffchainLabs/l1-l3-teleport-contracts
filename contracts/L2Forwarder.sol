@@ -90,7 +90,7 @@ contract L2Forwarder is L2ForwarderPredictor {
     /// @param  targets Addresses to call
     /// @param  values  Values to send
     /// @param  datas   Calldata to send
-    function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external {
+    function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external payable {
         if (msg.sender != owner) revert OnlyOwner();
         if (targets.length != values.length || values.length != datas.length) revert LengthMismatch();
 
@@ -101,4 +101,6 @@ contract L2Forwarder is L2ForwarderPredictor {
 
         emit Rescued(targets, values, datas);
     }
+
+    receive() external payable {}
 }
