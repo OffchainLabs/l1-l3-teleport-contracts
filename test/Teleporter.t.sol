@@ -43,8 +43,7 @@ contract TeleporterTest is ForkTest {
                 l2l3Router: l2l3Router,
                 to: receiver,
                 amount: 10 ether,
-                gasParams: params,
-                randomNonce: 1
+                gasParams: params
             })
         );
     }
@@ -65,8 +64,7 @@ contract TeleporterTest is ForkTest {
                 l2l3Router: l2l3Router,
                 to: receiver,
                 amount: amount,
-                gasParams: params,
-                randomNonce: 1
+                gasParams: params
             })
         );
 

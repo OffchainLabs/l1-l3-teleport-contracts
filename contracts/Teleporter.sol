@@ -23,7 +23,6 @@ contract Teleporter is L2ForwarderPredictor {
     /// @param  to          L3 address that will receive the tokens
     /// @param  amount      Amount of tokens being teleported
     /// @param  gasParams   Gas parameters for each retryable ticket
-    /// @param  randomNonce Nonce to ensure the L2Forwarder address is unique
     struct TeleportParams {
         address l1Token;
         address l1l2Router;
@@ -31,7 +30,6 @@ contract Teleporter is L2ForwarderPredictor {
         address to;
         uint256 amount;
         RetryableGasParams gasParams;
-        uint256 randomNonce;
     }
 
     /// @notice Gas parameters for each retryable ticket.
