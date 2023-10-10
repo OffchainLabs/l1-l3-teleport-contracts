@@ -62,10 +62,10 @@ forge test --fork-url $ETH_URL -vvv
 To deploy:
 ```
 # for all L2's
-forge script script/0_DeployL2Contracts.s.sol --rpc-url $L2_URL
+forge script script/0_DeployL2Contracts.s.sol --rpc-url $L2_URL --broadcast --verify --etherscan-api-key $ARBISCAN_API_KEY
 
 # for L1
-forge script script/1_DeployL1Teleporter.s.sol --rpc-url $ETH_URL
+forge script script/1_DeployL1Teleporter.s.sol --rpc-url $ETH_URL --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
 ```
 
 ## TODO
