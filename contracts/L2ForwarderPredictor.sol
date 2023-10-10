@@ -7,25 +7,22 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 /// @notice Predicts the address of an L2Forwarder based on its parameters
 abstract contract L2ForwarderPredictor {
     /// @notice Parameters for an L2Forwarder
-    /// @param  owner Address of the L2Forwarder owner. Setting this incorrectly could result in loss of funds.
-    /// @param  token Address of the L2 token to bridge to L3
-    /// @param  router Address of the L2 -> L3 GatewayRouter
-    /// @param  to Address of the recipient on L3
-    /// @param  amount Amount of tokens to bridge to L3
-    /// @param  gasLimit Gas limit for the L2 -> L3 retryable
-    /// @param  gasPrice Gas price for the L2 -> L3 retryable
-    /// @param  relayerPayment Amount of tokens to pay the relayer
-    /// @param  randomNonce Nonce to ensure the L2Forwarder address is unique. Should be randomly generated off-chain for each L1 -> L3 transfer.
+    /// @dev    When changing this struct, be sure to change Teleporter.l2ForwarderFactoryCalldataSize
+    /// @param  owner           Address of the L2Forwarder owner. Setting this incorrectly could result in loss of funds.
+    /// @param  token           Address of the L2 token to bridge to L3
+    /// @param  router          Address of the L2 -> L3 GatewayRouter
+    /// @param  to              Address of the recipient on L3
+    /// @param  gasLimit        Gas limit for the L2 -> L3 retryable
+    /// @param  gasPrice        Gas price for the L2 -> L3 retryable
+    /// @param  relayerPayment  Amount of tokens to pay the relayer
     struct L2ForwarderParams {
         address owner;
         address token;
         address router;
         address to;
-        uint256 amount;
         uint256 gasLimit;
         uint256 gasPrice;
         uint256 relayerPayment;
-        uint256 randomNonce;
     }
 
     /// @notice Address of the L2ForwarderFactory

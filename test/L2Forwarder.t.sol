@@ -62,11 +62,9 @@ contract L2ForwarderTest is ForkTest {
             token: address(l2Token),
             router: address(l1l2Router),
             to: l3Recipient,
-            amount: tokenAmount,
             gasLimit: gasLimit,
             gasPrice: gasPrice,
-            relayerPayment: relayerPayment,
-            randomNonce: 1
+            relayerPayment: relayerPayment
         });
 
         address forwarder = factory.l2ForwarderAddress(params);

@@ -56,9 +56,9 @@ contract Teleporter is L2ForwarderPredictor {
         uint256 total;
     }
 
-    /// @dev Calldata size of L2ForwarderFactory.callForwarder (selector + 9 args).
+    /// @dev Calldata size of L2ForwarderFactory.callForwarder (selector + 7 args).
     ///      Necessary to calculate the submission cost of the retryable ticket to L2ForwarderFactory.
-    uint256 constant l2ForwarderFactoryCalldataSize = 4 + 9 * 32;
+    uint256 constant l2ForwarderFactoryCalldataSize = 4 + 7 * 32;
 
     /// @notice Emitted when a teleportation is initiated.
     /// @param  l1Owner     L1 address that initiated the teleportation
@@ -116,11 +116,9 @@ contract Teleporter is L2ForwarderPredictor {
                 token: l2Token,
                 router: params.l2l3Router,
                 to: params.to,
-                amount: params.amount,
                 gasLimit: params.gasParams.l2l3TokenBridgeGasLimit,
                 gasPrice: params.gasParams.l3GasPrice,
-                relayerPayment: 0, // we aren't using a relayer, so no payment
-                randomNonce: params.randomNonce
+                relayerPayment: 0 // we aren't using a relayer, so no payment
             });
         }
 

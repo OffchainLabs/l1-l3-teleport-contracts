@@ -83,11 +83,9 @@ contract TeleporterTest is ForkTest {
             token: l1l2Router.calculateL2TokenAddress(address(l1Token)),
             router: l2l3Router,
             to: receiver,
-            amount: amount - 1, // since this is the first transfer, 1 wei will be kept by the teleporter
             gasLimit: params.l2l3TokenBridgeGasLimit,
             gasPrice: params.l3GasPrice,
-            relayerPayment: 0,
-            randomNonce: 1
+            relayerPayment: 0
         });
 
         uint256 msgCount = bridge.delayedMessageCount();

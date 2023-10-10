@@ -59,8 +59,10 @@ contract L2Forwarder is L2ForwarderPredictor {
         // get gateway
         address l2l3Gateway = L1GatewayRouter(params.router).getGateway(params.token);
 
+        uint256 tokenBalance = IERC20(params.token).balanceOf(address(this));
+
         // approve gateway
-        IERC20(params.token).safeApprove(l2l3Gateway, params.amount);
+        IERC20(params.token).safeApprove(l2l3Gateway, tokenBalance);
 
         // send tokens through the bridge to intended recipient
         // (send all the ETH we have too, we could have more than msg.value b/c of fee refunds)
@@ -71,7 +73,7 @@ contract L2Forwarder is L2ForwarderPredictor {
             params.token,
             params.to,
             params.to,
-            params.amount,
+            tokenBalance,
             params.gasLimit,
             params.gasPrice,
             abi.encode(submissionCost, bytes(""))
