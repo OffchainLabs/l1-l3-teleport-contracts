@@ -17,7 +17,9 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 
-/// @notice Teleports tokens from L1 to L3.
+/// @title  Teleporter
+/// @notice Initiates L1 -> L3 transfers. 
+///         Creates 2 retryables: one to transfer tokens and ETH to an L2Forwarder, and one to call the L2ForwarderFactory.
 contract Teleporter is L2ForwarderPredictor {
     using SafeERC20 for IERC20;
 
@@ -28,6 +30,7 @@ contract Teleporter is L2ForwarderPredictor {
     /// @param  to          L3 address that will receive the tokens
     /// @param  amount      Amount of tokens being teleported
     /// @param  gasParams   Gas parameters for each retryable ticket
+    /// @param  randomNonce Nonce to ensure the L2Forwarder address is unique
     struct TeleportParams {
         address l1Token;
         address l1l2Router;
@@ -81,11 +84,10 @@ contract Teleporter is L2ForwarderPredictor {
     constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation) 
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation) {}
 
-    /// @notice Start a teleportation. Value sent must be >= the total cost of all retryables.
+    /// @notice Start an L1 -> L3 transfer. msg.value sent must be >= the total cost of all retryables.
     ///         Any extra ETH will be sent to the receiver on L3.
-    
-    /// @dev    2 retryables will be created: one to bridge tokens to the L2Forwarder, and one to call the L2ForwarderFactory.
-    ///         Extra ETH is sent as l2CallValue to the L2ForwarderFactory, which will be sent through the L2Forwarder to L3.
+    /// @dev    2 retryables will be created: one to send tokens and ETH to the L2Forwarder, and one to call the L2ForwarderFactory.
+    ///         Extra ETH is sent through the first retryable as an overestimated submission fee.
     function teleport(
         TeleportParams memory params
     ) external payable {
@@ -116,6 +118,8 @@ contract Teleporter is L2ForwarderPredictor {
         {
             address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
             l2ForwarderParams = L2ForwarderParams({
+                // set owner to the aliased msg.sender. 
+                // As long as msg.sender can create retryables, they will be able to recover in case of failure
                 owner: AddressAliasHelper.applyL1ToL2Alias(msg.sender),
                 token: l2Token,
                 router: params.l2l3Router,
@@ -123,7 +127,7 @@ contract Teleporter is L2ForwarderPredictor {
                 amount: params.amount,
                 gasLimit: params.gasParams.l2l3TokenBridgeGasLimit,
                 gasPrice: params.gasParams.l3GasPrice,
-                relayerPayment: 0,
+                relayerPayment: 0, // we aren't using a relayer, so no payment
                 randomNonce: params.randomNonce
             });
         }

@@ -52,7 +52,7 @@ contract TeleporterTest is ForkTest {
         }));
     }
 
-    function testHappyPath() public {
+    function testHappyPathEvents() public {
         l1Token.transfer(address(this), amount);
 
         l1Token.approve(address(teleporter), amount);
@@ -70,6 +70,9 @@ contract TeleporterTest is ForkTest {
             gasParams: params,
             randomNonce: 1
         }));
+
+        // make sure the teleporter has no ETH balance
+        assertEq(address(teleporter).balance, 0);
     }
 
     function _expectEvents() internal {

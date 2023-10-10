@@ -8,10 +8,15 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 
+/// @title  L2Forwarder
+/// @notice Single use L2 contract that receives ERC20 tokens and ETH from a token bridge retryable,
+///         forwards them to a recipient on L3, optionally pays a relayer,
+///         and allows the owner to make arbitrary calls.
+/// @dev    The parameters of the bridge transaction are encoded in the L2Forwarder address. See L2ForwarderPredictor and L2ForwarderFactory.
 contract L2Forwarder is L2ForwarderPredictor {
     using SafeERC20 for IERC20;
 
-    /// @notice address that owns this L2Forwarder
+    /// @notice Address that owns this L2Forwarder and can make arbitrary calls
     address public owner;
 
     /// @notice Emitted after a successful call to rescue
@@ -40,12 +45,15 @@ contract L2Forwarder is L2ForwarderPredictor {
 
     /// @notice Initialize this L2Forwarder
     /// @param  _owner Address that owns this L2Forwarder
-    /// @dev    Can only be called once.
+    /// @dev    Can only be called once. Failing to set owner properly could result in loss of funds.
     function initialize(address _owner) external {
         if (owner != address(0)) revert AlreadyInitialized();
         owner = _owner;
     }
 
+    /// @notice Send tokens and ETH through the bridge to a recipient on L3 and optionally pay a relayer.
+    /// @param  params Parameters of the bridge transaction. There is only one combination of valid parameters for a given L2Forwarder.
+    /// @dev    The params are encoded in the L2Forwarder address. Will revert if params do not match.
     function bridgeToL3(L2ForwarderParams memory params) external {
         if (address(this) != l2ForwarderAddress(params)) revert IncorrectParams();
 
@@ -73,8 +81,7 @@ contract L2Forwarder is L2ForwarderPredictor {
     }
 
     /// @notice Allows the L1 owner of this L2Forwarder to make arbitrary calls.
-    ///         If the second leg of a teleportation fails, the L1 owner can call this to rescue their tokens.
-    ///         When transferring tokens, failing second leg retryables should be cancelled to avoid race conditions and retreive any ETH.
+    ///         If bridgeToL3 cannot succeed, the L1 owner can call this to rescue their tokens and ETH.
     /// @param  targets Addresses to call
     /// @param  values  Values to send
     /// @param  datas   Calldata to send
