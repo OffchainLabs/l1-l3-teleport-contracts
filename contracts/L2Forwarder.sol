@@ -8,7 +8,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 
 /// @title  L2Forwarder
-/// @notice Single use L2 contract that receives ERC20 tokens and ETH from a token bridge retryable,
+/// @notice L2 contract that receives ERC20 tokens and ETH from a token bridge retryable,
 ///         forwards them to a recipient on L3, optionally pays a relayer,
 ///         and allows the owner to make arbitrary calls.
 /// @dev    The parameters of the bridge transaction are encoded in the L2Forwarder address. See L2ForwarderPredictor and L2ForwarderFactory.

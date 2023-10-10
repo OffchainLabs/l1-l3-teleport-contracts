@@ -3,7 +3,7 @@
 ### Summary
 
 In short, there are 3 legs of an L1 -> L3 teleportation:
-1. Send tokens from L1 to a single use `L2Forwarder` whose address depends on its parameters
+1. Send tokens from L1 to a personal `L2Forwarder` whose address depends on its parameters
 2. Create the `L2Forwarder` if it doesn't already exist and start the third leg
 3. Send tokens and ETH from the `L2Forwarder` to the recipient on L3
 
@@ -14,7 +14,7 @@ In short, there are 3 legs of an L1 -> L3 teleportation:
 ### Teleportation Flow
 
 There are two ways to bridge ERC20 tokens from L1 to L3. Through the L1 `Teleporter` contract, or using a relayer on L2.
-Both routes work similarly, sending tokens to a precomputed single use `L2Forwarder` and creating/calling the `L2Forwarder` to send the tokens up to L3.
+Both routes work similarly, sending tokens to a precomputed personal `L2Forwarder` and creating/calling the `L2Forwarder` to send the tokens up to L3.
 
 When using the `Teleporter`, 2 L1 -> L2 retryables will be created: one bridging tokens and one calling the forwarder.
 
@@ -24,7 +24,7 @@ When using an L2 relayer, the user calls the `L1GatewayRouter` directly to send 
 
 1. User approves `Teleporter` to spend TOKEN
 2. User calls `Teleporter.teleport`:
-    1. Computes the single use `L2Forwarder` address
+    1. Computes the personal `L2Forwarder` address
     2. Sends tokens over the bridge to the `L2Forwarder`. Send extra `msg.value` by overestimating submission cost.
     3. Creates a retryable to call `L2ForwarderFactory.callForwarder`
 3. Retryable 1 is redeemed: tokens and ETH land in the `L2Forwarder` address (which may or may not be a contract yet)
