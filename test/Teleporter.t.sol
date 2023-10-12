@@ -114,7 +114,7 @@ contract TeleporterTest is ForkTest {
             _from: address(teleporter),
             _to: l2Forwarder,
             _sequenceNumber: msgCount,
-            _amount: amount - 1 // since this is the first transfer, 1 wei will be kept by the teleporter
+            _amount: amount
         });
 
         // call to the factory
@@ -138,7 +138,7 @@ contract TeleporterTest is ForkTest {
             _l1Token: address(l1Token),
             _from: address(teleporter),
             _to: l2Forwarder,
-            _amount: amount - 1, // since this is the first transfer, 1 wei will be kept by the teleporter
+            _amount: amount,
             _data: ""
         });
         return l1l2TokenBridgeRetryableCalldata;

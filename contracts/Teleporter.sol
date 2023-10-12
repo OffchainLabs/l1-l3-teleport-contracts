@@ -80,7 +80,7 @@ contract Teleporter is L2ForwarderPredictor {
     ///         Any extra ETH will be sent to the receiver on L3.
     /// @dev    2 retryables will be created: one to send tokens and ETH to the L2Forwarder, and one to call the L2ForwarderFactory.
     ///         Extra ETH is sent through the first retryable as an overestimated submission fee.
-    function teleport(TeleportParams memory params) external payable {
+    function teleport(TeleportParams calldata params) external payable {
         // get inbox
         address inbox = L1GatewayRouter(params.l1l2Router).inbox();
 
@@ -91,11 +91,6 @@ contract Teleporter is L2ForwarderPredictor {
 
         // pull in tokens from caller
         IERC20(params.l1Token).safeTransferFrom(msg.sender, address(this), params.amount);
-
-        // if we don't already have an extra wei of token, keep it for gas optimization
-        if (IERC20(params.l1Token).balanceOf(address(this)) == params.amount) {
-            params.amount--;
-        }
 
         // approve gateway
         address gateway = L1GatewayRouter(params.l1l2Router).getGateway(params.l1Token);
@@ -174,7 +169,7 @@ contract Teleporter is L2ForwarderPredictor {
     /// @param  inbox       L2's Inbox
     /// @param  l1BaseFee   L1's base fee
     /// @param  gasParams   Gas parameters for each retryable ticket
-    function calculateRetryableGasCosts(address inbox, uint256 l1BaseFee, RetryableGasParams memory gasParams)
+    function calculateRetryableGasCosts(address inbox, uint256 l1BaseFee, RetryableGasParams calldata gasParams)
         public
         view
         returns (RetryableGasCosts memory results)
