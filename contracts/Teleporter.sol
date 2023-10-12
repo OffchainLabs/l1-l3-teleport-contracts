@@ -59,14 +59,14 @@ contract Teleporter is L2ForwarderPredictor {
     uint256 constant l2ForwarderFactoryCalldataSize = 4 + 7 * 32;
 
     /// @notice Emitted when a teleportation is initiated.
-    /// @param  l1Owner     L1 address that initiated the teleportation
+    /// @param  sender      L1 address that initiated the teleportation
     /// @param  l1Token     L1 token being teleported
     /// @param  l1l2Router  L1 to L2 token bridge router
     /// @param  l2l3Router  L2 to L3 token bridge router
     /// @param  to          L3 address that will receive the tokens
     /// @param  amount      Amount of tokens being teleported
     event Teleported(
-        address indexed l1Owner, address l1Token, address l1l2Router, address l2l3Router, address to, uint256 amount
+        address indexed sender, address l1Token, address l1l2Router, address l2l3Router, address to, uint256 amount
     );
 
     /// @notice Thrown when the value sent to teleport() is less than the total cost of all retryables.
@@ -161,7 +161,7 @@ contract Teleporter is L2ForwarderPredictor {
         });
 
         emit Teleported({
-            l1Owner: msg.sender,
+            sender: msg.sender,
             l1Token: address(params.l1Token),
             l1l2Router: address(params.l1l2Router),
             l2l3Router: params.l2l3Router,

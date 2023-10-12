@@ -25,7 +25,7 @@ contract L2Forwarder is L2ForwarderPredictor {
     event Rescued(address[] targets, uint256[] values, bytes[] datas);
 
     /// @notice Emitted after a successful call to bridgeToL3
-    event BridgedToL3(L2ForwarderParams params);
+    event BridgedToL3(uint256 tokenAmount, uint256 ethBalance);
 
     /// @notice Thrown when initialize is called after initialization
     error AlreadyInitialized();
@@ -67,6 +67,7 @@ contract L2Forwarder is L2ForwarderPredictor {
         // send tokens through the bridge to intended recipient
         // (send all the ETH we have too, we could have more than msg.value b/c of fee refunds)
         // overestimate submission cost to ensure all ETH is sent through
+        uint256 ethBalance = address(this).balance;
         uint256 balanceSubRelayerPayment = address(this).balance - params.relayerPayment;
         uint256 submissionCost = balanceSubRelayerPayment - params.gasLimit * params.gasPrice;
         L1GatewayRouter(params.router).outboundTransferCustomRefund{value: balanceSubRelayerPayment}(
@@ -84,7 +85,7 @@ contract L2Forwarder is L2ForwarderPredictor {
             if (!paymentSuccess) revert RelayerPaymentFailed();
         }
 
-        emit BridgedToL3(params);
+        emit BridgedToL3(tokenBalance, ethBalance);
     }
 
     /// @notice Allows the L1 owner of this L2Forwarder to make arbitrary calls.
