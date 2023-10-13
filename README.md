@@ -74,6 +74,4 @@ forge script script/1_DeployL1Teleporter.s.sol --rpc-url $ETH_URL --broadcast --
 
 ## TODO
 
-* Update / complete natspec
-* Review
 * Custom fee token L3's?
