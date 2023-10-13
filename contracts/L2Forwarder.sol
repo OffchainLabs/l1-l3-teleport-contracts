@@ -54,6 +54,7 @@ contract L2Forwarder is L2ForwarderPredictor {
     /// @param  params Parameters of the bridge transaction. There is only one combination of valid parameters for a given L2Forwarder.
     /// @dev    The params are encoded in the L2Forwarder address. Will revert if params do not match.
     function bridgeToL3(L2ForwarderParams memory params) external {
+        // check parameters
         if (address(this) != l2ForwarderAddress(params)) revert IncorrectParams();
 
         // get gateway
@@ -88,8 +89,8 @@ contract L2Forwarder is L2ForwarderPredictor {
         emit BridgedToL3(tokenBalance, ethBalance);
     }
 
-    /// @notice Allows the L1 owner of this L2Forwarder to make arbitrary calls.
-    ///         If bridgeToL3 cannot succeed, the L1 owner can call this to rescue their tokens and ETH.
+    /// @notice Allows the owner of this L2Forwarder to make arbitrary calls.
+    ///         If bridgeToL3 cannot succeed, the owner can call this to rescue their tokens and ETH.
     /// @param  targets Addresses to call
     /// @param  values  Values to send
     /// @param  datas   Calldata to send

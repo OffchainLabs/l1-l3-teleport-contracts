@@ -10,10 +10,10 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 
-/// @title  Teleporter
+/// @title  L1Teleporter
 /// @notice Initiates L1 -> L3 transfers.
 ///         Creates 2 retryables: one to transfer tokens and ETH to an L2Forwarder, and one to call the L2ForwarderFactory.
-contract Teleporter is L2ForwarderPredictor {
+contract L1Teleporter is L2ForwarderPredictor {
     using SafeERC20 for IERC20;
 
     /// @notice Parameters for teleport()

@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
 
-import {Teleporter} from "../contracts/Teleporter.sol";
+import {L1Teleporter} from "../contracts/L1Teleporter.sol";
 
 contract DeployL1Teleporter is Script {
     using stdJson for string;
@@ -18,9 +18,9 @@ contract DeployL1Teleporter is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        Teleporter teleporter = new Teleporter(l2ForwarderFactory, l2ForwarderImplementation);
+        L1Teleporter teleporter = new L1Teleporter(l2ForwarderFactory, l2ForwarderImplementation);
 
-        string memory finalJson = vm.serializeAddress("deployment", "Teleporter", address(teleporter));
+        string memory finalJson = vm.serializeAddress("deployment", "L1Teleporter", address(teleporter));
 
         vm.writeJson(finalJson, "./script-deploy-data/l1.json");
     }

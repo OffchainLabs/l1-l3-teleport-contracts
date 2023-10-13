@@ -7,14 +7,14 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 /// @notice Predicts the address of an L2Forwarder based on its parameters
 abstract contract L2ForwarderPredictor {
     /// @notice Parameters for an L2Forwarder
-    /// @dev    When changing this struct, be sure to change Teleporter.l2ForwarderFactoryCalldataSize
+    /// @dev    When changing this struct, be sure to change L1Teleporter.l2ForwarderFactoryCalldataSize
     /// @param  owner           Address of the L2Forwarder owner. Setting this incorrectly could result in loss of funds.
     /// @param  token           Address of the L2 token to bridge to L3
     /// @param  router          Address of the L2 -> L3 GatewayRouter
     /// @param  to              Address of the recipient on L3
     /// @param  gasLimit        Gas limit for the L2 -> L3 retryable
     /// @param  gasPrice        Gas price for the L2 -> L3 retryable
-    /// @param  relayerPayment  Amount of tokens to pay the relayer
+    /// @param  relayerPayment  Amount of ETH to pay the relayer
     struct L2ForwarderParams {
         address owner;
         address token;

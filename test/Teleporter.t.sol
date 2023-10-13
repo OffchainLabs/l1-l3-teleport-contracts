@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {Teleporter} from "../contracts/Teleporter.sol";
+import {L1Teleporter} from "../contracts/L1Teleporter.sol";
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
 import {MockToken} from "../contracts/mocks/MockToken.sol";
@@ -12,10 +12,10 @@ import {L1ArbitrumGateway} from
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ForkTest} from "./Fork.t.sol";
 
-contract TeleporterTest is ForkTest {
+contract L1TeleporterTest is ForkTest {
     address immutable l2l3Router = vm.addr(0x10);
 
-    Teleporter teleporter;
+    L1Teleporter teleporter;
     IERC20 l1Token;
 
     address constant l2ForwarderFactory = address(0x1100);
@@ -25,19 +25,19 @@ contract TeleporterTest is ForkTest {
     uint256 constant amount = 1 ether;
 
     function setUp() public {
-        teleporter = new Teleporter(l2ForwarderFactory, l2ForwarderImpl);
+        teleporter = new L1Teleporter(l2ForwarderFactory, l2ForwarderImpl);
         l1Token = IERC20(new MockToken("MOCK", "MOCK", 100 ether, address(this)));
         // l1Token.transfer(address(teleporter), 1);
         vm.deal(address(this), 100 ether);
     }
 
     function testTeleportValueCheck() public {
-        (Teleporter.RetryableGasParams memory params, Teleporter.RetryableGasCosts memory costs) =
+        (L1Teleporter.RetryableGasParams memory params, L1Teleporter.RetryableGasCosts memory costs) =
             _defaultParamsAndCosts();
 
-        vm.expectRevert(abi.encodeWithSelector(Teleporter.InsufficientValue.selector, costs.total, costs.total - 1));
+        vm.expectRevert(abi.encodeWithSelector(L1Teleporter.InsufficientValue.selector, costs.total, costs.total - 1));
         teleporter.teleport{value: costs.total - 1}(
-            Teleporter.TeleportParams({
+            L1Teleporter.TeleportParams({
                 l1Token: address(l1Token),
                 l1l2Router: address(l1l2Router),
                 l2l3Router: l2l3Router,
@@ -53,12 +53,12 @@ contract TeleporterTest is ForkTest {
 
         l1Token.approve(address(teleporter), amount);
 
-        (Teleporter.RetryableGasParams memory params, Teleporter.RetryableGasCosts memory costs) =
+        (L1Teleporter.RetryableGasParams memory params, L1Teleporter.RetryableGasCosts memory costs) =
             _defaultParamsAndCosts();
 
         _expectEvents();
         teleporter.teleport{value: costs.total}(
-            Teleporter.TeleportParams({
+            L1Teleporter.TeleportParams({
                 l1Token: address(l1Token),
                 l1l2Router: address(l1l2Router),
                 l2l3Router: l2l3Router,
@@ -73,7 +73,7 @@ contract TeleporterTest is ForkTest {
     }
 
     function _expectEvents() internal {
-        (Teleporter.RetryableGasParams memory params, Teleporter.RetryableGasCosts memory costs) =
+        (L1Teleporter.RetryableGasParams memory params, L1Teleporter.RetryableGasCosts memory costs) =
             _defaultParamsAndCosts();
 
         L2ForwarderPredictor.L2ForwarderParams memory l2ForwarderParams = L2ForwarderPredictor.L2ForwarderParams({
@@ -144,8 +144,8 @@ contract TeleporterTest is ForkTest {
         return l1l2TokenBridgeRetryableCalldata;
     }
 
-    function _defaultParams() internal pure returns (Teleporter.RetryableGasParams memory) {
-        return Teleporter.RetryableGasParams({
+    function _defaultParams() internal pure returns (L1Teleporter.RetryableGasParams memory) {
+        return L1Teleporter.RetryableGasParams({
             l2GasPrice: 0.1 gwei,
             l3GasPrice: 0.1 gwei,
             l2ForwarderFactoryGasLimit: 1_000_000,
@@ -159,10 +159,10 @@ contract TeleporterTest is ForkTest {
     function _defaultParamsAndCosts()
         internal
         view
-        returns (Teleporter.RetryableGasParams memory, Teleporter.RetryableGasCosts memory)
+        returns (L1Teleporter.RetryableGasParams memory, L1Teleporter.RetryableGasCosts memory)
     {
-        Teleporter.RetryableGasParams memory params = _defaultParams();
-        Teleporter.RetryableGasCosts memory costs = teleporter.calculateRetryableGasCosts(l1l2Router.inbox(), 0, params);
+        L1Teleporter.RetryableGasParams memory params = _defaultParams();
+        L1Teleporter.RetryableGasCosts memory costs = teleporter.calculateRetryableGasCosts(l1l2Router.inbox(), 0, params);
         return (params, costs);
     }
 }
