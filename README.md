@@ -48,13 +48,10 @@ The first and third legs should always succeed (if auto redeem fails, manual red
 The second leg can fail for a number of reasons, mostly due to bad parameters:
 * Not enough ETH is sent to cover L2 -> L3 retryable submission cost + relayer payment
 * Incorrect `l2l3Router`, `token`, etc
-* Races caused by reusing an `L2Forwarder` for more than one teleportation
 
 If for some reason the second leg cannot be redeemed, TOKEN and ETH will be stuck at the `L2Forwarder`. As long as the `owner` parameter of the forwarder is correct, the `owner` can call `rescue` on the forwarder to recover TOKEN and ETH.
 
-It is possible that two L1 -> L3 transfers use the same `L2Forwarder` if they have the same `L2ForwarderParams`. 
-
-Because of this, it is also possible that the second and third leg of one of the transfers are not executed. It's okay if there are two simultaneous transfers A and B, where steps A1-B1-A2-A3 are executed since TOKEN and ETH from both A1 and B1 are transferred during A2.
+It is possible that two L1 -> L3 transfers use the same `L2Forwarder` if they have the same `L2ForwarderParams`. Because of this, it is also possible that the second and third leg of one of the transfers are not executed. It's okay if there are two simultaneous transfers A and B, where steps A1-B1-A2-A3 are executed since TOKEN and ETH from both A1 and B1 are transferred during A2.
 
 ### Testing and Deploying
 
@@ -65,13 +62,11 @@ forge test --fork-url $ETH_URL -vvv
 
 To deploy:
 ```
+mkdir script-deploy-data
+
 # for all L2's
 forge script script/0_DeployL2Contracts.s.sol --rpc-url $L2_URL --broadcast --verify --etherscan-api-key $ARBISCAN_API_KEY
 
 # for L1
 forge script script/1_DeployL1Teleporter.s.sol --rpc-url $ETH_URL --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
 ```
-
-## TODO
-
-* Custom fee token L3's?
