@@ -1,10 +1,12 @@
 # L1 -> L3 ERC20 Teleportation
 
+Contracts enabling direct ERC20 bridging from L1 to L3.
+
 ### Summary
 
-In short, there are 3 legs of an L1 -> L3 teleportation:
+In short, there are 3 steps to an L1 -> L3 teleportation:
 1. Send tokens from L1 to a personal `L2Forwarder` whose address depends on its parameters
-2. Create the `L2Forwarder` if it doesn't already exist and start the third leg
+2. Create the `L2Forwarder` if it doesn't already exist and start the third step
 3. Send tokens and ETH from the `L2Forwarder` to the recipient on L3
 
 ### Deployment Procedure
@@ -43,15 +45,15 @@ When using an L2 relayer, the user calls the `L1GatewayRouter` directly to send 
 
 ### Retryable Failures and Race Conditions
 
-The first and third legs should always succeed (if auto redeem fails, manual redeem should succeed).
+The first and third step retryables should always succeed (if auto redeem fails, manual redeem should succeed).
 
-The second leg can fail for a number of reasons, mostly due to bad parameters:
+The second step can fail for a number of reasons, mostly due to bad parameters:
 * Not enough ETH is sent to cover L2 -> L3 retryable submission cost + relayer payment
 * Incorrect `l2l3Router`, `token`, etc
 
-If for some reason the second leg cannot be redeemed, TOKEN and ETH will be stuck at the `L2Forwarder`. As long as the `owner` parameter of the forwarder is correct, the `owner` can call `rescue` on the forwarder to recover TOKEN and ETH.
+If for some reason the second step cannot succeed, TOKEN and ETH will be stuck at the `L2Forwarder`. As long as the `owner` parameter of the forwarder is correct, the `owner` can call `rescue` on the forwarder to recover TOKEN and ETH.
 
-It is possible that two L1 -> L3 transfers use the same `L2Forwarder` if they have the same `L2ForwarderParams`. Because of this, it is also possible that the second and third leg of one of the transfers are not executed. It's okay if there are two simultaneous transfers A and B, where steps A1-B1-A2-A3 are executed since TOKEN and ETH from both A1 and B1 are transferred during A2.
+It is possible that two L1 -> L3 transfers use the same `L2Forwarder` if they have the same `L2ForwarderParams`. Because of this, it is also possible that the second and third step of one of the transfers are not executed. It's okay if there are two simultaneous transfers A and B, where steps A1-B1-A2-A3 are executed since TOKEN and ETH from both A1 and B1 are transferred during A2.
 
 ### Testing and Deploying
 
