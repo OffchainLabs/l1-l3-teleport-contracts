@@ -7,7 +7,7 @@
     "hardhat": "^2.18.0"
   },
   "dependencies": {
-    "@arbitrum/token-bridge-contracts": "1.1.0-alpha.1"
+    "@arbitrum/token-bridge-contracts": "1.1.0"
   },
   "files": [
     "hardhat.config.js",
