@@ -32,7 +32,7 @@ When using an L2 relayer, the user calls the `L1GatewayRouter` directly to send 
     1. Create and initialize the user's `L2Forwarder` via `Clone` if it does not already exist.
     2. Call `L2Forwarder.bridgeToL3(...)`
 5. `L2Forwarder.bridgeToL3`
-    1. Send the specified amount of tokens through the bridge to L3. The contract's entire balance minus execution fee is sent as submission fee in order to forward all the extra ETH to L3.
+    1. Send the forwarder's entire token balance through the bridge to L3. The contract's entire ETH balance minus execution fee is sent as submission fee in order to forward all the extra ETH to L3.
 
 #### Example Using an L2 Relayer
 
