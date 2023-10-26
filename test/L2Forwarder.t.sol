@@ -6,7 +6,7 @@ import {L2ForwarderContractsDeployer} from "../contracts/L2ForwarderContractsDep
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2Forwarder} from "../contracts/L2Forwarder.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
-import {MockToken} from "../contracts/mocks/MockToken.sol";
+import {MockToken} from "./mocks/MockToken.sol";
 import {ForkTest} from "./Fork.t.sol";
 import {L1ArbitrumGateway} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";

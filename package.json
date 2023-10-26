@@ -8,5 +8,9 @@
   },
   "dependencies": {
     "@arbitrum/token-bridge-contracts": "1.1.0-alpha.1"
-  }
+  },
+  "files": [
+    "hardhat.config.js",
+    "contracts/"
+  ]
 }
