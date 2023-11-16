@@ -162,7 +162,8 @@ contract L1TeleporterTest is ForkTest {
         returns (L1Teleporter.RetryableGasParams memory, L1Teleporter.RetryableGasCosts memory)
     {
         L1Teleporter.RetryableGasParams memory params = _defaultParams();
-        L1Teleporter.RetryableGasCosts memory costs = teleporter.calculateRetryableGasCosts(l1l2Router.inbox(), 0, params);
+        L1Teleporter.RetryableGasCosts memory costs =
+            teleporter.calculateRetryableGasCosts(l1l2Router.inbox(), 0, params);
         return (params, costs);
     }
 }

@@ -31,7 +31,8 @@ contract L2ForwarderFactory is L2ForwarderPredictor {
     /// @notice Creates an L2Forwarder for the given parameters.
     /// @param  params Parameters for the L2Forwarder
     function createL2Forwarder(L2ForwarderParams memory params) public returns (L2Forwarder) {
-        L2Forwarder l2Forwarder = L2Forwarder(payable(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(params))));
+        L2Forwarder l2Forwarder =
+            L2Forwarder(payable(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(params))));
         l2Forwarder.initialize(params.owner);
 
         emit CreatedL2Forwarder(address(l2Forwarder), params.owner, params);
