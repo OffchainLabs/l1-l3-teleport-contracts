@@ -11,7 +11,7 @@
   "files": [
     "hardhat.config.js",
     "contracts/",
-    "build/contracts/src"
+    "build/contracts/contracts"
   ],
   "private": false,
   "devDependencies": {
