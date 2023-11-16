@@ -18,7 +18,7 @@
     "hardhat": "^2.18.0"
   },
   "dependencies": {
-    "@arbitrum/token-bridge-contracts": "1.1.0"
+    "@arbitrum/token-bridge-contracts": "1.1.1"
   },
   "scripts": {
     "prepublishOnly": "hardhat clean && hardhat compile",
