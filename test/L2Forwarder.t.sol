@@ -48,43 +48,13 @@ contract L2ForwarderTest is ForkTest {
         forwarder.bridgeToL3(params);
     }
 
-    // check that the L2Forwarder creates the correct bridge tx
-    // and pays the relayer
     function testHappyCase() public {
-        uint256 tokenAmount = 1 ether;
-        uint256 gasLimit = 1_000_000;
-        uint256 gasPrice = 0.1 gwei;
-        uint256 relayerPayment = 0.1 ether;
-        uint256 forwarderETHBalance = 1 ether;
+        _happyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 1 ether);
+    }
 
-        L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
-            owner: owner,
-            token: address(l2Token),
-            router: address(l1l2Router),
-            to: l3Recipient,
-            gasLimit: gasLimit,
-            gasPrice: gasPrice,
-            relayerPayment: relayerPayment
-        });
-
-        address forwarder = factory.l2ForwarderAddress(params);
-
-        // give the forwarder some ETH, the first leg retryable would do this in practice
-        vm.deal(forwarder, forwarderETHBalance);
-
-        // give the forwarder some tokens, the first leg retryable would do this in practice
-        l2Token.transfer(forwarder, tokenAmount);
-
-        uint256 relayerBalanceBefore = tx.origin.balance;
-
-        _expectHappyCaseEvents(params, forwarderETHBalance, gasLimit, gasPrice, tokenAmount);
-        factory.callForwarder(params);
-
-        // make sure the relayer was paid
-        assertEq(tx.origin.balance, relayerBalanceBefore + relayerPayment);
-
-        // make sure the forwarder has no ETH left
-        assertEq(address(forwarder).balance, 0);
+    function testHappyCaseWhenForwarderExists() public {
+        _happyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 1 ether);
+        _happyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 1 ether);
     }
 
     function testRescue() public {
@@ -121,6 +91,45 @@ contract L2ForwarderTest is ForkTest {
         vm.prank(owner);
         vm.expectCall(targets[0], datas[0]);
         forwarder.rescue(targets, values, datas);
+    }
+
+    // check that the L2Forwarder creates the correct bridge tx
+    // and pays the relayer
+    function _happyCase(
+        uint256 tokenAmount,
+        uint256 gasLimit,
+        uint256 gasPrice,
+        uint256 relayerPayment,
+        uint256 forwarderETHBalance
+    ) public {
+        L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
+            owner: owner,
+            token: address(l2Token),
+            router: address(l1l2Router),
+            to: l3Recipient,
+            gasLimit: gasLimit,
+            gasPrice: gasPrice,
+            relayerPayment: relayerPayment
+        });
+
+        address forwarder = factory.l2ForwarderAddress(params);
+
+        // give the forwarder some ETH, the first leg retryable would do this in practice
+        vm.deal(forwarder, forwarderETHBalance);
+
+        // give the forwarder some tokens, the first leg retryable would do this in practice
+        l2Token.transfer(forwarder, tokenAmount);
+
+        uint256 relayerBalanceBefore = tx.origin.balance;
+
+        _expectHappyCaseEvents(params, forwarderETHBalance, gasLimit, gasPrice, tokenAmount);
+        factory.callForwarder(params);
+
+        // make sure the relayer was paid
+        assertEq(tx.origin.balance, relayerBalanceBefore + relayerPayment);
+
+        // make sure the forwarder has no ETH left
+        assertEq(address(forwarder).balance, 0);
     }
 
     function _expectHappyCaseEvents(
