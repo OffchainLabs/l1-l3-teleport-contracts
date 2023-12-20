@@ -1,16 +1,28 @@
 {
-  "name": "l1-l3-teleport-contracts",
-  "version": "0.1.0",
-  "private": false,
+  "name": "@offchainlabs/l1-l3-teleport-contracts",
+  "version": "0.1.0-alpha.0",
   "license": "Apache-2.0",
+  "description": "Contracts enabling direct ERC20 bridging from L1 to L3",
+  "author": "Offchain Labs, Inc.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OffchainLabs/l1-l3-teleport-contracts.git"
+  },
+  "files": [
+    "hardhat.config.js",
+    "contracts/",
+    "build/contracts/contracts"
+  ],
+  "private": false,
   "devDependencies": {
     "hardhat": "^2.18.0"
   },
   "dependencies": {
-    "@arbitrum/token-bridge-contracts": "1.1.0"
+    "@arbitrum/token-bridge-contracts": "1.1.1"
   },
-  "files": [
-    "hardhat.config.js",
-    "contracts/"
-  ]
+  "scripts": {
+    "prepublishOnly": "hardhat clean && hardhat compile",
+    "build": "hardhat compile",
+    "format": "forge fmt"
+  }
 }
