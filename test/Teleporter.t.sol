@@ -79,7 +79,8 @@ contract L1TeleporterTest is ForkTest {
         L2ForwarderPredictor.L2ForwarderParams memory l2ForwarderParams = L2ForwarderPredictor.L2ForwarderParams({
             owner: AddressAliasHelper.applyL1ToL2Alias(address(this)),
             token: l1l2Router.calculateL2TokenAddress(address(l1Token)),
-            router: l2l3Router,
+            l3FeeToken: address(0), // 0x00 for ETH, addr of l3 fee token on L2
+            routerOrInbox: l2l3Router,
             to: receiver,
             gasLimit: params.l2l3TokenBridgeGasLimit,
             gasPrice: params.l3GasPrice,

@@ -18,7 +18,10 @@ abstract contract L2ForwarderPredictor {
     struct L2ForwarderParams {
         address owner;
         address token;
-        address router;
+
+        address l2FeeToken; // 0x00 for ETH, addr of l3 fee token on L2
+        address routerOrInbox;
+        
         address to;
         uint256 gasLimit;
         uint256 gasPrice;

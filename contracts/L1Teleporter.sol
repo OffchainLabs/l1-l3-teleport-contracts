@@ -24,9 +24,10 @@ contract L1Teleporter is L2ForwarderPredictor {
     /// @param  amount      Amount of tokens being teleported
     /// @param  gasParams   Gas parameters for each retryable ticket
     struct TeleportParams {
-        address l1Token;
+        address l1Token; // todo: new naming convention, l1Token, l2Token, l1FeeToken, l2FeeToken. they refer to the same asset's address on each layer. with feeToken obviously being the l3 custom fee asset
+        address l1FeeToken; // address of the L3 fee token on L1
         address l1l2Router;
-        address l2l3Router;
+        address l2l3RouterOrInbox;
         address to;
         uint256 amount;
         RetryableGasParams gasParams;
@@ -76,11 +77,7 @@ contract L1Teleporter is L2ForwarderPredictor {
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
     {}
 
-    /// @notice Start an L1 -> L3 transfer. msg.value sent must be >= the total cost of all retryables.
-    ///         Any extra ETH will be sent to the receiver on L3.
-    /// @dev    2 retryables will be created: one to send tokens and ETH to the L2Forwarder, and one to call the L2ForwarderFactory.
-    ///         Extra ETH is sent through the first retryable as an overestimated submission fee.
-    function teleport(TeleportParams calldata params) external payable {
+    function _teleportStandard(TeleportParams calldata params) internal {
         // get inbox
         address inbox = L1GatewayRouter(params.l1l2Router).inbox();
 
@@ -102,12 +99,14 @@ contract L1Teleporter is L2ForwarderPredictor {
         L2ForwarderParams memory l2ForwarderParams;
         {
             address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
+            address l2FeeToken = params.l1FeeToken == address(0) ? address(0) : L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1FeeToken);
             l2ForwarderParams = L2ForwarderParams({
                 // set owner to the aliased msg.sender.
                 // As long as msg.sender can create retryables, they will be able to recover in case of failure
                 owner: AddressAliasHelper.applyL1ToL2Alias(msg.sender),
                 token: l2Token,
-                router: params.l2l3Router,
+                l2FeeToken: l2FeeToken,
+                routerOrInbox: params.l2l3RouterOrInbox,
                 to: params.to,
                 gasLimit: params.gasParams.l2l3TokenBridgeGasLimit,
                 gasPrice: params.gasParams.l3GasPrice,
@@ -148,21 +147,40 @@ contract L1Teleporter is L2ForwarderPredictor {
             to: l2ForwarderFactory,
             l2CallValue: 0,
             maxSubmissionCost: gasResults.l2ForwarderFactorySubmissionCost,
-            excessFeeRefundAddress: l2Forwarder,
-            callValueRefundAddress: l2Forwarder,
+            excessFeeRefundAddress: l2Forwarder, // todo: should these be owner?
+            callValueRefundAddress: l2Forwarder, // ^^^^
             gasLimit: params.gasParams.l2ForwarderFactoryGasLimit,
             maxFeePerGas: params.gasParams.l2GasPrice,
             data: l2ForwarderFactoryCalldata
         });
 
+
+        // todo: change this event to include new stuff
         emit Teleported({
             sender: msg.sender,
             l1Token: address(params.l1Token),
             l1l2Router: address(params.l1l2Router),
-            l2l3Router: params.l2l3Router,
+            l2l3Router: params.l2l3RouterOrInbox,
             to: params.to,
             amount: params.amount
         });
+    }
+
+    function _teleportNonFeeTokenToCustomFeeL3(TeleportParams calldata params) internal {
+        revert("TODO");
+    }
+
+    /// @notice Start an L1 -> L3 transfer. msg.value sent must be >= the total cost of all retryables.
+    ///         Any extra ETH will be sent to the receiver on L3.
+    /// @dev    2 retryables will be created: one to send tokens and ETH to the L2Forwarder, and one to call the L2ForwarderFactory.
+    ///         Extra ETH is sent through the first retryable as an overestimated submission fee.
+    function teleport(TeleportParams calldata params) external payable {
+        if (params.l1FeeToken == address(0) || params.l1FeeToken == params.l1Token) {
+            _teleportStandard(params);
+        }
+        else {
+            _teleportNonFeeTokenToCustomFeeL3(params);
+        }
     }
 
     /// @notice Given some gas parameters, calculate the gas and submission costs for each retryable ticket.

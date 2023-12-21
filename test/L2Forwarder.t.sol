@@ -105,7 +105,8 @@ contract L2ForwarderTest is ForkTest {
         L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
             owner: owner,
             token: address(l2Token),
-            router: address(l1l2Router),
+            l3FeeToken: address(0), // 0x00 for ETH, addr of l3 fee token on L2
+            routerOrInbox: address(l1l2Router),
             to: l3Recipient,
             gasLimit: gasLimit,
             gasPrice: gasPrice,
