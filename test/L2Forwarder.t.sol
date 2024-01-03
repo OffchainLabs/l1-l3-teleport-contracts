@@ -90,7 +90,7 @@ contract NewL2ForwarderTest is BaseTest {
     ) internal {
         L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
             owner: owner,
-            token: address(l2Token),
+            l2Token: address(l2Token),
             l2FeeToken: address(nativeToken),
             routerOrInbox: address(erc20GatewayRouter),
             to: l3Recipient,
@@ -153,7 +153,7 @@ contract NewL2ForwarderTest is BaseTest {
     ) internal {
         L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
             owner: owner,
-            token: address(nativeToken),
+            l2Token: address(nativeToken),
             l2FeeToken: address(nativeToken),
             routerOrInbox: address(erc20Inbox),
             to: l3Recipient,
@@ -204,7 +204,7 @@ contract NewL2ForwarderTest is BaseTest {
     ) internal {
         L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
             owner: owner,
-            token: address(l2Token),
+            l2Token: address(l2Token),
             l2FeeToken: address(0),
             routerOrInbox: address(ethGatewayRouter),
             to: l3Recipient,

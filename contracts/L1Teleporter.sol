@@ -104,7 +104,7 @@ contract L1Teleporter is L2ForwarderPredictor {
                 // set owner to the aliased msg.sender.
                 // As long as msg.sender can create retryables, they will be able to recover in case of failure
                 owner: AddressAliasHelper.applyL1ToL2Alias(msg.sender),
-                token: l2Token,
+                l2Token: l2Token,
                 l2FeeToken: l2FeeToken,
                 routerOrInbox: params.l2l3RouterOrInbox,
                 to: params.to,

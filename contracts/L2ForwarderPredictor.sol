@@ -9,17 +9,18 @@ abstract contract L2ForwarderPredictor {
     /// @notice Parameters for an L2Forwarder
     /// @dev    When changing this struct, be sure to change L1Teleporter.l2ForwarderFactoryCalldataSize
     /// @param  owner           Address of the L2Forwarder owner. Setting this incorrectly could result in loss of funds.
-    /// @param  token           Address of the L2 token to bridge to L3
-    /// @param  router          Address of the L2 -> L3 GatewayRouter
+    /// @param  l2Token         Address of the L2 token to bridge to L3
+    /// @param  l2FeeToken      Address of the L3's fee token, or 0x00 for ETH
+    /// @param  routerOrInbox   Address of the L2 -> L3 GatewayRouter or Inbox if depositing custom fee token
     /// @param  to              Address of the recipient on L3
     /// @param  gasLimit        Gas limit for the L2 -> L3 retryable
     /// @param  gasPrice        Gas price for the L2 -> L3 retryable
     /// @param  relayerPayment  Amount of ETH to pay the relayer
     struct L2ForwarderParams {
         address owner;
-        address token;
+        address l2Token;
 
-        address l2FeeToken; // 0x00 for ETH, addr of l3 fee token on L2
+        address l2FeeToken;
         address routerOrInbox;
         
         address to;

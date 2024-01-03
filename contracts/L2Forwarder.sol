@@ -61,7 +61,7 @@ contract L2Forwarder is L2ForwarderPredictor {
         if (params.l2FeeToken == address(0)) {
             _bridgeToEthFeeL3(params);
         }
-        else if (params.l2FeeToken == params.token) {
+        else if (params.l2FeeToken == params.l2Token) {
             _bridgeFeeTokenToCustomFeeL3(params);
         }
         else {
@@ -89,12 +89,12 @@ contract L2Forwarder is L2ForwarderPredictor {
     /// @dev Bridge tokens to an L3 that uses ETH for fees. 
     function _bridgeToEthFeeL3(L2ForwarderParams memory params) internal {
         // get gateway
-        address l2l3Gateway = L1GatewayRouter(params.routerOrInbox).getGateway(params.token);
+        address l2l3Gateway = L1GatewayRouter(params.routerOrInbox).getGateway(params.l2Token);
 
-        uint256 tokenBalance = IERC20(params.token).balanceOf(address(this));
+        uint256 tokenBalance = IERC20(params.l2Token).balanceOf(address(this));
 
         // approve gateway
-        IERC20(params.token).safeApprove(l2l3Gateway, tokenBalance);
+        IERC20(params.l2Token).safeApprove(l2l3Gateway, tokenBalance);
 
         // send tokens through the bridge to intended recipient
         // (send all the ETH we have too, we could have more than msg.value b/c of fee refunds)
@@ -103,7 +103,7 @@ contract L2Forwarder is L2ForwarderPredictor {
         uint256 balanceSubRelayerPayment = address(this).balance - params.relayerPayment;
         uint256 submissionCost = balanceSubRelayerPayment - params.gasLimit * params.gasPrice;
         L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund{value: balanceSubRelayerPayment}(
-            params.token,
+            params.l2Token,
             params.to,
             params.to,
             tokenBalance,
@@ -118,10 +118,10 @@ contract L2Forwarder is L2ForwarderPredictor {
     }
 
     function _bridgeFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
-        uint256 tokenBalance = IERC20(params.token).balanceOf(address(this));
+        uint256 tokenBalance = IERC20(params.l2Token).balanceOf(address(this));
 
         // transfer tokens to the inbox
-        IERC20(params.token).safeTransfer(params.routerOrInbox, tokenBalance);
+        IERC20(params.l2Token).safeTransfer(params.routerOrInbox, tokenBalance);
 
         // create retryable ticket
         uint256 submissionCost = IERC20Inbox(params.routerOrInbox).calculateRetryableSubmissionFee(0, 0);
@@ -144,13 +144,13 @@ contract L2Forwarder is L2ForwarderPredictor {
 
     function _bridgeNonFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
         // get gateway
-        address l2l3Gateway = L1GatewayRouter(params.routerOrInbox).getGateway(params.token);
+        address l2l3Gateway = L1GatewayRouter(params.routerOrInbox).getGateway(params.l2Token);
 
-        uint256 tokenBalance = IERC20(params.token).balanceOf(address(this));
+        uint256 tokenBalance = IERC20(params.l2Token).balanceOf(address(this));
         uint256 feeTokenBalance = IERC20(params.l2FeeToken).balanceOf(address(this));
 
         // approve gateway
-        IERC20(params.token).safeApprove(l2l3Gateway, tokenBalance);
+        IERC20(params.l2Token).safeApprove(l2l3Gateway, tokenBalance);
 
         // send feeToken to the inbox
         address inbox = L1GatewayRouter(params.routerOrInbox).inbox();
@@ -160,7 +160,7 @@ contract L2Forwarder is L2ForwarderPredictor {
         // overestimate submission cost to ensure all feeToken is sent through
         uint256 submissionCost = feeTokenBalance - params.gasLimit * params.gasPrice;
         L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund(
-            params.token,
+            params.l2Token,
             params.to,
             params.to,
             tokenBalance,
