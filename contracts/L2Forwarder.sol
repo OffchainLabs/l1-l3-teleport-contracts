@@ -51,6 +51,42 @@ contract L2Forwarder is L2ForwarderPredictor {
         owner = _owner;
     }
 
+    /// @notice Send tokens and fee tokens through the bridge to a recipient on L3 and optionally pay a relayer in ETH.
+    /// @param  params Parameters of the bridge transaction. There is only one combination of valid parameters for a given L2Forwarder.
+    /// @dev    The params are encoded in the L2Forwarder address. Will revert if params do not match.
+    function bridgeToL3(L2ForwarderParams memory params) external {
+        // check parameters
+        if (address(this) != l2ForwarderAddress(params)) revert IncorrectParams();
+
+        if (params.l2FeeToken == address(0)) {
+            _bridgeToEthFeeL3(params);
+        }
+        else if (params.l2FeeToken == params.token) {
+            _bridgeFeeTokenToCustomFeeL3(params);
+        }
+        else {
+            _bridgeNonFeeTokenToCustomFeeL3(params);
+        }
+    }
+
+    /// @notice Allows the owner of this L2Forwarder to make arbitrary calls.
+    ///         If bridgeToL3 cannot succeed, the owner can call this to rescue their tokens and ETH.
+    /// @param  targets Addresses to call
+    /// @param  values  Values to send
+    /// @param  datas   Calldata to send
+    function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external payable {
+        if (msg.sender != owner) revert OnlyOwner();
+        if (targets.length != values.length || values.length != datas.length) revert LengthMismatch();
+
+        for (uint256 i = 0; i < targets.length; i++) {
+            (bool success, bytes memory retData) = targets[i].call{value: values[i]}(datas[i]);
+            if (!success) revert CallFailed(targets[i], values[i], datas[i], retData);
+        }
+
+        emit Rescued(targets, values, datas);
+    }
+
+    /// @dev Bridge tokens to an L3 that uses ETH for fees. 
     function _bridgeToEthFeeL3(L2ForwarderParams memory params) internal {
         // get gateway
         address l2l3Gateway = L1GatewayRouter(params.routerOrInbox).getGateway(params.token);
@@ -84,10 +120,23 @@ contract L2Forwarder is L2ForwarderPredictor {
     function _bridgeFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
         uint256 tokenBalance = IERC20(params.token).balanceOf(address(this));
 
-        // approve inbox
-        IERC20(params.token).safeApprove(params.routerOrInbox, tokenBalance);
+        // transfer tokens to the inbox
+        IERC20(params.token).safeTransfer(params.routerOrInbox, tokenBalance);
 
-        IERC20Inbox(params.routerOrInbox).depositERC20(tokenBalance);
+        // create retryable ticket
+        uint256 submissionCost = IERC20Inbox(params.routerOrInbox).calculateRetryableSubmissionFee(0, 0);
+        uint256 callValue = tokenBalance - submissionCost - params.gasLimit * params.gasPrice;
+        IERC20Inbox(params.routerOrInbox).createRetryableTicket({
+            to: params.to,
+            l2CallValue: callValue,
+            maxSubmissionCost: submissionCost,
+            excessFeeRefundAddress: params.to,
+            callValueRefundAddress: params.to,
+            gasLimit: params.gasLimit,
+            maxFeePerGas: params.gasPrice,
+            tokenTotalFeeAmount: tokenBalance,
+            data: ""
+        });
 
         // if there is a relayer payment, send it to the relayer
         _trySendRelayerPayment(params.relayerPayment);       
@@ -109,7 +158,7 @@ contract L2Forwarder is L2ForwarderPredictor {
 
         // send tokens through the bridge to intended recipient
         // overestimate submission cost to ensure all feeToken is sent through
-        uint256 submissionCost = IERC20(params.l2FeeToken).balanceOf(inbox) - params.gasLimit * params.gasPrice;
+        uint256 submissionCost = feeTokenBalance - params.gasLimit * params.gasPrice;
         L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund(
             params.token,
             params.to,
@@ -117,7 +166,7 @@ contract L2Forwarder is L2ForwarderPredictor {
             tokenBalance,
             params.gasLimit,
             params.gasPrice,
-            abi.encode(submissionCost, bytes(""))
+            abi.encode(submissionCost, bytes(""), feeTokenBalance)
         );
 
         _trySendRelayerPayment(params.relayerPayment);
@@ -128,41 +177,6 @@ contract L2Forwarder is L2ForwarderPredictor {
             (bool paymentSuccess,) = tx.origin.call{value: relayerPayment}("");
             if (!paymentSuccess) revert RelayerPaymentFailed();
         }
-    }
-
-    /// @notice Send tokens and ETH through the bridge to a recipient on L3 and optionally pay a relayer.
-    /// @param  params Parameters of the bridge transaction. There is only one combination of valid parameters for a given L2Forwarder.
-    /// @dev    The params are encoded in the L2Forwarder address. Will revert if params do not match.
-    function bridgeToL3(L2ForwarderParams memory params) external {
-        // check parameters
-        if (address(this) != l2ForwarderAddress(params)) revert IncorrectParams();
-
-        if (params.l2FeeToken == address(0)) {
-            _bridgeToEthFeeL3(params);
-        }
-        else if (params.l2FeeToken == params.token) {
-            _bridgeFeeTokenToCustomFeeL3(params);
-        }
-        else {
-            _bridgeNonFeeTokenToCustomFeeL3(params);
-        }
-    }
-
-    /// @notice Allows the owner of this L2Forwarder to make arbitrary calls.
-    ///         If bridgeToL3 cannot succeed, the owner can call this to rescue their tokens and ETH.
-    /// @param  targets Addresses to call
-    /// @param  values  Values to send
-    /// @param  datas   Calldata to send
-    function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external payable {
-        if (msg.sender != owner) revert OnlyOwner();
-        if (targets.length != values.length || values.length != datas.length) revert LengthMismatch();
-
-        for (uint256 i = 0; i < targets.length; i++) {
-            (bool success, bytes memory retData) = targets[i].call{value: values[i]}(datas[i]);
-            if (!success) revert CallFailed(targets[i], values[i], datas[i], retData);
-        }
-
-        emit Rescued(targets, values, datas);
     }
 
     receive() external payable {}

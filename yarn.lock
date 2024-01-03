@@ -19,10 +19,10 @@
   optionalDependencies:
     sol2uml "2.2.0"
 
-"@arbitrum/token-bridge-contracts@1.1.1":
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/@arbitrum/token-bridge-contracts/-/token-bridge-contracts-1.1.1.tgz#716af9d3a50f544b9ce4e49dfa55058d1715b728"
-  integrity sha512-4gvzydeNBIGlMHFLvO/+r8SdtKglZLKOo6bh8a+nK3pjovKUfBs4ZcpqYNkbabKWeJ9cZCOvw74VX+kJGn65xQ==
+"@arbitrum/token-bridge-contracts@1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@arbitrum/token-bridge-contracts/-/token-bridge-contracts-1.2.0.tgz#b1dc02e123393848d0d8e5c167028bafa0ac8229"
+  integrity sha512-GdPn6nIlhkuacgvXZkmYLmNdmOcxVoHEfkEHtNlaBnMqS+HPXEA8keqZDesBHkQ96b9PCwwCegNEx/ZjM+Rq+g==
   dependencies:
     "@arbitrum/nitro-contracts" "^1.0.0-beta.8"
     "@offchainlabs/upgrade-executor" "1.1.0-beta.0"
