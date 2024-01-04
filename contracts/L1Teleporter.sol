@@ -55,9 +55,9 @@ contract L1Teleporter is L2ForwarderPredictor {
         uint256 l2ForwarderFactorySubmissionCost;
     }
 
-    /// @dev Calldata size of L2ForwarderFactory.callForwarder (selector + 7 args).
+    /// @dev Calldata size of L2ForwarderFactory.callForwarder (selector + 8 args).
     ///      Necessary to calculate the submission cost of the retryable ticket to L2ForwarderFactory.
-    uint256 constant l2ForwarderFactoryCalldataSize = 4 + 7 * 32;
+    uint256 constant l2ForwarderFactoryCalldataSize = 4 + 8 * 32;
 
     /// @notice Emitted when a teleportation is initiated.
     /// @param  sender      L1 address that initiated the teleportation
@@ -119,7 +119,7 @@ contract L1Teleporter is L2ForwarderPredictor {
         });
     }
 
-    function _buildL2ForwarderParams(TeleportParams memory params) internal view returns (L2ForwarderParams memory) {
+    function buildL2ForwarderParams(TeleportParams memory params, address msgSender) public view returns (L2ForwarderParams memory) {
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
         address l2FeeToken = params.l1FeeToken == address(0)
             ? address(0)
@@ -127,7 +127,7 @@ contract L1Teleporter is L2ForwarderPredictor {
         return L2ForwarderParams({
             // set owner to the aliased msg.sender.
             // As long as msg.sender can create retryables, they will be able to recover in case of failure
-            owner: AddressAliasHelper.applyL1ToL2Alias(msg.sender),
+            owner: AddressAliasHelper.applyL1ToL2Alias(msgSender),
             l2Token: l2Token,
             l2FeeToken: l2FeeToken,
             routerOrInbox: params.l2l3RouterOrInbox,
@@ -165,7 +165,7 @@ contract L1Teleporter is L2ForwarderPredictor {
                 amount: params.amount,
                 gasLimit: params.gasParams.l1l2TokenBridgeGasLimit,
                 gasPrice: params.gasParams.l2GasPrice,
-                submissionCost: params.gasParams.l1l2TokenBridgeSubmissionCost + extraETH
+                submissionCost: params.gasParams.l1l2TokenBridgeSubmissionCost + retryableCosts.l2l3TokenBridgeCost + extraETH
             });
         }
 
@@ -201,7 +201,7 @@ contract L1Teleporter is L2ForwarderPredictor {
         address inbox = L1GatewayRouter(params.l1l2Router).inbox();
 
         // create L2ForwarderParams
-        L2ForwarderParams memory l2ForwarderParams = _buildL2ForwarderParams(params);
+        L2ForwarderParams memory l2ForwarderParams = buildL2ForwarderParams(params, msg.sender);
 
         // calculate forwarder address
         address l2Forwarder = l2ForwarderAddress(l2ForwarderParams);
