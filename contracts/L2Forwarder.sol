@@ -60,11 +60,9 @@ contract L2Forwarder is L2ForwarderPredictor {
 
         if (params.l2FeeToken == address(0)) {
             _bridgeToEthFeeL3(params);
-        }
-        else if (params.l2FeeToken == params.l2Token) {
+        } else if (params.l2FeeToken == params.l2Token) {
             _bridgeFeeTokenToCustomFeeL3(params);
-        }
-        else {
+        } else {
             _bridgeNonFeeTokenToCustomFeeL3(params);
         }
     }
@@ -86,7 +84,7 @@ contract L2Forwarder is L2ForwarderPredictor {
         emit Rescued(targets, values, datas);
     }
 
-    /// @dev Bridge tokens to an L3 that uses ETH for fees. 
+    /// @dev Bridge tokens to an L3 that uses ETH for fees.
     function _bridgeToEthFeeL3(L2ForwarderParams memory params) internal {
         // get gateway
         address l2l3Gateway = L1GatewayRouter(params.routerOrInbox).getGateway(params.l2Token);
@@ -139,7 +137,7 @@ contract L2Forwarder is L2ForwarderPredictor {
         });
 
         // if there is a relayer payment, send it to the relayer
-        _trySendRelayerPayment(params.relayerPayment);       
+        _trySendRelayerPayment(params.relayerPayment);
     }
 
     function _bridgeNonFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {

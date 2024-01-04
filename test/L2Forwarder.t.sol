@@ -117,7 +117,7 @@ contract NewL2ForwarderTest is BaseTest {
         _expectRetryable({
             inbox: address(erc20Inbox),
             msgCount: msgCount,
-            to: l2DefaultGateway, // counterpart gateway
+            to: childDefaultGateway, // counterpart gateway
             l2CallValue: 0,
             msgValue: forwarderNativeBalance,
             maxSubmissionCost: forwarderNativeBalance - params.gasLimit * params.gasPrice,
@@ -177,9 +177,9 @@ contract NewL2ForwarderTest is BaseTest {
             inbox: address(erc20Inbox),
             msgCount: msgCount,
             to: params.to,
-            l2CallValue: tokenAmount - erc20Inbox.calculateRetryableSubmissionFee(0,0) - params.gasLimit * params.gasPrice,
+            l2CallValue: tokenAmount - erc20Inbox.calculateRetryableSubmissionFee(0, 0) - params.gasLimit * params.gasPrice,
             msgValue: tokenAmount,
-            maxSubmissionCost: erc20Inbox.calculateRetryableSubmissionFee(0,0),
+            maxSubmissionCost: erc20Inbox.calculateRetryableSubmissionFee(0, 0),
             excessFeeRefundAddress: params.to,
             callValueRefundAddress: params.to,
             gasLimit: params.gasLimit,

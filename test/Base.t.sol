@@ -28,8 +28,6 @@ import {IOwnable} from "@arbitrum/nitro-contracts/src/bridge/IOwnable.sol";
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
-
-
 contract BaseTest is Test {
     // we need to deploy rollup contracts and token bridge
 
@@ -48,7 +46,6 @@ contract BaseTest is Test {
     address public rollup = address(1000);
     address public seqInbox = address(1001);
 
-
     // token bridge contracts
 
     L1GatewayRouter public ethGatewayRouter;
@@ -57,8 +54,8 @@ contract BaseTest is Test {
     L1ERC20Gateway public ethDefaultGateway;
     L1OrbitERC20Gateway public erc20DefaultGateway;
 
-    address public l2GatewayRouter = address(0x9900);
-    address public l2DefaultGateway = address(0x9901);
+    address public childGatewayRouter = address(0x9900);
+    address public childDefaultGateway = address(0x9901);
 
     function setUp() public virtual {
         ethBridge = Bridge(_deployProxy(address(new Bridge())));
@@ -75,7 +72,7 @@ contract BaseTest is Test {
 
         ethInbox.initialize(ethBridge, ISequencerInbox(seqInbox));
         erc20Inbox.initialize(erc20Bridge, ISequencerInbox(seqInbox));
-        
+
         vm.prank(rollup);
         ethBridge.setDelayedInbox(address(ethInbox), true);
         vm.prank(rollup);
@@ -96,11 +93,19 @@ contract BaseTest is Test {
         ethDefaultGateway = L1ERC20Gateway(_deployProxy(address(new L1ERC20Gateway())));
         erc20DefaultGateway = L1OrbitERC20Gateway(_deployProxy(address(new L1OrbitERC20Gateway())));
 
-        ethGatewayRouter.initialize(address(this), address(ethDefaultGateway), address(0), l2GatewayRouter, address(ethInbox));
-        erc20GatewayRouter.initialize(address(this), address(erc20DefaultGateway), address(0), l2GatewayRouter, address(erc20Inbox));
+        ethGatewayRouter.initialize(
+            address(this), address(ethDefaultGateway), address(0), childGatewayRouter, address(ethInbox)
+        );
+        erc20GatewayRouter.initialize(
+            address(this), address(erc20DefaultGateway), address(0), childGatewayRouter, address(erc20Inbox)
+        );
 
-        ethDefaultGateway.initialize(l2DefaultGateway, address(ethGatewayRouter), address(ethInbox), keccak256("1"), address(1));
-        erc20DefaultGateway.initialize(l2DefaultGateway, address(erc20GatewayRouter), address(erc20Inbox), keccak256("1"), address(1));
+        ethDefaultGateway.initialize(
+            childDefaultGateway, address(ethGatewayRouter), address(ethInbox), keccak256("1"), address(1)
+        );
+        erc20DefaultGateway.initialize(
+            childDefaultGateway, address(erc20GatewayRouter), address(erc20Inbox), keccak256("1"), address(1)
+        );
 
         vm.label(address(ethGatewayRouter), "ethGatewayRouter");
         vm.label(address(erc20GatewayRouter), "erc20GatewayRouter");
@@ -121,10 +126,7 @@ contract BaseTest is Test {
 
     function _expectErc20Deposit(uint256 msgCount, address to, uint256 amount) internal {
         vm.expectEmit(address(erc20Inbox));
-        emit InboxMessageDelivered(
-            msgCount,
-            abi.encodePacked(to, amount)
-        );
+        emit InboxMessageDelivered(msgCount, abi.encodePacked(to, amount));
     }
 
     function _expectRetryable(
