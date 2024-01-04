@@ -148,9 +148,12 @@ contract L1TeleporterTest is BaseTest {
         );
     }
 
-    function testStandardTeleport(L1Teleporter.RetryableGasParams memory gasParams, uint256 extraEth, address receiver, uint256 amount)
-        public
-    {
+    function testStandardTeleport(
+        L1Teleporter.RetryableGasParams memory gasParams,
+        uint256 extraEth,
+        address receiver,
+        uint256 amount
+    ) public {
         gasParams = _boundGasParams(gasParams);
         amount = bound(amount, 1, 100 ether);
         extraEth = bound(extraEth, 1, 10000);
@@ -165,8 +168,10 @@ contract L1TeleporterTest is BaseTest {
             gasParams: gasParams
         });
 
-        (uint256 eth,, L1Teleporter.RetryableGasCosts memory retryableCosts) = teleporter.calculateRequiredEthAndFeeToken(params, block.basefee);
-        L1Teleporter.L2ForwarderParams memory l2ForwarderParams = teleporter.buildL2ForwarderParams(params, address(this));
+        (uint256 eth,, L1Teleporter.RetryableGasCosts memory retryableCosts) =
+            teleporter.calculateRequiredEthAndFeeToken(params, block.basefee);
+        L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
+            teleporter.buildL2ForwarderParams(params, address(this));
         address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
 
         l1Token.approve(address(teleporter), amount);
@@ -188,15 +193,13 @@ contract L1TeleporterTest is BaseTest {
             to: l2ForwarderFactory,
             l2CallValue: 0,
             msgValue: retryableCosts.l2ForwarderFactoryCost,
-            maxSubmissionCost: retryableCosts.l2ForwarderFactoryCost - params.gasParams.l2ForwarderFactoryGasLimit * params.gasParams.l2GasPrice,
+            maxSubmissionCost: retryableCosts.l2ForwarderFactoryCost
+                - params.gasParams.l2ForwarderFactoryGasLimit * params.gasParams.l2GasPrice,
             excessFeeRefundAddress: l2Forwarder,
             callValueRefundAddress: l2Forwarder,
             gasLimit: params.gasParams.l2ForwarderFactoryGasLimit,
             maxFeePerGas: params.gasParams.l2GasPrice,
-            data: abi.encodeCall(
-                L2ForwarderFactory.callForwarder,
-                l2ForwarderParams
-            )
+            data: abi.encodeCall(L2ForwarderFactory.callForwarder, l2ForwarderParams)
         });
         teleporter.teleport{value: eth + extraEth}(params);
     }

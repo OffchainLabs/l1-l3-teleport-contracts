@@ -119,7 +119,11 @@ contract L1Teleporter is L2ForwarderPredictor {
         });
     }
 
-    function buildL2ForwarderParams(TeleportParams memory params, address msgSender) public view returns (L2ForwarderParams memory) {
+    function buildL2ForwarderParams(TeleportParams memory params, address msgSender)
+        public
+        view
+        returns (L2ForwarderParams memory)
+    {
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
         address l2FeeToken = params.l1FeeToken == address(0)
             ? address(0)
@@ -165,7 +169,8 @@ contract L1Teleporter is L2ForwarderPredictor {
                 amount: params.amount,
                 gasLimit: params.gasParams.l1l2TokenBridgeGasLimit,
                 gasPrice: params.gasParams.l2GasPrice,
-                submissionCost: params.gasParams.l1l2TokenBridgeSubmissionCost + retryableCosts.l2l3TokenBridgeCost + extraETH
+                submissionCost: params.gasParams.l1l2TokenBridgeSubmissionCost + retryableCosts.l2l3TokenBridgeCost
+                    + extraETH
             });
         }
 
