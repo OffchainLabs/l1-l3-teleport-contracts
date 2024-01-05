@@ -74,8 +74,9 @@ contract L1TeleporterTest is BaseTest {
                 amount: 10,
                 gasParams: gasParams
             });
-            (uint256 standardEth, uint256 standardFeeToken, L1Teleporter.RetryableGasCosts memory standardCosts) =
-                teleporter.calculateRequiredEthAndFeeToken(standardParams, baseFee);
+            (uint256 standardEth, uint256 standardFeeToken, L1Teleporter.TeleportationType standardType, L1Teleporter.RetryableGasCosts memory standardCosts) =
+                teleporter.determineTypeAndFees(standardParams, baseFee);
+            assertTrue(standardType == L1Teleporter.TeleportationType.Standard, "standardType");
             assertEq(standardFeeToken, 0, "standardFeeToken");
             assertEq(
                 standardEth,
@@ -124,8 +125,9 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
-        (uint256 feeTokenEth, uint256 feeTokenFeeToken, L1Teleporter.RetryableGasCosts memory feeTokenGasCosts) =
-            teleporter.calculateRequiredEthAndFeeToken(feeTokenParams, baseFee);
+        (uint256 feeTokenEth, uint256 feeTokenFeeToken, L1Teleporter.TeleportationType onlyFeeType, L1Teleporter.RetryableGasCosts memory feeTokenGasCosts) =
+            teleporter.determineTypeAndFees(feeTokenParams, baseFee);
+        assertTrue(onlyFeeType == L1Teleporter.TeleportationType.OnlyCustomFee, "OnlyCustomFee type");
         assertEq(feeTokenFeeToken, feeTokenGasCosts.l2l3TokenBridgeCost, "feeTokenFeeToken");
         assertEq(
             feeTokenEth, feeTokenGasCosts.l1l2TokenBridgeCost + feeTokenGasCosts.l2ForwarderFactoryCost, "feeTokenEth"
@@ -141,8 +143,9 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
-        (uint256 feeTokenEth2, uint256 feeTokenFeeToken2, L1Teleporter.RetryableGasCosts memory feeTokenGasCosts2) =
-            teleporter.calculateRequiredEthAndFeeToken(feeTokenParams2, baseFee);
+        (uint256 feeTokenEth2, uint256 feeTokenFeeToken2, L1Teleporter.TeleportationType nonFeeType, L1Teleporter.RetryableGasCosts memory feeTokenGasCosts2) =
+            teleporter.determineTypeAndFees(feeTokenParams2, baseFee);
+        assertTrue(nonFeeType == L1Teleporter.TeleportationType.NonFeeTokenToCustomFeeL3, "NonStandard type");
         assertEq(feeTokenFeeToken2, feeTokenGasCosts2.l2l3TokenBridgeCost, "feeTokenFeeToken2");
         assertEq(
             feeTokenEth2,
@@ -172,8 +175,8 @@ contract L1TeleporterTest is BaseTest {
             gasParams: gasParams
         });
 
-        (uint256 requiredEth,, L1Teleporter.RetryableGasCosts memory retryableCosts) =
-            teleporter.calculateRequiredEthAndFeeToken(params, block.basefee);
+        (uint256 requiredEth,,, L1Teleporter.RetryableGasCosts memory retryableCosts) =
+            teleporter.determineTypeAndFees(params, block.basefee);
         L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, address(this));
         address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
@@ -224,8 +227,8 @@ contract L1TeleporterTest is BaseTest {
             gasParams: gasParams
         });
 
-        (uint256 requiredEth, uint256 requiredFeeTokenAmount, L1Teleporter.RetryableGasCosts memory retryableCosts) =
-            teleporter.calculateRequiredEthAndFeeToken(params, block.basefee);
+        (uint256 requiredEth, uint256 requiredFeeTokenAmount,, L1Teleporter.RetryableGasCosts memory retryableCosts) =
+            teleporter.determineTypeAndFees(params, block.basefee);
 
         // make sure it checks msg.value properly
         vm.expectRevert(abi.encodeWithSelector(L1Teleporter.InsufficientValue.selector, requiredEth, requiredEth - 1));
@@ -282,8 +285,8 @@ contract L1TeleporterTest is BaseTest {
             gasParams: gasParams
         });
 
-        (uint256 requiredEth, uint256 requiredFeeTokenAmount, L1Teleporter.RetryableGasCosts memory retryableCosts) =
-            teleporter.calculateRequiredEthAndFeeToken(params, block.basefee);
+        (uint256 requiredEth, uint256 requiredFeeTokenAmount,, L1Teleporter.RetryableGasCosts memory retryableCosts) =
+            teleporter.determineTypeAndFees(params, block.basefee);
 
         // make sure it checks msg.value properly
         vm.expectRevert(abi.encodeWithSelector(L1Teleporter.InsufficientValue.selector, requiredEth, requiredEth - 1));
