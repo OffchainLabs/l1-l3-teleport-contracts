@@ -13,12 +13,12 @@ contract L2ForwarderContractsDeployer {
     address public immutable implementation;
     address public immutable factory;
 
-    constructor() {
+    constructor(address _aliasedL1Teleporter) {
         implementation = _contractAddressFrom(1);
         factory = _contractAddressFrom(2);
 
         address realImpl = address(new L2Forwarder(factory));
-        address realFactory = address(new L2ForwarderFactory(implementation));
+        address realFactory = address(new L2ForwarderFactory(implementation, _aliasedL1Teleporter));
 
         require(implementation == realImpl, "impl mismatch");
         require(factory == realFactory, "factory mismatch");

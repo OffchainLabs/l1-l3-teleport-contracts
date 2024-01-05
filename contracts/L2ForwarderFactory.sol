@@ -10,17 +10,25 @@ import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 /// @notice Creates L2Forwarders and calls them to bridge tokens to L3.
 ///         L2Forwarders are created via CREATE2 / clones.
 contract L2ForwarderFactory is L2ForwarderPredictor {
+    address public immutable aliasedL1Teleporter;
+
     /// @notice Emitted when a new L2Forwarder is created
     event CreatedL2Forwarder(address indexed l2Forwarder, address indexed owner, L2ForwarderParams params);
 
     /// @notice Emitted when an L2Forwarder is called to bridge tokens to L3
     event CalledL2Forwarder(address indexed l2Forwarder, L2ForwarderParams params);
 
-    constructor(address _impl) L2ForwarderPredictor(address(this), _impl) {}
+    error OnlyL1Teleporter();
+
+    constructor(address _impl, address _aliasedL1Teleporter) L2ForwarderPredictor(address(this), _impl) {
+        aliasedL1Teleporter = _aliasedL1Teleporter;
+    }
 
     /// @notice Calls an L2Forwarder to bridge tokens to L3. Will create the L2Forwarder first if it doesn't exist.
     /// @param  params Parameters for the L2Forwarder
     function callForwarder(L2ForwarderParams memory params) external {
+        if (msg.sender != aliasedL1Teleporter) revert OnlyL1Teleporter();
+
         L2Forwarder l2Forwarder = _tryCreateL2Forwarder(params);
 
         l2Forwarder.bridgeToL3(params);

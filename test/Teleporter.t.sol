@@ -35,8 +35,6 @@ contract L1TeleporterTest is BaseTest {
         vm.deal(address(this), 10000 ether);
     }
 
-    // todo: test mode
-
     function _boundGasParams(L1Teleporter.RetryableGasParams memory gasParams)
         internal
         view
@@ -97,10 +95,16 @@ contract L1TeleporterTest is BaseTest {
                 gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPrice + gasParams.l1l2TokenBridgeSubmissionCost,
                 "l1l2TokenBridgeCost"
             );
+            L1Teleporter.L2ForwarderParams memory _x;
+            uint256 factorySubmissionFee = ethInbox.calculateRetryableSubmissionFee(
+                abi.encodeCall(L2ForwarderFactory.callForwarder, _x).length,
+                baseFee
+            );
+            assertEq(standardCosts.l2ForwarderFactorySubmissionCost, factorySubmissionFee, "l2ForwarderFactorySubmissionCost");
             assertEq(
                 standardCosts.l2ForwarderFactoryCost,
                 gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPrice
-                    + ethInbox.calculateRetryableSubmissionFee(4 + 8 * 32, baseFee),
+                    + factorySubmissionFee,
                 "l2ForwarderFactoryCost"
             );
             assertEq(
@@ -182,15 +186,22 @@ contract L1TeleporterTest is BaseTest {
 
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();
-        vm.expectEmit(address(ethDefaultGateway));
-        emit DepositInitiated({
-            l1Token: address(l1Token),
+        bytes memory l1l2TokenBridgeRetryableCalldata = ethDefaultGateway.getOutboundCalldata({
+            _token: address(l1Token),
             _from: address(teleporter),
             _to: l2Forwarder,
-            _sequenceNumber: msgCount,
-            _amount: amount
+            _amount: amount,
+            _data: ""
         });
-        _expectFactoryRetryable(msgCount, params, retryableCosts, l2ForwarderParams, l2Forwarder);
+        _expectTokenBridgeRetryable(msgCount, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata);
+        _expectFactoryRetryable(
+            msgCount + 1,
+            params,
+            retryableCosts,
+            l2ForwarderParams,
+            l2Forwarder,
+            retryableCosts.l2l3TokenBridgeCost + extraEth
+        );
         teleporter.teleport{value: requiredEth + extraEth}(params);
     }
 
@@ -237,16 +248,122 @@ contract L1TeleporterTest is BaseTest {
 
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();
-        vm.expectEmit(address(ethDefaultGateway));
-        emit DepositInitiated({
-            l1Token: address(l1Token),
-            _from: address(teleporter),
-            _to: l2Forwarder,
-            _sequenceNumber: msgCount,
-            _amount: params.amount
-        });
-        _expectFactoryRetryable(msgCount, params, retryableCosts, l2ForwarderParams, l2Forwarder);
+        {
+            bytes memory l1l2TokenBridgeRetryableCalldata = ethDefaultGateway.getOutboundCalldata({
+                _token: address(l1Token),
+                _from: address(teleporter),
+                _to: l2Forwarder,
+                _amount: params.amount,
+                _data: ""
+            });
+            _expectTokenBridgeRetryable(msgCount, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata);
+        }
+        _expectFactoryRetryable(msgCount + 1, params, retryableCosts, l2ForwarderParams, l2Forwarder, extraEth);
         teleporter.teleport{value: requiredEth + extraEth}(params);
+    }
+
+    function testNonFeeTokenTeleport(
+        L1Teleporter.RetryableGasParams memory gasParams,
+        uint256 extraEth,
+        address receiver,
+        uint256 amount
+    ) public {
+        gasParams = _boundGasParams(gasParams);
+        extraEth = bound(extraEth, 0, 10000);
+        amount = bound(amount, 1, 100 ether);
+
+        L1Teleporter.TeleportParams memory params = L1Teleporter.TeleportParams({
+            l1Token: address(l1Token),
+            l1FeeToken: address(nativeToken),
+            l1l2Router: address(ethGatewayRouter),
+            l2l3RouterOrInbox: l2l3RouterOrInbox,
+            to: receiver,
+            amount: amount,
+            gasParams: gasParams
+        });
+
+        (uint256 requiredEth, uint256 requiredFeeTokenAmount, L1Teleporter.RetryableGasCosts memory retryableCosts) =
+            teleporter.calculateRequiredEthAndFeeToken(params, block.basefee);
+
+        // make sure it checks msg.value properly
+        vm.expectRevert(abi.encodeWithSelector(L1Teleporter.InsufficientValue.selector, requiredEth, requiredEth - 1));
+        teleporter.teleport{value: requiredEth - 1}(params);
+
+        l1Token.approve(address(teleporter), params.amount);
+        nativeToken.approve(address(teleporter), requiredFeeTokenAmount);
+
+        L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
+            teleporter.buildL2ForwarderParams(params, address(this));
+        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
+
+        // token bridge, indicating an actual bridge tx has been initiated
+        uint256 msgCount = ethBridge.delayedMessageCount();
+        {
+            bytes memory l1l2FeeTokenBridgeRetryableCalldata = ethDefaultGateway.getOutboundCalldata({
+                _token: address(nativeToken),
+                _from: address(teleporter),
+                _to: l2Forwarder,
+                _amount: requiredFeeTokenAmount,
+                _data: ""
+            });
+            bytes memory l1l2TokenBridgeRetryableCalldata = ethDefaultGateway.getOutboundCalldata({
+                _token: address(l1Token),
+                _from: address(teleporter),
+                _to: l2Forwarder,
+                _amount: params.amount,
+                _data: ""
+            });
+            _expectFeeTokenBridgeRetryable(msgCount, params, retryableCosts, l2Forwarder, l1l2FeeTokenBridgeRetryableCalldata);
+            _expectTokenBridgeRetryable(msgCount + 1, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata);
+        }
+        _expectFactoryRetryable(msgCount + 2, params, retryableCosts, l2ForwarderParams, l2Forwarder, extraEth);
+        teleporter.teleport{value: requiredEth + extraEth}(params);
+    }
+
+    function _expectFeeTokenBridgeRetryable(
+        uint256 msgCount,
+        L1Teleporter.TeleportParams memory params,
+        L1Teleporter.RetryableGasCosts memory retryableCosts,
+        address l2Forwarder,
+        bytes memory l1l2FeeTokenBridgeRetryableCalldata
+    ) internal {
+        _expectRetryable({
+            inbox: address(ethInbox),
+            msgCount: msgCount,
+            to: childDefaultGateway,
+            l2CallValue: 0,
+            msgValue: retryableCosts.l1l2FeeTokenBridgeCost,
+            maxSubmissionCost: retryableCosts.l1l2FeeTokenBridgeCost
+                - params.gasParams.l1l2FeeTokenBridgeGasLimit * params.gasParams.l2GasPrice,
+            excessFeeRefundAddress: l2Forwarder,
+            callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(address(teleporter)),
+            gasLimit: params.gasParams.l1l2FeeTokenBridgeGasLimit,
+            maxFeePerGas: params.gasParams.l2GasPrice,
+            data: l1l2FeeTokenBridgeRetryableCalldata
+        });
+    }
+
+    function _expectTokenBridgeRetryable(
+        uint256 msgCount,
+        L1Teleporter.TeleportParams memory params,
+        L1Teleporter.RetryableGasCosts memory retryableCosts,
+        address l2Forwarder,
+        bytes memory l1l2TokenBridgeRetryableCalldata
+    ) internal {
+        _expectRetryable({
+            inbox: address(ethInbox),
+            msgCount: msgCount,
+            to: childDefaultGateway,
+            l2CallValue: 0,
+            msgValue: retryableCosts.l1l2TokenBridgeCost,
+            maxSubmissionCost: retryableCosts.l1l2TokenBridgeCost
+                - params.gasParams.l1l2TokenBridgeGasLimit * params.gasParams.l2GasPrice,
+            excessFeeRefundAddress: l2Forwarder,
+            callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(address(teleporter)),
+            gasLimit: params.gasParams.l1l2TokenBridgeGasLimit,
+            maxFeePerGas: params.gasParams.l2GasPrice,
+            data: l1l2TokenBridgeRetryableCalldata
+        });
     }
 
     function _expectFactoryRetryable(
@@ -254,14 +371,15 @@ contract L1TeleporterTest is BaseTest {
         L1Teleporter.TeleportParams memory params,
         L1Teleporter.RetryableGasCosts memory retryableCosts,
         L1Teleporter.L2ForwarderParams memory l2ForwarderParams,
-        address l2Forwarder
+        address l2Forwarder,
+        uint256 l2CallValue
     ) internal {
         _expectRetryable({
             inbox: address(ethInbox),
-            msgCount: msgCount + 1,
+            msgCount: msgCount,
             to: l2ForwarderFactory,
-            l2CallValue: 0,
-            msgValue: retryableCosts.l2ForwarderFactoryCost,
+            l2CallValue: l2CallValue,
+            msgValue: retryableCosts.l2ForwarderFactoryCost + l2CallValue,
             maxSubmissionCost: retryableCosts.l2ForwarderFactoryCost
                 - params.gasParams.l2ForwarderFactoryGasLimit * params.gasParams.l2GasPrice,
             excessFeeRefundAddress: l2Forwarder,
@@ -271,195 +389,4 @@ contract L1TeleporterTest is BaseTest {
             data: abi.encodeCall(L2ForwarderFactory.callForwarder, l2ForwarderParams)
         });
     }
-
-    // function _expectTeleporterRetryable(L1Teleporter.TeleportParams memory params) internal {
-    //     _expectRetryable({
-    //         inbox: address(ethInbox),
-    //         msgCount: ethBridge.delayedMessageCount(),
-    //         to: l2ForwarderFactory,
-    //         l2CallValue: 0,
-    //         msgValue: retryableCosts.l1l2TokenBridgeCost + extraEth,
-    //         maxSubmissionCost: retryableCosts.l1l2TokenBridgeCost + extraEth - params.gasParams.l1l2TokenBridgeGasLimit * params.gasParams.l2GasPrice,
-    //         excessFeeRefundAddress: l2Forwarder,
-    //         callValueRefundAddress: l2Forwarder,
-    //         gasLimit: params.gasParams.l1l2TokenBridgeGasLimit,
-    //         maxFeePerGas: params.gasParams.l2GasPrice,
-    //         data: abi.encodeCall(
-    //             L2ForwarderFactory.callForwarder,
-    //             l2ForwarderParams
-    //         )
-    //     });
-    // }
 }
-
-// contract L1TeleporterTest is BaseTest {
-//     address immutable l2l3Router = vm.addr(0x10);
-
-//     L1Teleporter teleporter;
-//     IERC20 l1Token;
-
-//     address constant l2ForwarderFactory = address(0x1100);
-//     address constant l2ForwarderImpl = address(0x2200);
-
-//     address constant receiver = address(0x3300);
-//     uint256 constant amount = 1 ether;
-
-//     function setUp() public override {
-//         super.setUp();
-//         teleporter = new L1Teleporter(l2ForwarderFactory, l2ForwarderImpl);
-//         l1Token = IERC20(new MockToken("MOCK", "MOCK", 100 ether, address(this)));
-//         // l1Token.transfer(address(teleporter), 1);
-//         vm.deal(address(this), 100 ether);
-//     }
-
-//     function testCalculateRequiredEthAndFeeToken() public {
-//         revert("TODO");
-//     }
-
-//     // function testTeleportValueCheck() public {
-//     //     (L1Teleporter.RetryableGasParams memory params, L1Teleporter.RetryableGasCosts memory costs) =
-//     //         _defaultParamsAndCosts();
-
-//     //     vm.expectRevert(abi.encodeWithSelector(L1Teleporter.InsufficientValue.selector, costs.total, costs.total - 1));
-//     //     teleporter.teleport{value: costs.total - 1}(
-//     //         L1Teleporter.TeleportParams({
-//     //             l1Token: address(l1Token),
-//     //             l1FeeToken: address(0),
-//     //             l1l2Router: address(ethGatewayRouter),
-//     //             l2l3RouterOrInbox: l2l3Router,
-//     //             to: receiver,
-//     //             amount: 10 ether,
-//     //             gasParams: params
-//     //         })
-//     //     );
-//     // }
-
-//     function testHappyPathEvents() public {
-//         l1Token.transfer(address(this), amount);
-
-//         l1Token.approve(address(teleporter), amount);
-
-//         (L1Teleporter.RetryableGasParams memory gasParams,) =
-//             _defaultParamsAndCosts();
-
-//         L1Teleporter.TeleportParams memory params =
-//             L1Teleporter.TeleportParams({
-//                 l1Token: address(l1Token),
-//                 l1FeeToken: address(0),
-//                 l1l2Router: address(ethGatewayRouter),
-//                 l2l3RouterOrInbox: l2l3Router,
-//                 to: receiver,
-//                 amount: amount,
-//                 gasParams: gasParams
-//             });
-
-//         (uint256 requiredEth,) = teleporter.calculateRequiredEthAndFeeToken(params);
-
-//         _expectEvents();
-//         teleporter.teleport{value: requiredEth}(params);
-
-//         // make sure the teleporter has no ETH balance
-//         assertEq(address(teleporter).balance, 0);
-//     }
-
-//     function _expectEvents() internal {
-//         (L1Teleporter.RetryableGasParams memory params, L1Teleporter.RetryableGasCosts memory costs) =
-//             _defaultParamsAndCosts();
-
-//         L2ForwarderPredictor.L2ForwarderParams memory l2ForwarderParams;
-//         {
-//             l2ForwarderParams = L2ForwarderPredictor.L2ForwarderParams({
-//                 owner: AddressAliasHelper.applyL1ToL2Alias(address(this)),
-//                 l2Token: ethGatewayRouter.calculateL2TokenAddress(address(l1Token)),
-//                 l2FeeToken: address(0), // 0x00 for ETH, addr of l3 fee token on L2
-//                 routerOrInbox: l2l3Router,
-//                 to: receiver,
-//                 gasLimit: params.l2l3TokenBridgeGasLimit,
-//                 gasPrice: params.l3GasPrice,
-//                 relayerPayment: 0
-//             });
-//         }
-//         uint256 msgCount = ethBridge.delayedMessageCount();
-//         address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
-//         // address counterpartGateway = ethDefaultGateway.counterpartGateway();
-
-//         // token bridge retryable
-//         bytes memory l1l2TokenBridgeRetryableCalldata = _getTokenBridgeRetryableCalldata(l2Forwarder);
-//         _expectRetryable(
-//             address(ethInbox),
-//             msgCount,
-//             ethDefaultGateway.counterpartGateway(),
-//             0, // l2 call value
-//             costs.total - costs.l2ForwarderFactoryGasCost - costs.l2ForwarderFactorySubmissionCost, // msg.value
-//             costs.total - costs.l2ForwarderFactoryGasCost - costs.l2ForwarderFactorySubmissionCost
-//                 - costs.l1l2TokenBridgeGasCost, // maxSubmissionCost
-//             l2Forwarder, // excessFeeRefundAddress
-//             AddressAliasHelper.applyL1ToL2Alias(address(teleporter)), // callValueRefundAddress
-//             params.l1l2TokenBridgeGasLimit, // gasLimit
-//             params.l2GasPrice, // maxFeePerGas
-//             l1l2TokenBridgeRetryableCalldata // data
-//         );
-
-//         // token bridge, indicating an actual bridge tx has been initiated
-//         vm.expectEmit(address(ethDefaultGateway));
-//         emit DepositInitiated({
-//             l1Token: address(l1Token),
-//             _from: address(teleporter),
-//             _to: l2Forwarder,
-//             _sequenceNumber: msgCount,
-//             _amount: amount
-//         });
-
-//         // call to the factory
-//         _expectRetryable(
-//             address(ethInbox),
-//             msgCount + 1,
-//             l2ForwarderFactory, // to
-//             0, // l2 call value
-//             costs.l2ForwarderFactoryGasCost + costs.l2ForwarderFactorySubmissionCost, // msg.value
-//             costs.l2ForwarderFactorySubmissionCost, // maxSubmissionCost
-//             l2Forwarder, // excessFeeRefundAddress
-//             l2Forwarder, // callValueRefundAddress
-//             params.l2ForwarderFactoryGasLimit, // gasLimit
-//             params.l2GasPrice, // maxFeePerGas
-//             abi.encodeCall(L2ForwarderFactory.callForwarder, (l2ForwarderParams)) // data
-//         );
-//     }
-
-//     function _getTokenBridgeRetryableCalldata(address l2Forwarder) internal view returns (bytes memory) {
-//         address l1Gateway = ethGatewayRouter.getGateway(address(l1Token));
-//         bytes memory l1l2TokenBridgeRetryableCalldata = L1ArbitrumGateway(l1Gateway).getOutboundCalldata({
-//             _l1Token: address(l1Token),
-//             _from: address(teleporter),
-//             _to: l2Forwarder,
-//             _amount: amount,
-//             _data: ""
-//         });
-//         return l1l2TokenBridgeRetryableCalldata;
-//     }
-
-//     function _defaultParams() internal pure returns (L1Teleporter.RetryableGasParams memory) {
-//         return L1Teleporter.RetryableGasParams({
-//             l2GasPrice: 0.1 gwei,
-//             l3GasPrice: 0.1 gwei,
-//             l2ForwarderFactoryGasLimit: 1_000_000,
-//             l1l2FeeTokenBridgeGasLimit: 1_000_000,
-//             l1l2TokenBridgeGasLimit: 1_000_000,
-//             l2l3TokenBridgeGasLimit: 1_000_000,
-//             l1l2FeeTokenBridgeRetryableSize: 1000,
-//             l1l2TokenBridgeRetryableSize: 1000,
-//             l2l3TokenBridgeRetryableSize: 1000
-//         });
-//     }
-
-//     function _defaultParamsAndCosts()
-//         internal
-//         view
-//         returns (L1Teleporter.RetryableGasParams memory, L1Teleporter.RetryableGasCosts memory)
-//     {
-//         L1Teleporter.RetryableGasParams memory params = _defaultParams();
-//         L1Teleporter.RetryableGasCosts memory costs =
-//             teleporter.calculateRetryableGasCosts(ethGatewayRouter.inbox(), 0, params);
-//         return (params, costs);
-//     }
-// }

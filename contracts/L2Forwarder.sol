@@ -38,8 +38,8 @@ contract L2Forwarder is L2ForwarderPredictor {
     error CallFailed(address to, uint256 value, bytes data, bytes returnData);
     /// @notice Thrown when the relayer payment fails
     error RelayerPaymentFailed();
-    /// @notice Thrown when bridgeToL3 is called with incorrect parameters
-    error IncorrectParams();
+
+    error OnlyL2ForwarderFactory();
 
     constructor(address _factory) L2ForwarderPredictor(_factory, address(this)) {}
 
@@ -54,9 +54,8 @@ contract L2Forwarder is L2ForwarderPredictor {
     /// @notice Send tokens and fee tokens through the bridge to a recipient on L3 and optionally pay a relayer in ETH.
     /// @param  params Parameters of the bridge transaction. There is only one combination of valid parameters for a given L2Forwarder.
     /// @dev    The params are encoded in the L2Forwarder address. Will revert if params do not match.
-    function bridgeToL3(L2ForwarderParams memory params) external {
-        // check parameters
-        if (address(this) != l2ForwarderAddress(params)) revert IncorrectParams();
+    function bridgeToL3(L2ForwarderParams memory params) external payable {
+        if (msg.sender != l2ForwarderFactory) revert OnlyL2ForwarderFactory();
 
         if (params.l2FeeToken == address(0)) {
             _bridgeToEthFeeL3(params);
@@ -98,9 +97,8 @@ contract L2Forwarder is L2ForwarderPredictor {
         // (send all the ETH we have too, we could have more than msg.value b/c of fee refunds)
         // overestimate submission cost to ensure all ETH is sent through
         uint256 ethBalance = address(this).balance;
-        uint256 balanceSubRelayerPayment = address(this).balance - params.relayerPayment;
-        uint256 submissionCost = balanceSubRelayerPayment - params.gasLimit * params.gasPrice;
-        L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund{value: balanceSubRelayerPayment}(
+        uint256 submissionCost = address(this).balance - params.gasLimit * params.gasPrice;
+        L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund{value: address(this).balance}(
             params.l2Token,
             params.to,
             params.to,
@@ -109,8 +107,6 @@ contract L2Forwarder is L2ForwarderPredictor {
             params.gasPrice,
             abi.encode(submissionCost, bytes(""))
         );
-
-        _trySendRelayerPayment(params.relayerPayment);
 
         emit BridgedToL3(tokenBalance, ethBalance);
     }
@@ -135,9 +131,6 @@ contract L2Forwarder is L2ForwarderPredictor {
             tokenTotalFeeAmount: tokenBalance,
             data: ""
         });
-
-        // if there is a relayer payment, send it to the relayer
-        _trySendRelayerPayment(params.relayerPayment);
     }
 
     function _bridgeNonFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
@@ -166,15 +159,6 @@ contract L2Forwarder is L2ForwarderPredictor {
             params.gasPrice,
             abi.encode(submissionCost, bytes(""), feeTokenBalance)
         );
-
-        _trySendRelayerPayment(params.relayerPayment);
-    }
-
-    function _trySendRelayerPayment(uint256 relayerPayment) internal {
-        if (relayerPayment > 0) {
-            (bool paymentSuccess,) = tx.origin.call{value: relayerPayment}("");
-            if (!paymentSuccess) revert RelayerPaymentFailed();
-        }
     }
 
     receive() external payable {}
