@@ -148,7 +148,7 @@ contract L1Teleporter is L2ForwarderPredictor {
         L2ForwarderParams memory l2ForwarderParams,
         address l2Forwarder,
         address inbox,
-        uint256 extraETH
+        uint256 extraSubmissionCost
     ) internal {
         // pull in tokens from caller
         IERC20(params.l1Token).safeTransferFrom(msg.sender, address(this), params.amount);
@@ -169,8 +169,7 @@ contract L1Teleporter is L2ForwarderPredictor {
                 amount: params.amount,
                 gasLimit: params.gasParams.l1l2TokenBridgeGasLimit,
                 gasPrice: params.gasParams.l2GasPrice,
-                submissionCost: params.gasParams.l1l2TokenBridgeSubmissionCost + retryableCosts.l2l3TokenBridgeCost
-                    + extraETH
+                submissionCost: params.gasParams.l1l2TokenBridgeSubmissionCost + extraSubmissionCost
             });
         }
 
@@ -199,8 +198,7 @@ contract L1Teleporter is L2ForwarderPredictor {
             calculateRequiredEthAndFeeToken(params, block.basefee);
         if (msg.value < requiredEth) revert InsufficientValue(requiredEth, msg.value);
 
-        // determine how much extra ETH we have
-        uint256 extraETH = msg.value - requiredEth;
+        uint256 surplusEth = msg.value - requiredEth;
 
         // get inbox
         address inbox = L1GatewayRouter(params.l1l2Router).inbox();
@@ -216,7 +214,7 @@ contract L1Teleporter is L2ForwarderPredictor {
 
         if (_teleportationType == TeleportationType.Standard) {
             // we are teleporting a token to an ETH fee L3
-            _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder, inbox, extraETH);
+            _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder, inbox, surplusEth + retryableCosts.l2l3TokenBridgeCost);
         } else if (_teleportationType == TeleportationType.OnlyCustomFee) {
             // we are teleporting an L3's fee token
 
@@ -224,7 +222,7 @@ contract L1Teleporter is L2ForwarderPredictor {
             if (params.amount < requiredFeeToken) revert InsufficientFeeToken(requiredFeeToken, params.amount);
 
             // teleportation flow is identical to standard
-            _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder, inbox, extraETH);
+            _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder, inbox, surplusEth);
         } else {
             // we are teleporting a non-fee token to a custom fee L3
             // the flow is identical to standard,
@@ -253,7 +251,7 @@ contract L1Teleporter is L2ForwarderPredictor {
             });
 
             // the rest of the flow is identical to standard
-            _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder, inbox, extraETH);
+            _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder, inbox, surplusEth);
         }
     }
 

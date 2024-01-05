@@ -32,7 +32,7 @@ contract L1TeleporterTest is BaseTest {
         l1Token = new ERC20PresetMinterPauser("TOKEN", "TOKEN");
         ERC20PresetMinterPauser(address(l1Token)).mint(address(this), 100 ether);
 
-        vm.deal(address(this), 100 ether);
+        vm.deal(address(this), 10000 ether);
     }
 
     // todo: test mode
@@ -156,7 +156,7 @@ contract L1TeleporterTest is BaseTest {
     ) public {
         gasParams = _boundGasParams(gasParams);
         amount = bound(amount, 1, 100 ether);
-        extraEth = bound(extraEth, 1, 10000);
+        extraEth = bound(extraEth, 0, 10000);
 
         L1Teleporter.TeleportParams memory params = L1Teleporter.TeleportParams({
             l1Token: address(l1Token),
@@ -168,13 +168,17 @@ contract L1TeleporterTest is BaseTest {
             gasParams: gasParams
         });
 
-        (uint256 eth,, L1Teleporter.RetryableGasCosts memory retryableCosts) =
+        (uint256 requiredEth,, L1Teleporter.RetryableGasCosts memory retryableCosts) =
             teleporter.calculateRequiredEthAndFeeToken(params, block.basefee);
         L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, address(this));
         address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
 
         l1Token.approve(address(teleporter), amount);
+
+        // make sure it checks msg.value properly
+        vm.expectRevert(abi.encodeWithSelector(L1Teleporter.InsufficientValue.selector, requiredEth, requiredEth - 1));
+        teleporter.teleport{value: requiredEth - 1}(params);
 
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();
@@ -186,7 +190,72 @@ contract L1TeleporterTest is BaseTest {
             _sequenceNumber: msgCount,
             _amount: amount
         });
-        // call to L2ForwarderFactory
+        _expectFactoryRetryable(msgCount, params, retryableCosts, l2ForwarderParams, l2Forwarder);
+        teleporter.teleport{value: requiredEth + extraEth}(params);
+    }
+
+    function testFeeTokenOnlyTeleport(
+        L1Teleporter.RetryableGasParams memory gasParams,
+        uint256 extraEth,
+        address receiver,
+        uint256 amount
+    ) public {
+        gasParams = _boundGasParams(gasParams);
+        extraEth = bound(extraEth, 0, 10000);
+
+        L1Teleporter.TeleportParams memory params = L1Teleporter.TeleportParams({
+            l1Token: address(l1Token),
+            l1FeeToken: address(l1Token),
+            l1l2Router: address(ethGatewayRouter),
+            l2l3RouterOrInbox: l2l3RouterOrInbox,
+            to: receiver,
+            amount: amount,
+            gasParams: gasParams
+        });
+
+        (uint256 requiredEth, uint256 requiredFeeTokenAmount, L1Teleporter.RetryableGasCosts memory retryableCosts) =
+            teleporter.calculateRequiredEthAndFeeToken(params, block.basefee);
+
+        // make sure it checks msg.value properly
+        vm.expectRevert(abi.encodeWithSelector(L1Teleporter.InsufficientValue.selector, requiredEth, requiredEth - 1));
+        teleporter.teleport{value: requiredEth - 1}(params);
+
+        // make sure it checks fee token amount properly
+        // since token is fee token, params.amount must be greater than retryable costs
+        params.amount = requiredFeeTokenAmount - 1;
+        vm.expectRevert(
+            abi.encodeWithSelector(L1Teleporter.InsufficientFeeToken.selector, requiredFeeTokenAmount, params.amount)
+        );
+        teleporter.teleport{value: requiredEth}(params);
+
+        params.amount = bound(amount, requiredFeeTokenAmount, 100 ether);
+        l1Token.approve(address(teleporter), params.amount);
+
+        L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
+            teleporter.buildL2ForwarderParams(params, address(this));
+        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
+
+        // token bridge, indicating an actual bridge tx has been initiated
+        uint256 msgCount = ethBridge.delayedMessageCount();
+        vm.expectEmit(address(ethDefaultGateway));
+        emit DepositInitiated({
+            l1Token: address(l1Token),
+            _from: address(teleporter),
+            _to: l2Forwarder,
+            _sequenceNumber: msgCount,
+            _amount: params.amount
+        });
+        _expectFactoryRetryable(msgCount, params, retryableCosts, l2ForwarderParams, l2Forwarder);
+        teleporter.teleport{value: requiredEth + extraEth}(params);
+    }
+
+    function _expectFactoryRetryable(
+        uint256 msgCount,
+        L1Teleporter.TeleportParams memory params,
+        L1Teleporter.RetryableGasCosts memory retryableCosts,
+        L1Teleporter.L2ForwarderParams memory l2ForwarderParams,
+        address l2Forwarder
+    ) internal {
         _expectRetryable({
             inbox: address(ethInbox),
             msgCount: msgCount + 1,
@@ -201,7 +270,6 @@ contract L1TeleporterTest is BaseTest {
             maxFeePerGas: params.gasParams.l2GasPrice,
             data: abi.encodeCall(L2ForwarderFactory.callForwarder, l2ForwarderParams)
         });
-        teleporter.teleport{value: eth + extraEth}(params);
     }
 
     // function _expectTeleporterRetryable(L1Teleporter.TeleportParams memory params) internal {
