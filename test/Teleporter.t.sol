@@ -74,8 +74,12 @@ contract L1TeleporterTest is BaseTest {
                 amount: 10,
                 gasParams: gasParams
             });
-            (uint256 standardEth, uint256 standardFeeToken, L1Teleporter.TeleportationType standardType, L1Teleporter.RetryableGasCosts memory standardCosts) =
-                teleporter.determineTypeAndFees(standardParams, baseFee);
+            (
+                uint256 standardEth,
+                uint256 standardFeeToken,
+                L1Teleporter.TeleportationType standardType,
+                L1Teleporter.RetryableGasCosts memory standardCosts
+            ) = teleporter.determineTypeAndFees(standardParams, baseFee);
             assertTrue(standardType == L1Teleporter.TeleportationType.Standard, "standardType");
             assertEq(standardFeeToken, 0, "standardFeeToken");
             assertEq(
@@ -98,14 +102,14 @@ contract L1TeleporterTest is BaseTest {
             );
             L1Teleporter.L2ForwarderParams memory _x;
             uint256 factorySubmissionFee = ethInbox.calculateRetryableSubmissionFee(
-                abi.encodeCall(L2ForwarderFactory.callForwarder, _x).length,
-                baseFee
+                abi.encodeCall(L2ForwarderFactory.callForwarder, _x).length, baseFee
             );
-            assertEq(standardCosts.l2ForwarderFactorySubmissionCost, factorySubmissionFee, "l2ForwarderFactorySubmissionCost");
+            assertEq(
+                standardCosts.l2ForwarderFactorySubmissionCost, factorySubmissionFee, "l2ForwarderFactorySubmissionCost"
+            );
             assertEq(
                 standardCosts.l2ForwarderFactoryCost,
-                gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPrice
-                    + factorySubmissionFee,
+                gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPrice + factorySubmissionFee,
                 "l2ForwarderFactoryCost"
             );
             assertEq(
@@ -125,8 +129,12 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
-        (uint256 feeTokenEth, uint256 feeTokenFeeToken, L1Teleporter.TeleportationType onlyFeeType, L1Teleporter.RetryableGasCosts memory feeTokenGasCosts) =
-            teleporter.determineTypeAndFees(feeTokenParams, baseFee);
+        (
+            uint256 feeTokenEth,
+            uint256 feeTokenFeeToken,
+            L1Teleporter.TeleportationType onlyFeeType,
+            L1Teleporter.RetryableGasCosts memory feeTokenGasCosts
+        ) = teleporter.determineTypeAndFees(feeTokenParams, baseFee);
         assertTrue(onlyFeeType == L1Teleporter.TeleportationType.OnlyCustomFee, "OnlyCustomFee type");
         assertEq(feeTokenFeeToken, feeTokenGasCosts.l2l3TokenBridgeCost, "feeTokenFeeToken");
         assertEq(
@@ -143,8 +151,12 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
-        (uint256 feeTokenEth2, uint256 feeTokenFeeToken2, L1Teleporter.TeleportationType nonFeeType, L1Teleporter.RetryableGasCosts memory feeTokenGasCosts2) =
-            teleporter.determineTypeAndFees(feeTokenParams2, baseFee);
+        (
+            uint256 feeTokenEth2,
+            uint256 feeTokenFeeToken2,
+            L1Teleporter.TeleportationType nonFeeType,
+            L1Teleporter.RetryableGasCosts memory feeTokenGasCosts2
+        ) = teleporter.determineTypeAndFees(feeTokenParams2, baseFee);
         assertTrue(nonFeeType == L1Teleporter.TeleportationType.NonFeeTokenToCustomFeeL3, "NonStandard type");
         assertEq(feeTokenFeeToken2, feeTokenGasCosts2.l2l3TokenBridgeCost, "feeTokenFeeToken2");
         assertEq(
@@ -316,8 +328,12 @@ contract L1TeleporterTest is BaseTest {
                 _amount: params.amount,
                 _data: ""
             });
-            _expectFeeTokenBridgeRetryable(msgCount, params, retryableCosts, l2Forwarder, l1l2FeeTokenBridgeRetryableCalldata);
-            _expectTokenBridgeRetryable(msgCount + 1, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata);
+            _expectFeeTokenBridgeRetryable(
+                msgCount, params, retryableCosts, l2Forwarder, l1l2FeeTokenBridgeRetryableCalldata
+            );
+            _expectTokenBridgeRetryable(
+                msgCount + 1, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata
+            );
         }
         _expectFactoryRetryable(msgCount + 2, params, retryableCosts, l2ForwarderParams, l2Forwarder, extraEth);
         teleporter.teleport{value: requiredEth + extraEth}(params);

@@ -79,7 +79,7 @@ contract L1Teleporter is L2ForwarderPredictor {
 
     /// @notice Thrown when the ETH value sent to teleport() is less than the total ETH cost of retryables
     error InsufficientValue(uint256 required, uint256 provided);
-    /// @notice When TeleportationType is OnlyCustomFee, 
+    /// @notice When TeleportationType is OnlyCustomFee,
     ///         thrown when the amount of fee tokens to send is less than the cost of the retryable to L3
     // todo: in OnlyCustomFee case, we can make the retryable for "free"
     error InsufficientFeeToken(uint256 required, uint256 provided);
@@ -97,8 +97,12 @@ contract L1Teleporter is L2ForwarderPredictor {
     ///         Extra ETH is sent through the first retryable as an overestimated submission fee.
     function teleport(TeleportParams memory params) external payable {
         // ensure we have enough msg.value
-        (uint256 requiredEth, uint256 requiredFeeToken, TeleportationType teleportationType, RetryableGasCosts memory retryableCosts) =
-            determineTypeAndFees(params, block.basefee);
+        (
+            uint256 requiredEth,
+            uint256 requiredFeeToken,
+            TeleportationType teleportationType,
+            RetryableGasCosts memory retryableCosts
+        ) = determineTypeAndFees(params, block.basefee);
         if (msg.value < requiredEth) revert InsufficientValue(requiredEth, msg.value);
 
         // get inbox
@@ -156,7 +160,12 @@ contract L1Teleporter is L2ForwarderPredictor {
     function determineTypeAndFees(TeleportParams memory params, uint256 l1BaseFee)
         public
         view
-        returns (uint256 ethAmount, uint256 feeTokenAmount, TeleportationType teleportationType, RetryableGasCosts memory costs)
+        returns (
+            uint256 ethAmount,
+            uint256 feeTokenAmount,
+            TeleportationType teleportationType,
+            RetryableGasCosts memory costs
+        )
     {
         // todo: optimize out redundant call to inbox() via a new internal function
         costs = _calculateRetryableGasCosts(L1GatewayRouter(params.l1l2Router).inbox(), l1BaseFee, params.gasParams);
@@ -165,13 +174,11 @@ contract L1Teleporter is L2ForwarderPredictor {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
             feeTokenAmount = 0;
             teleportationType = TeleportationType.Standard;
-        }
-        else if (params.l1FeeToken == params.l1Token) {
+        } else if (params.l1FeeToken == params.l1Token) {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
             feeTokenAmount = costs.l2l3TokenBridgeCost;
             teleportationType = TeleportationType.OnlyCustomFee;
-        }
-        else {
+        } else {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l1l2FeeTokenBridgeCost + costs.l2ForwarderFactoryCost;
             feeTokenAmount = costs.l2l3TokenBridgeCost;
             teleportationType = TeleportationType.NonFeeTokenToCustomFeeL3;
