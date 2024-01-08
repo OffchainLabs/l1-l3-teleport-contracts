@@ -13,12 +13,15 @@ contract DeployL1Teleporter is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         string memory l2DeploymentJson = vm.readFile("./script-deploy-data/l2.json");
 
+        address predictedL1Teleporter = l2DeploymentJson.readAddress(".predictedL1Teleporter");
         address l2ForwarderFactory = l2DeploymentJson.readAddress(".L2ForwarderFactory");
         address l2ForwarderImplementation = l2DeploymentJson.readAddress(".L2ForwarderImplementation");
 
         vm.startBroadcast(deployerPrivateKey);
 
         L1Teleporter teleporter = new L1Teleporter(l2ForwarderFactory, l2ForwarderImplementation);
+
+        require(address(teleporter) == predictedL1Teleporter, "L1Teleporter address mismatch");
 
         string memory finalJson = vm.serializeAddress("deployment", "L1Teleporter", address(teleporter));
 
