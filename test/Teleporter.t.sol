@@ -5,7 +5,6 @@ import {Test, console2} from "forge-std/Test.sol";
 import {L1Teleporter} from "../contracts/L1Teleporter.sol";
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
-import {MockToken} from "./mocks/MockToken.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {L1ArbitrumGateway} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
@@ -191,7 +190,7 @@ contract L1TeleporterTest is BaseTest {
             teleporter.determineTypeAndFees(params, block.basefee);
         L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, address(this));
-        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
+        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams.owner);
 
         l1Token.approve(address(teleporter), amount);
 
@@ -259,7 +258,7 @@ contract L1TeleporterTest is BaseTest {
 
         L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, address(this));
-        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
+        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams.owner);
 
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();
@@ -309,7 +308,7 @@ contract L1TeleporterTest is BaseTest {
 
         L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, address(this));
-        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
+        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams.owner);
 
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();

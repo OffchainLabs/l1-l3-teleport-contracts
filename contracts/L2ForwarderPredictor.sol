@@ -38,13 +38,13 @@ abstract contract L2ForwarderPredictor {
 
     /// @notice Predicts the address of an L2Forwarder based on its parameters
     // todo: switch this to address owner
-    function l2ForwarderAddress(L2ForwarderParams memory params) public view returns (address) {
-        return Clones.predictDeterministicAddress(l2ForwarderImplementation, _salt(params), l2ForwarderFactory);
+    function l2ForwarderAddress(address owner) public view returns (address) {
+        return Clones.predictDeterministicAddress(l2ForwarderImplementation, _salt(owner), l2ForwarderFactory);
     }
 
     /// @notice Computes the salt for an L2Forwarder based on its parameters
     /// @dev    It is just the keccak256 hash of the abi encoded params
-    function _salt(L2ForwarderParams memory params) internal pure returns (bytes32) {
-        return keccak256(abi.encode(params.owner));
+    function _salt(address owner) internal pure returns (bytes32) {
+        return keccak256(abi.encode(owner));
     }
 }

@@ -75,7 +75,7 @@ contract L1Teleporter is L2ForwarderPredictor {
     /// @param  amount      Amount of tokens being teleported
     event Teleported(
         address indexed sender, address l1Token, address l1l2Router, address l2l3Router, address to, uint256 amount
-    );
+    ); // todo: redefine and emit
 
     /// @notice Thrown when the ETH value sent to teleport() is less than the total ETH cost of retryables
     error InsufficientValue(uint256 required, uint256 provided);
@@ -109,10 +109,11 @@ contract L1Teleporter is L2ForwarderPredictor {
         address inbox = L1GatewayRouter(params.l1l2Router).inbox();
 
         // create L2ForwarderParams
+        // todo: can move this build to common function
         L2ForwarderParams memory l2ForwarderParams = buildL2ForwarderParams(params, msg.sender);
 
         // calculate forwarder address
-        address l2Forwarder = l2ForwarderAddress(l2ForwarderParams);
+        address l2Forwarder = l2ForwarderAddress(l2ForwarderParams.owner);
 
         if (teleportationType == TeleportationType.Standard) {
             // we are teleporting a token to an ETH fee L3
@@ -191,9 +192,16 @@ contract L1Teleporter is L2ForwarderPredictor {
         returns (L2ForwarderParams memory)
     {
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
-        address l2FeeToken = params.l1FeeToken == address(0)
-            ? address(0)
-            : L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1FeeToken);
+        address l2FeeToken;
+
+        if (params.l1Token == params.l1FeeToken) {
+            l2FeeToken = l2Token;
+        } else if (params.l1FeeToken == address(0)) {
+            l2FeeToken = address(0);
+        } else {
+            l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1FeeToken);
+        }
+
         return L2ForwarderParams({
             // set owner to the aliased msg.sender.
             // As long as msg.sender can create retryables, they will be able to recover in case of failure

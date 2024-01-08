@@ -54,8 +54,8 @@ contract BaseTest is Test {
     L1ERC20Gateway public ethDefaultGateway;
     L1OrbitERC20Gateway public erc20DefaultGateway;
 
-    address public childGatewayRouter = address(0x9900);
-    address public childDefaultGateway = address(0x9901);
+    address public childGatewayRouter = address(9900);
+    address public childDefaultGateway = address(9901);
 
     function setUp() public virtual {
         ethBridge = Bridge(_deployProxy(address(new Bridge())));
