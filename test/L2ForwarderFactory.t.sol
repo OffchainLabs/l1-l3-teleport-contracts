@@ -34,7 +34,8 @@ contract L2ForwarderFactoryTest is Test {
         vm.expectRevert(L2ForwarderFactory.OnlyL1Teleporter.selector);
         factory.callForwarder(params);
         vm.prank(aliasedL1Teleporter);
-        (bool success, bytes memory data) = address(factory).call(abi.encodeCall(L2ForwarderFactory.callForwarder, params));
+        (bool success, bytes memory data) =
+            address(factory).call(abi.encodeCall(L2ForwarderFactory.callForwarder, params));
         assertFalse(success);
         assertEq(data.length, 0);
     }

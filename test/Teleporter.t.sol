@@ -189,7 +189,7 @@ contract L1TeleporterTest is BaseTest {
         (uint256 requiredEth,,, L1Teleporter.RetryableGasCosts memory retryableCosts) =
             teleporter.determineTypeAndFees(params, block.basefee);
         L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
-            teleporter.buildL2ForwarderParams(params, address(this));
+            teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
         address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams.owner);
 
         l1Token.approve(address(teleporter), amount);
@@ -257,7 +257,7 @@ contract L1TeleporterTest is BaseTest {
         l1Token.approve(address(teleporter), params.amount);
 
         L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
-            teleporter.buildL2ForwarderParams(params, address(this));
+            teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
         address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams.owner);
 
         // token bridge, indicating an actual bridge tx has been initiated
@@ -307,7 +307,7 @@ contract L1TeleporterTest is BaseTest {
         nativeToken.approve(address(teleporter), requiredFeeTokenAmount);
 
         L1Teleporter.L2ForwarderParams memory l2ForwarderParams =
-            teleporter.buildL2ForwarderParams(params, address(this));
+            teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
         address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams.owner);
 
         // token bridge, indicating an actual bridge tx has been initiated

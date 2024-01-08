@@ -103,21 +103,18 @@ contract L1Teleporter is L2ForwarderPredictor {
             TeleportationType teleportationType,
             RetryableGasCosts memory retryableCosts
         ) = determineTypeAndFees(params, block.basefee);
+
         if (msg.value < requiredEth) revert InsufficientValue(requiredEth, msg.value);
 
         // get inbox
         address inbox = L1GatewayRouter(params.l1l2Router).inbox();
 
-        // create L2ForwarderParams
-        // todo: can move this build to common function
-        L2ForwarderParams memory l2ForwarderParams = buildL2ForwarderParams(params, msg.sender);
-
         // calculate forwarder address
-        address l2Forwarder = l2ForwarderAddress(l2ForwarderParams.owner);
+        address l2Forwarder = l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender));
 
         if (teleportationType == TeleportationType.Standard) {
             // we are teleporting a token to an ETH fee L3
-            _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder, inbox);
+            _teleportCommon(params, retryableCosts, l2Forwarder, inbox);
         } else if (teleportationType == TeleportationType.OnlyCustomFee) {
             // we are teleporting an L3's fee token
 
@@ -125,7 +122,7 @@ contract L1Teleporter is L2ForwarderPredictor {
             if (params.amount < requiredFeeToken) revert InsufficientFeeToken(requiredFeeToken, params.amount);
 
             // teleportation flow is identical to standard
-            _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder, inbox);
+            _teleportCommon(params, retryableCosts, l2Forwarder, inbox);
         } else {
             // we are teleporting a non-fee token to a custom fee L3
             // the flow is identical to standard,
@@ -154,7 +151,7 @@ contract L1Teleporter is L2ForwarderPredictor {
             });
 
             // the rest of the flow is identical to standard
-            _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder, inbox);
+            _teleportCommon(params, retryableCosts, l2Forwarder, inbox);
         }
     }
 
@@ -186,7 +183,7 @@ contract L1Teleporter is L2ForwarderPredictor {
         }
     }
 
-    function buildL2ForwarderParams(TeleportParams memory params, address msgSender)
+    function buildL2ForwarderParams(TeleportParams memory params, address l2Owner)
         public
         view
         returns (L2ForwarderParams memory)
@@ -205,7 +202,7 @@ contract L1Teleporter is L2ForwarderPredictor {
         return L2ForwarderParams({
             // set owner to the aliased msg.sender.
             // As long as msg.sender can create retryables, they will be able to recover in case of failure
-            owner: AddressAliasHelper.applyL1ToL2Alias(msgSender),
+            owner: l2Owner,
             l2Token: l2Token,
             l2FeeToken: l2FeeToken,
             routerOrInbox: params.l2l3RouterOrInbox,
@@ -218,7 +215,6 @@ contract L1Teleporter is L2ForwarderPredictor {
     function _teleportCommon(
         TeleportParams memory params,
         RetryableGasCosts memory retryableCosts,
-        L2ForwarderParams memory l2ForwarderParams,
         address l2Forwarder,
         address inbox
     ) internal {
@@ -254,7 +250,10 @@ contract L1Teleporter is L2ForwarderPredictor {
             callValueRefundAddress: l2Forwarder,
             gasLimit: params.gasParams.l2ForwarderFactoryGasLimit,
             maxFeePerGas: params.gasParams.l2GasPrice,
-            data: abi.encodeCall(L2ForwarderFactory.callForwarder, (l2ForwarderParams))
+            data: abi.encodeCall(
+                L2ForwarderFactory.callForwarder,
+                buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender))
+                )
         });
     }
 
