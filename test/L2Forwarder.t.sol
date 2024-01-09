@@ -45,15 +45,34 @@ contract L2ForwarderTest is BaseTest {
     }
 
     function testNativeTokenHappyCase() public {
-        _bridgeNativeTokenHappyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 0.01 ether);
+        _bridgeNativeTokenHappyCase({
+            tokenAmount: 1 ether,
+            gasLimit: 1_000_000,
+            gasPrice: 0.1 gwei,
+            forwarderETHBalance: 2 ether,
+            msgValue: 3 ether
+        });
     }
 
     function testEthFeesHappyCase() public {
-        _bridgeTokenEthFeesHappyCase(1 ether, 1_000_000, 0.1 gwei, 0.01 ether, 0.1 ether);
+        _bridgeTokenEthFeesHappyCase({
+            tokenAmount: 1 ether,
+            gasLimit: 1_000_000,
+            gasPrice: 0.1 gwei,
+            forwarderETHBalance: 0.01 ether,
+            msgValue: 0.1 ether
+        });
     }
 
     function testNonFeeTokenHappyCase() public {
-        _bridgeNonFeeTokenHappyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 0.2 ether, 3 ether);
+        _bridgeNonFeeTokenHappyCase({
+            tokenAmount: 1 ether,
+            gasLimit: 1_000_000,
+            gasPrice: 0.1 gwei,
+            forwarderETHBalance: 0.1 ether,
+            msgValue: 0.2 ether,
+            forwarderNativeBalance: 3 ether
+        });
     }
 
     function testRescue() public {
