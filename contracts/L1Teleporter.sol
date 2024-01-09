@@ -104,18 +104,18 @@ contract L1Teleporter is L2ForwarderPredictor {
     ///         If TeleportationType is NonFeeTokenToCustomFeeL3, a third retryable will be created to send the L3's fee token to the L2Forwarder.
     ///         Extra ETH is sent through the l2CallValue of the call to the L2ForwarderFactory.
     function teleport(TeleportParams memory params) external payable {
+        // get inbox
+        address inbox = L1GatewayRouter(params.l1l2Router).inbox();
+
         (
             uint256 requiredEth,
             uint256 requiredFeeToken,
             TeleportationType teleportationType,
             RetryableGasCosts memory retryableCosts
-        ) = determineTypeAndFees(params, block.basefee);
+        ) = _determineTypeAndFees(params, block.basefee, inbox);
 
         // ensure we have enough msg.value
         if (msg.value < requiredEth) revert InsufficientValue(requiredEth, msg.value);
-
-        // get inbox
-        address inbox = L1GatewayRouter(params.l1l2Router).inbox();
 
         // calculate forwarder address
         address l2Forwarder = l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender));
@@ -136,19 +136,7 @@ contract L1Teleporter is L2ForwarderPredictor {
             // the flow is identical to standard,
             // except we have to send the appropriate amount of fee token through the bridge as well
 
-            {
-                // pull in fee tokens from caller
-                IERC20(params.l1FeeToken).safeTransferFrom(msg.sender, address(this), requiredFeeToken);
-
-                // approve gateway
-                // todo: internal function for this
-                address gateway = L1GatewayRouter(params.l1l2Router).getGateway(params.l1FeeToken);
-                if (IERC20(params.l1FeeToken).allowance(address(this), gateway) == 0) {
-                    IERC20(params.l1FeeToken).safeApprove(gateway, type(uint256).max);
-                }
-            }
-
-            // send fee tokens through the bridge to predicted forwarder
+            // pull in and send fee tokens through the bridge to predicted forwarder
             _bridgeToken({
                 router: params.l1l2Router,
                 token: params.l1FeeToken,
@@ -176,7 +164,7 @@ contract L1Teleporter is L2ForwarderPredictor {
 
     /// @notice Given some teleportation parameters, calculate the total cost of retryables in ETH and the L3's fee token.
     function determineTypeAndFees(TeleportParams memory params, uint256 l1BaseFee)
-        public
+        external
         view
         returns (
             uint256 ethAmount,
@@ -185,22 +173,7 @@ contract L1Teleporter is L2ForwarderPredictor {
             RetryableGasCosts memory costs
         )
     {
-        // todo: optimize out redundant call to inbox() via a new internal function
-        costs = _calculateRetryableGasCosts(L1GatewayRouter(params.l1l2Router).inbox(), l1BaseFee, params.gasParams);
-
-        if (params.l1FeeToken == address(0)) {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
-            feeTokenAmount = 0;
-            teleportationType = TeleportationType.Standard;
-        } else if (params.l1FeeToken == params.l1Token) {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
-            feeTokenAmount = costs.l2l3TokenBridgeCost;
-            teleportationType = TeleportationType.OnlyCustomFee;
-        } else {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l1l2FeeTokenBridgeCost + costs.l2ForwarderFactoryCost;
-            feeTokenAmount = costs.l2l3TokenBridgeCost;
-            teleportationType = TeleportationType.NonFeeTokenToCustomFeeL3;
-        }
+        return _determineTypeAndFees(params, l1BaseFee, L1GatewayRouter(params.l1l2Router).inbox());
     }
 
     /// @notice Given some teleportation parameters, build the L2ForwarderParams for the L2ForwarderFactory.
@@ -239,27 +212,16 @@ contract L1Teleporter is L2ForwarderPredictor {
         address l2Forwarder,
         address inbox
     ) internal {
-        // pull in tokens from caller
-        IERC20(params.l1Token).safeTransferFrom(msg.sender, address(this), params.amount);
-
-        // approve gateway
-        address gateway = L1GatewayRouter(params.l1l2Router).getGateway(params.l1Token);
-        if (IERC20(params.l1Token).allowance(address(this), gateway) == 0) {
-            IERC20(params.l1Token).safeApprove(gateway, type(uint256).max);
-        }
-
-        {
-            // send tokens through the bridge to predicted forwarder
-            _bridgeToken({
-                router: params.l1l2Router,
-                token: params.l1Token,
-                to: l2Forwarder,
-                amount: params.amount,
-                gasLimit: params.gasParams.l1l2TokenBridgeGasLimit,
-                gasPrice: params.gasParams.l2GasPrice,
-                submissionCost: params.gasParams.l1l2TokenBridgeSubmissionCost
-            });
-        }
+        // send tokens through the bridge to predicted forwarder
+        _bridgeToken({
+            router: params.l1l2Router,
+            token: params.l1Token,
+            to: l2Forwarder,
+            amount: params.amount,
+            gasLimit: params.gasParams.l1l2TokenBridgeGasLimit,
+            gasPrice: params.gasParams.l2GasPrice,
+            submissionCost: params.gasParams.l1l2TokenBridgeSubmissionCost
+        });
 
         // call the L2ForwarderFactory
         IInbox(inbox).createRetryableTicket{value: address(this).balance}({
@@ -277,7 +239,7 @@ contract L1Teleporter is L2ForwarderPredictor {
         });
     }
 
-    /// @notice Bridge a token to L2.
+    /// @notice Pull tokens from msg.sender, approve the token's gateway and bridge them to L2.
     function _bridgeToken(
         address router,
         address token,
@@ -287,6 +249,15 @@ contract L1Teleporter is L2ForwarderPredictor {
         uint256 gasPrice,
         uint256 submissionCost
     ) internal {
+        // pull in tokens from caller
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+
+        // approve gateway
+        address gateway = L1GatewayRouter(router).getGateway(token);
+        if (IERC20(token).allowance(address(this), gateway) == 0) {
+            IERC20(token).safeApprove(gateway, type(uint256).max);
+        }
+
         L1GatewayRouter(router).outboundTransferCustomRefund{value: gasLimit * gasPrice + submissionCost}({
             _token: address(token),
             _refundTo: to,
@@ -298,11 +269,39 @@ contract L1Teleporter is L2ForwarderPredictor {
         });
     }
 
+    /// @notice Given some teleportation parameters, calculate the total cost of retryables in ETH and the L3's fee token.
+    function _determineTypeAndFees(TeleportParams memory params, uint256 l1BaseFee, address inbox)
+        internal
+        view
+        returns (
+            uint256 ethAmount,
+            uint256 feeTokenAmount,
+            TeleportationType teleportationType,
+            RetryableGasCosts memory costs
+        )
+    {
+        costs = _calculateRetryableGasCosts(params.gasParams, l1BaseFee, inbox);
+
+        if (params.l1FeeToken == address(0)) {
+            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
+            feeTokenAmount = 0;
+            teleportationType = TeleportationType.Standard;
+        } else if (params.l1FeeToken == params.l1Token) {
+            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
+            feeTokenAmount = costs.l2l3TokenBridgeCost;
+            teleportationType = TeleportationType.OnlyCustomFee;
+        } else {
+            ethAmount = costs.l1l2TokenBridgeCost + costs.l1l2FeeTokenBridgeCost + costs.l2ForwarderFactoryCost;
+            feeTokenAmount = costs.l2l3TokenBridgeCost;
+            teleportationType = TeleportationType.NonFeeTokenToCustomFeeL3;
+        }
+    }
+
     /// @notice Given some gas parameters, calculate costs for each retryable ticket.
-    /// @param  inbox       L2's Inbox
-    /// @param  l1BaseFee   L1's base fee
     /// @param  gasParams   Gas parameters for each retryable ticket
-    function _calculateRetryableGasCosts(address inbox, uint256 l1BaseFee, RetryableGasParams memory gasParams)
+    /// @param  l1BaseFee   L1's base fee
+    /// @param  inbox       L2's Inbox
+    function _calculateRetryableGasCosts(RetryableGasParams memory gasParams, uint256 l1BaseFee, address inbox)
         internal
         view
         returns (RetryableGasCosts memory results)
