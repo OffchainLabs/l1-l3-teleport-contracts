@@ -9,14 +9,13 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 
 /// @title  L2Forwarder
-/// @notice L2 contract that receives ERC20 tokens and ETH from a token bridge retryable,
-///         forwards them to a recipient on L3, optionally pays a relayer,
-///         and allows the owner to make arbitrary calls.
-/// @dev    The parameters of the bridge transaction are encoded in the L2Forwarder address. See L2ForwarderPredictor and L2ForwarderFactory.
+/// @notice L2 contract that receives ERC20 tokens to forward to L3.
+///         May receive either token and ETH, token and the L3 feeToken, or just feeToken if token == feeToken.
+///         In case funds cannot be bridged to L3, the owner can call rescue to get their funds back.
 contract L2Forwarder is L2ForwarderPredictor {
     using SafeERC20 for IERC20;
 
-    /// @notice Address that owns this L2Forwarder and can make arbitrary calls
+    /// @notice Address that owns this L2Forwarder and can make arbitrary calls via rescue
     address public owner;
 
     /// @notice Emitted after a successful call to rescue
@@ -26,7 +25,7 @@ contract L2Forwarder is L2ForwarderPredictor {
     event Rescued(address[] targets, uint256[] values, bytes[] datas);
 
     /// @notice Emitted after a successful call to bridgeToL3
-    event BridgedToL3(uint256 tokenAmount, uint256 ethBalance);
+    event BridgedToL3(uint256 tokenAmount, uint256 feeAmount);
 
     /// @notice Thrown when initialize is called after initialization
     error AlreadyInitialized();
@@ -38,7 +37,7 @@ contract L2Forwarder is L2ForwarderPredictor {
     error CallFailed(address to, uint256 value, bytes data, bytes returnData);
     /// @notice Thrown when the relayer payment fails
     error RelayerPaymentFailed();
-
+    /// @notice Thrown when bridgeToL3 is called by an address other than the L2ForwarderFactory
     error OnlyL2ForwarderFactory();
 
     constructor(address _factory) L2ForwarderPredictor(_factory, address(this)) {}
@@ -51,9 +50,9 @@ contract L2Forwarder is L2ForwarderPredictor {
         owner = _owner;
     }
 
-    /// @notice Send tokens and fee tokens through the bridge to a recipient on L3 and optionally pay a relayer in ETH.
-    /// @param  params Parameters of the bridge transaction. There is only one combination of valid parameters for a given L2Forwarder.
-    /// @dev    The params are encoded in the L2Forwarder address. Will revert if params do not match.
+    /// @notice Send tokens + (fee tokens or ETH) through the bridge to a recipient on L3.
+    /// @param  params Parameters of the bridge transaction.
+    /// @dev    Can only be called by the L2ForwarderFactory.
     function bridgeToL3(L2ForwarderParams memory params) external payable {
         if (msg.sender != l2ForwarderFactory) revert OnlyL2ForwarderFactory();
 
@@ -85,13 +84,8 @@ contract L2Forwarder is L2ForwarderPredictor {
 
     /// @dev Bridge tokens to an L3 that uses ETH for fees.
     function _bridgeToEthFeeL3(L2ForwarderParams memory params) internal {
-        // get gateway
-        address l2l3Gateway = L1GatewayRouter(params.routerOrInbox).getGateway(params.l2Token);
-
-        uint256 tokenBalance = IERC20(params.l2Token).balanceOf(address(this));
-
-        // approve gateway
-        IERC20(params.l2Token).safeApprove(l2l3Gateway, tokenBalance);
+        // get balance and approve gateway
+        uint256 tokenBalance = _approveGatewayForBalance(params.routerOrInbox, params.l2Token);
 
         // send tokens through the bridge to intended recipient
         // (send all the ETH we have too, we could have more than msg.value b/c of fee refunds)
@@ -120,6 +114,7 @@ contract L2Forwarder is L2ForwarderPredictor {
         // create retryable ticket
         uint256 submissionCost = IERC20Inbox(params.routerOrInbox).calculateRetryableSubmissionFee(0, 0);
         uint256 callValue = tokenBalance - submissionCost - params.gasLimit * params.gasPrice;
+        // todo: investigate the submission fee hack to not pay l3 gas
         IERC20Inbox(params.routerOrInbox).createRetryableTicket({
             to: params.to,
             l2CallValue: callValue,
@@ -131,17 +126,16 @@ contract L2Forwarder is L2ForwarderPredictor {
             tokenTotalFeeAmount: tokenBalance,
             data: ""
         });
+
+        emit BridgedToL3(callValue, submissionCost + params.gasLimit * params.gasPrice);
     }
 
     function _bridgeNonFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
-        // get gateway
-        address l2l3Gateway = L1GatewayRouter(params.routerOrInbox).getGateway(params.l2Token);
+        // get balance and approve gateway
+        uint256 tokenBalance = _approveGatewayForBalance(params.routerOrInbox, params.l2Token);
 
-        uint256 tokenBalance = IERC20(params.l2Token).balanceOf(address(this));
+        // get feeToken balance
         uint256 feeTokenBalance = IERC20(params.l2FeeToken).balanceOf(address(this));
-
-        // approve gateway
-        IERC20(params.l2Token).safeApprove(l2l3Gateway, tokenBalance);
 
         // send feeToken to the inbox
         address inbox = L1GatewayRouter(params.routerOrInbox).inbox();
@@ -159,6 +153,15 @@ contract L2Forwarder is L2ForwarderPredictor {
             params.gasPrice,
             abi.encode(submissionCost, bytes(""), feeTokenBalance)
         );
+
+        emit BridgedToL3(tokenBalance, feeTokenBalance);
+    }
+
+    function _approveGatewayForBalance(address router, address token) internal returns (uint256) {
+        uint256 balance = IERC20(token).balanceOf(address(this));
+        address l2l3Gateway = L1GatewayRouter(router).getGateway(token);
+        IERC20(token).safeApprove(l2l3Gateway, balance);
+        return balance;
     }
 
     receive() external payable {}

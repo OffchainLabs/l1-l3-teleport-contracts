@@ -212,6 +212,7 @@ contract L2ForwarderTest is BaseTest {
         address forwarder = factory.l2ForwarderAddress(params.owner);
 
         // give the forwarder some ETH, the first leg retryable would do this in practice
+        // TODO: this is not how it works anymore, instead pass value in call to factory
         vm.deal(forwarder, forwarderETHBalance);
 
         // give the forwarder some tokens, the first leg retryable would do this in practice
