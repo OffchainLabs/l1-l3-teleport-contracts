@@ -66,7 +66,10 @@ To deploy:
 ```
 mkdir script-deploy-data
 
-# for all L2's
+# set ETH_NONCE so the L1Teleporter address can be predicted by 0_DeployL2Contracts.s.sol
+export ETH_NONCE=$(cast nonce $(cast w address $PRIVATE_KEY) --rpc-url $ETH_URL)
+
+# for each L2
 forge script script/0_DeployL2Contracts.s.sol --rpc-url $L2_URL --broadcast --verify --etherscan-api-key $ARBISCAN_API_KEY
 
 # for L1
