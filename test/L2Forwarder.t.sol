@@ -33,6 +33,8 @@ contract L2ForwarderTest is BaseTest {
         implementation = L2Forwarder(payable(deployer.implementation()));
         l2Token = IERC20(new ERC20PresetMinterPauser("MOCK", "MOCK"));
         ERC20PresetMinterPauser(address(l2Token)).mint(address(this), 10000 ether);
+
+        vm.deal(aliasedL1Teleporter, 10000 ether);
     }
 
     function testOnlyL2ForwarderFactory() public {
@@ -43,15 +45,15 @@ contract L2ForwarderTest is BaseTest {
     }
 
     function testNativeTokenHappyCase() public {
-        _bridgeNativeTokenHappyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether);
+        _bridgeNativeTokenHappyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 0.01 ether);
     }
 
     function testEthFeesHappyCase() public {
-        _bridgeTokenEthFeesHappyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether);
+        _bridgeTokenEthFeesHappyCase(1 ether, 1_000_000, 0.1 gwei, 0.01 ether, 0.1 ether);
     }
 
     function testNonFeeTokenHappyCase() public {
-        _bridgeNonFeeTokenHappyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 3 ether);
+        _bridgeNonFeeTokenHappyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 0.2 ether, 3 ether);
     }
 
     function testRescue() public {
@@ -95,6 +97,7 @@ contract L2ForwarderTest is BaseTest {
         uint256 gasLimit,
         uint256 gasPrice,
         uint256 forwarderETHBalance,
+        uint256 msgValue,
         uint256 forwarderNativeBalance
     ) internal {
         L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
@@ -142,17 +145,18 @@ contract L2ForwarderTest is BaseTest {
             _amount: tokenAmount
         });
         vm.prank(aliasedL1Teleporter);
-        factory.callForwarder(params);
+        factory.callForwarder{value: msgValue}(params);
 
         // make sure the forwarder has not moved any ETH
-        assertEq(address(forwarder).balance, forwarderETHBalance);
+        assertEq(address(forwarder).balance, forwarderETHBalance + msgValue);
     }
 
     function _bridgeNativeTokenHappyCase(
         uint256 tokenAmount,
         uint256 gasLimit,
         uint256 gasPrice,
-        uint256 forwarderETHBalance
+        uint256 forwarderETHBalance,
+        uint256 msgValue
     ) internal {
         L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
             owner: owner,
@@ -187,17 +191,18 @@ contract L2ForwarderTest is BaseTest {
             data: ""
         });
         vm.prank(aliasedL1Teleporter);
-        factory.callForwarder(params);
+        factory.callForwarder{value: msgValue}(params);
 
         // make sure the forwarder has not moved its ETH
-        assertEq(address(forwarder).balance, forwarderETHBalance);
+        assertEq(address(forwarder).balance, forwarderETHBalance + msgValue);
     }
 
     function _bridgeTokenEthFeesHappyCase(
         uint256 tokenAmount,
         uint256 gasLimit,
         uint256 gasPrice,
-        uint256 forwarderETHBalance
+        uint256 forwarderETHBalance,
+        uint256 msgValue
     ) internal {
         L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
             owner: owner,
@@ -212,15 +217,14 @@ contract L2ForwarderTest is BaseTest {
         address forwarder = factory.l2ForwarderAddress(params.owner);
 
         // give the forwarder some ETH, the first leg retryable would do this in practice
-        // TODO: this is not how it works anymore, instead pass value in call to factory
         vm.deal(forwarder, forwarderETHBalance);
 
         // give the forwarder some tokens, the first leg retryable would do this in practice
         l2Token.transfer(forwarder, tokenAmount);
 
-        _expectBridgeTokenEthFeesHappyCaseEvents(params, forwarderETHBalance, gasLimit, gasPrice, tokenAmount);
+        _expectBridgeTokenEthFeesHappyCaseEvents(params, forwarderETHBalance, msgValue, gasLimit, gasPrice, tokenAmount);
         vm.prank(aliasedL1Teleporter);
-        factory.callForwarder(params);
+        factory.callForwarder{value: msgValue}(params);
 
         // make sure the forwarder has 0 ETH left
         assertEq(address(forwarder).balance, 0);
@@ -229,6 +233,7 @@ contract L2ForwarderTest is BaseTest {
     function _expectBridgeTokenEthFeesHappyCaseEvents(
         L2ForwarderPredictor.L2ForwarderParams memory params,
         uint256 forwarderETHBalance,
+        uint256 msgValue,
         uint256 gasLimit,
         uint256 gasPrice,
         uint256 tokenAmount
@@ -242,8 +247,8 @@ contract L2ForwarderTest is BaseTest {
             msgCount: msgCount,
             to: ethDefaultGateway.counterpartGateway(),
             l2CallValue: 0,
-            msgValue: forwarderETHBalance,
-            maxSubmissionCost: forwarderETHBalance - gasLimit * gasPrice,
+            msgValue: forwarderETHBalance + msgValue,
+            maxSubmissionCost: forwarderETHBalance + msgValue - gasLimit * gasPrice,
             excessFeeRefundAddress: l3Recipient,
             callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(forwarder),
             gasLimit: gasLimit,

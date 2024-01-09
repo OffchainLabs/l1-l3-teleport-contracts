@@ -105,6 +105,8 @@ contract L2Forwarder is L2ForwarderPredictor {
         emit BridgedToL3(tokenBalance, ethBalance);
     }
 
+    /// @dev Bridge fee tokens to an L3 that uses a custom fee token.
+    ///      Create a single retryable to call `params.to` with the fee token amount minus fees.
     function _bridgeFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
         uint256 tokenBalance = IERC20(params.l2Token).balanceOf(address(this));
 
@@ -130,6 +132,9 @@ contract L2Forwarder is L2ForwarderPredictor {
         emit BridgedToL3(callValue, submissionCost + params.gasLimit * params.gasPrice);
     }
 
+    /// @dev Bridge non-fee tokens to an L3 that uses a custom fee token.
+    ///      Send entire fee token balance to the inbox and call the L3's L1GatewayRouter to bridge tokens.
+    ///      Overestimate the submission cost to ensure all fee tokens are sent through.
     function _bridgeNonFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
         // get balance and approve gateway
         uint256 tokenBalance = _approveGatewayForBalance(params.routerOrInbox, params.l2Token);

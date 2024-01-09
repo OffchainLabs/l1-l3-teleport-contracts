@@ -26,12 +26,12 @@ contract L2ForwarderFactory is L2ForwarderPredictor {
 
     /// @notice Calls an L2Forwarder to bridge tokens to L3. Will create the L2Forwarder first if it doesn't exist.
     /// @param  params Parameters for the L2Forwarder
-    function callForwarder(L2ForwarderParams memory params) external {
+    function callForwarder(L2ForwarderParams memory params) external payable {
         if (msg.sender != aliasedL1Teleporter) revert OnlyL1Teleporter();
 
         L2Forwarder l2Forwarder = _tryCreateL2Forwarder(params);
 
-        l2Forwarder.bridgeToL3(params);
+        l2Forwarder.bridgeToL3{value: msg.value}(params);
 
         emit CalledL2Forwarder(address(l2Forwarder), params);
     }
