@@ -10,6 +10,7 @@ import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 /// @notice Creates L2Forwarders and calls them to bridge tokens to L3.
 ///         L2Forwarders are created via CREATE2 / clones.
 contract L2ForwarderFactory is L2ForwarderPredictor {
+    /// @notice Aliased address of the L1Teleporter contract
     address public immutable aliasedL1Teleporter;
 
     /// @notice Emitted when a new L2Forwarder is created
@@ -18,6 +19,7 @@ contract L2ForwarderFactory is L2ForwarderPredictor {
     /// @notice Emitted when an L2Forwarder is called to bridge tokens to L3
     event CalledL2Forwarder(address indexed l2Forwarder, L2ForwarderParams params);
 
+    /// @notice Thrown when any address other than the aliased L1Teleporter calls callForwarder
     error OnlyL1Teleporter();
 
     constructor(address _impl, address _aliasedL1Teleporter) L2ForwarderPredictor(address(this), _impl) {
