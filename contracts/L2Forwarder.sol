@@ -118,7 +118,6 @@ contract L2Forwarder is L2ForwarderPredictor {
         // create retryable ticket
         uint256 submissionCost = IERC20Inbox(params.routerOrInbox).calculateRetryableSubmissionFee(0, 0);
         uint256 callValue = tokenBalance - submissionCost - params.gasLimit * params.gasPrice;
-        // todo: investigate the submission fee hack to not pay l3 gas
         IERC20Inbox(params.routerOrInbox).createRetryableTicket({
             to: params.to,
             l2CallValue: callValue,
