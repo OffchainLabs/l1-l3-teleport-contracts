@@ -115,9 +115,12 @@ contract L2Forwarder is L2ForwarderPredictor {
         // transfer tokens to the inbox
         IERC20(params.l2Token).safeTransfer(params.routerOrInbox, tokenBalance);
 
+        // get inbox balance of fee token (l2Token is fee token)
+        uint256 inboxBalance = IERC20(params.l2Token).balanceOf(params.routerOrInbox);
+
         // create retryable ticket
         uint256 submissionCost = IERC20Inbox(params.routerOrInbox).calculateRetryableSubmissionFee(0, 0);
-        uint256 callValue = tokenBalance - submissionCost - params.gasLimit * params.gasPrice;
+        uint256 callValue = inboxBalance - submissionCost - params.gasLimit * params.gasPrice;
         IERC20Inbox(params.routerOrInbox).createRetryableTicket({
             to: params.to,
             l2CallValue: callValue,
@@ -143,13 +146,20 @@ contract L2Forwarder is L2ForwarderPredictor {
         // get feeToken balance
         uint256 feeTokenBalance = IERC20(params.l2FeeToken).balanceOf(address(this));
 
-        // send feeToken to the inbox
+        // get inbox
         address inbox = L1GatewayRouter(params.routerOrInbox).inbox();
-        IERC20(params.l2FeeToken).safeTransfer(inbox, feeTokenBalance);
+
+        // send feeToken to the inbox if we have any
+        if (feeTokenBalance > 0) {
+            IERC20(params.l2FeeToken).safeTransfer(inbox, feeTokenBalance);
+        }
+
+        // get inbox balance of fee token
+        uint256 inboxBalance = IERC20(params.l2FeeToken).balanceOf(inbox);
 
         // send tokens through the bridge to intended recipient
         // overestimate submission cost to ensure all feeToken is sent through
-        uint256 submissionCost = feeTokenBalance - params.gasLimit * params.gasPrice;
+        uint256 submissionCost = inboxBalance - params.gasLimit * params.gasPrice;
         L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund(
             params.l2Token,
             params.to,
