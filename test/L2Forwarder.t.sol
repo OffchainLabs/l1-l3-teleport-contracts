@@ -202,7 +202,7 @@ contract L2ForwarderTest is BaseTest {
             to: params.to,
             l2CallValue: tokenAmount - erc20Inbox.calculateRetryableSubmissionFee(0, 0) - params.gasLimit * params.gasPrice,
             msgValue: tokenAmount,
-            maxSubmissionCost: erc20Inbox.calculateRetryableSubmissionFee(0, 0), // this should be 0, but calculate it like this anyway
+            maxSubmissionCost: erc20Inbox.calculateRetryableSubmissionFee(0, 0),
             excessFeeRefundAddress: params.to,
             callValueRefundAddress: params.to,
             gasLimit: params.gasLimit,
