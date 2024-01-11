@@ -18,7 +18,7 @@ contract L2ForwarderFactoryTest is Test {
     /// forge-config: default.fuzz.runs = 20
     function testPredictionAndActualForwarderAddresses(L2ForwarderFactory.L2ForwarderParams memory params) public {
         address actual = address(factory.createL2Forwarder(params));
-        address predicted = factory.l2ForwarderAddress(params.owner);
+        address predicted = factory.l2ForwarderAddress(params);
         assertEq(predicted, actual);
     }
 

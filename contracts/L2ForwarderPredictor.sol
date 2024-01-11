@@ -23,6 +23,7 @@ abstract contract L2ForwarderPredictor {
         address to;
         uint256 gasLimit;
         uint256 gasPrice;
+        bool allowRelayer;
     }
 
     /// @notice Address of the L2ForwarderFactory
@@ -36,12 +37,12 @@ abstract contract L2ForwarderPredictor {
     }
 
     /// @notice Predicts the address of an L2Forwarder based on its owner
-    function l2ForwarderAddress(address owner) public view returns (address) {
-        return Clones.predictDeterministicAddress(l2ForwarderImplementation, _salt(owner), l2ForwarderFactory);
+    function l2ForwarderAddress(L2ForwarderParams memory params) public view returns (address) {
+        return Clones.predictDeterministicAddress(l2ForwarderImplementation, _salt(params), l2ForwarderFactory);
     }
 
     /// @notice Creates the salt for an L2Forwarder from its owner
-    function _salt(address owner) internal pure returns (bytes32) {
-        return keccak256(abi.encode(owner));
+    function _salt(L2ForwarderParams memory params) internal pure returns (bytes32) {
+        return keccak256(abi.encode(params));
     }
 }

@@ -29,7 +29,7 @@ contract L2ForwarderFactory is L2ForwarderPredictor {
     /// @notice Calls an L2Forwarder to bridge tokens to L3. Will create the L2Forwarder first if it doesn't exist.
     /// @param  params Parameters for the L2Forwarder
     function callForwarder(L2ForwarderParams memory params) external payable {
-        if (msg.sender != aliasedL1Teleporter) revert OnlyL1Teleporter();
+        if (!params.allowRelayer && msg.sender != aliasedL1Teleporter) revert OnlyL1Teleporter();
 
         L2Forwarder l2Forwarder = _tryCreateL2Forwarder(params);
 
@@ -42,7 +42,7 @@ contract L2ForwarderFactory is L2ForwarderPredictor {
     /// @param  params Parameters for the L2Forwarder
     function createL2Forwarder(L2ForwarderParams memory params) public returns (L2Forwarder) {
         L2Forwarder l2Forwarder =
-            L2Forwarder(payable(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(params.owner))));
+            L2Forwarder(payable(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(params))));
         l2Forwarder.initialize(params.owner);
 
         emit CreatedL2Forwarder(address(l2Forwarder), params.owner, params);
@@ -52,7 +52,7 @@ contract L2ForwarderFactory is L2ForwarderPredictor {
 
     /// @dev Create an L2Forwarder if it doesn't exist, otherwise return the existing one.
     function _tryCreateL2Forwarder(L2ForwarderParams memory params) internal returns (L2Forwarder) {
-        address calculatedAddress = l2ForwarderAddress(params.owner);
+        address calculatedAddress = l2ForwarderAddress(params);
 
         uint256 size;
         assembly {
