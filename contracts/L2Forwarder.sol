@@ -116,13 +116,11 @@ contract L2Forwarder is L2ForwarderPredictor {
         IERC20(params.l2Token).safeTransfer(params.routerOrInbox, tokenBalance);
 
         // create retryable ticket
-        uint256 submissionCost = IERC20Inbox(params.routerOrInbox).calculateRetryableSubmissionFee(0, 0);
-        uint256 callValue = tokenBalance - submissionCost - params.gasLimit * params.gasPrice;
-        // todo: investigate the submission fee hack to not pay l3 gas
+        uint256 callValue = tokenBalance - params.gasLimit * params.gasPrice;
         IERC20Inbox(params.routerOrInbox).createRetryableTicket({
             to: params.to,
             l2CallValue: callValue,
-            maxSubmissionCost: submissionCost,
+            maxSubmissionCost: 0,
             excessFeeRefundAddress: params.to,
             callValueRefundAddress: params.to,
             gasLimit: params.gasLimit,
@@ -131,7 +129,7 @@ contract L2Forwarder is L2ForwarderPredictor {
             data: ""
         });
 
-        emit BridgedToL3(callValue, submissionCost + params.gasLimit * params.gasPrice);
+        emit BridgedToL3(callValue, params.gasLimit * params.gasPrice);
     }
 
     /// @dev Bridge non-fee tokens to an L3 that uses a custom fee token.
