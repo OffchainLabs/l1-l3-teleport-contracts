@@ -129,7 +129,7 @@ contract L1Teleporter is L2ForwarderPredictor {
             // except we have to send the appropriate amount of fee token through the bridge as well
 
             // pull in and send fee tokens through the bridge to predicted forwarder
-            _bridgeToken({
+            _pullAndBridgeToken({
                 router: params.l1l2Router,
                 token: params.l1FeeToken,
                 to: l2Forwarder,
@@ -204,7 +204,7 @@ contract L1Teleporter is L2ForwarderPredictor {
         address inbox
     ) internal {
         // send tokens through the bridge to predicted forwarder
-        _bridgeToken({
+        _pullAndBridgeToken({
             router: params.l1l2Router,
             token: params.l1Token,
             to: l2Forwarder,
@@ -231,7 +231,7 @@ contract L1Teleporter is L2ForwarderPredictor {
     }
 
     /// @notice Pull tokens from msg.sender, approve the token's gateway and bridge them to L2.
-    function _bridgeToken(
+    function _pullAndBridgeToken(
         address router,
         address token,
         address to,
