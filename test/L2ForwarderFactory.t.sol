@@ -22,13 +22,6 @@ contract L2ForwarderFactoryTest is Test {
         assertEq(predicted, actual);
     }
 
-    function testProperForwarderInitialization() public {
-        L2ForwarderFactory.L2ForwarderParams memory params;
-        params.owner = address(0x2200);
-        L2Forwarder forwarder = factory.createL2Forwarder(params);
-        assertEq(forwarder.owner(), params.owner);
-    }
-
     function testOnlyL1Teleporter() public {
         L2ForwarderFactory.L2ForwarderParams memory params;
         vm.expectRevert(L2ForwarderFactory.OnlyL1Teleporter.selector);

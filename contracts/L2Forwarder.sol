@@ -15,9 +15,6 @@ import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 contract L2Forwarder is L2ForwarderPredictor {
     using SafeERC20 for IERC20;
 
-    /// @notice Address that owns this L2Forwarder and can make arbitrary calls via rescue
-    address public owner;
-
     /// @notice Emitted after a successful call to rescue
     /// @param  targets Addresses that were called
     /// @param  values  Values that were sent
@@ -42,14 +39,6 @@ contract L2Forwarder is L2ForwarderPredictor {
 
     constructor(address _factory) L2ForwarderPredictor(_factory, address(this)) {}
 
-    /// @notice Initialize this L2Forwarder
-    /// @param  _owner Address that owns this L2Forwarder
-    /// @dev    Can only be called once. Failing to set owner properly could result in loss of funds.
-    function initialize(address _owner) external {
-        if (owner != address(0)) revert AlreadyInitialized();
-        owner = _owner;
-    }
-
     /// @notice Send tokens + (fee tokens or ETH) through the bridge to a recipient on L3.
     /// @param  params Parameters of the bridge transaction.
     /// @dev    Can only be called by the L2ForwarderFactory.
@@ -71,7 +60,7 @@ contract L2Forwarder is L2ForwarderPredictor {
     /// @param  values  Values to send
     /// @param  datas   Calldata to send
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external payable {
-        if (msg.sender != owner) revert OnlyOwner();
+        if (l2ForwarderAddress(msg.sender) != address(this)) revert OnlyOwner();
         if (targets.length != values.length || values.length != datas.length) revert LengthMismatch();
 
         for (uint256 i = 0; i < targets.length; i++) {
