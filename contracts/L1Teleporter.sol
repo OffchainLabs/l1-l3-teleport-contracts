@@ -17,13 +17,6 @@ import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 contract L1Teleporter is L2ForwarderPredictor {
     using SafeERC20 for IERC20;
 
-    /// @notice Types of teleportations
-    enum TeleportationType {
-        Standard,
-        NonFeeTokenToCustomFeeL3,
-        OnlyCustomFee
-    }
-
     /// @notice Parameters for teleport()
     /// @param  l1Token     L1 token being teleported
     /// @param  l1FeeToken  L1 address of the L3's fee token, or 0x00 for ETH
@@ -110,7 +103,6 @@ contract L1Teleporter is L2ForwarderPredictor {
         (
             uint256 requiredEth,
             uint256 requiredFeeToken,
-            TeleportationType teleportationType,
             RetryableGasCosts memory retryableCosts
         ) = _determineTypeAndFees(params, block.basefee, inbox);
 
@@ -120,10 +112,10 @@ contract L1Teleporter is L2ForwarderPredictor {
         // calculate forwarder address
         address l2Forwarder = l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender));
 
-        if (teleportationType == TeleportationType.Standard) {
+        if (params.l1FeeToken == address(0)) {
             // we are teleporting a token to an ETH fee L3
             _teleportCommon(params, retryableCosts, l2Forwarder, inbox);
-        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
+        } else if (params.l1Token == params.l1FeeToken) {
             // we are teleporting an L3's fee token
 
             // we have to make sure that the amount specified is enough to cover the retryable costs from L2 -> L3
@@ -169,7 +161,6 @@ contract L1Teleporter is L2ForwarderPredictor {
         returns (
             uint256 ethAmount,
             uint256 feeTokenAmount,
-            TeleportationType teleportationType,
             RetryableGasCosts memory costs
         )
     {
@@ -276,7 +267,6 @@ contract L1Teleporter is L2ForwarderPredictor {
         returns (
             uint256 ethAmount,
             uint256 feeTokenAmount,
-            TeleportationType teleportationType,
             RetryableGasCosts memory costs
         )
     {
@@ -285,15 +275,12 @@ contract L1Teleporter is L2ForwarderPredictor {
         if (params.l1FeeToken == address(0)) {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
             feeTokenAmount = 0;
-            teleportationType = TeleportationType.Standard;
         } else if (params.l1FeeToken == params.l1Token) {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
             feeTokenAmount = costs.l2l3TokenBridgeCost;
-            teleportationType = TeleportationType.OnlyCustomFee;
         } else {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l1l2FeeTokenBridgeCost + costs.l2ForwarderFactoryCost;
             feeTokenAmount = costs.l2l3TokenBridgeCost;
-            teleportationType = TeleportationType.NonFeeTokenToCustomFeeL3;
         }
     }
 
