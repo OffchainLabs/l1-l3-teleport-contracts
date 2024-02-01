@@ -15,11 +15,14 @@ import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 ///         Creates 2 (or 3) retryables: one to bridge tokens (one to bridge the L3's fee token) to an L2Forwarder,
 ///         and one to call the L2ForwarderFactory.
 contract L1Teleporter is L2ForwarderPredictor {
+    // @review - should have interface for everything e.g. IL1Teleporter, etc.
+    //           and then have struct, event definitions there
+    // @review - make this contract pausable or deploy behind proxy for safety
     using SafeERC20 for IERC20;
 
     /// @notice Parameters for teleport()
     /// @param  l1Token     L1 token being teleported
-    /// @param  l1FeeToken  L1 address of the L3's fee token, or 0x00 for ETH
+    /// @param  l1FeeToken  L1 address of the L3's fee token, or 0x00 for ETH // @review - this naming is confusing
     /// @param  l1l2Router  L1 to L2 token bridge router
     /// @param  l2l3Router  L2 to L3 token bridge router
     /// @param  to          L3 address that will receive the tokens
@@ -37,13 +40,13 @@ contract L1Teleporter is L2ForwarderPredictor {
 
     /// @notice Gas parameters for each retryable ticket.
     struct RetryableGasParams {
-        uint256 l2GasPrice;
+        uint256 l2GasPrice; // @review - gasPrice -> gasBid
         uint256 l3GasPrice;
-        uint256 l2ForwarderFactoryGasLimit;
-        uint256 l1l2FeeTokenBridgeGasLimit;
+        uint256 l2ForwarderFactoryGasLimit; // @review - these 4 gas limit can use uint64
+        uint256 l1l2FeeTokenBridgeGasLimit; //         - gas limit cannot exceed uint64
         uint256 l1l2TokenBridgeGasLimit;
         uint256 l2l3TokenBridgeGasLimit;
-        uint256 l1l2FeeTokenBridgeSubmissionCost;
+        uint256 l1l2FeeTokenBridgeSubmissionCost; // @review - "max" submission cost
         uint256 l1l2TokenBridgeSubmissionCost;
         uint256 l2l3TokenBridgeSubmissionCost;
     }
@@ -87,6 +90,7 @@ contract L1Teleporter is L2ForwarderPredictor {
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
     {
         L2ForwarderParams memory _x;
+        // @review - this would not work if L2ForwarderParams has dynamic size
         l2ForwarderFactoryCalldataSize = abi.encodeCall(L2ForwarderFactory.callForwarder, (_x)).length;
     }
 
@@ -106,12 +110,16 @@ contract L1Teleporter is L2ForwarderPredictor {
             RetryableGasCosts memory retryableCosts
         ) = _determineTypeAndFees(params, block.basefee, inbox);
 
+        // @review - we should keep this exact if this is deterministic
+        //         - excess deposit have a slight risk of getting stolen by reentrancy
         // ensure we have enough msg.value
         if (msg.value < requiredEth) revert InsufficientValue(requiredEth, msg.value);
 
         // calculate forwarder address
         address l2Forwarder = l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender));
 
+        // @review we do this check in a few places, consider a library function to return an enum for clarity
+        //         also looks like _teleportCommon can be moved outside the if/else block here
         if (params.l1FeeToken == address(0)) {
             // we are teleporting a token to an ETH fee L3
             _teleportCommon(params, retryableCosts, l2Forwarder, inbox);
@@ -219,8 +227,8 @@ contract L1Teleporter is L2ForwarderPredictor {
             to: l2ForwarderFactory,
             l2CallValue: address(this).balance - retryableCosts.l2ForwarderFactoryCost,
             maxSubmissionCost: retryableCosts.l2ForwarderFactorySubmissionCost,
-            excessFeeRefundAddress: l2Forwarder,
-            callValueRefundAddress: l2Forwarder,
+            excessFeeRefundAddress: l2Forwarder, // @review - notice these are subject to aliasing
+            callValueRefundAddress: l2Forwarder, //           consider burn the nonce that deploy L2ForwarderFactory on L1
             gasLimit: params.gasParams.l2ForwarderFactoryGasLimit,
             maxFeePerGas: params.gasParams.l2GasPrice,
             data: abi.encodeCall(
@@ -244,6 +252,8 @@ contract L1Teleporter is L2ForwarderPredictor {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
         // approve gateway
+        // @review - gateway is user supplied, an attacker can hence approve arbitrary address to spend fund from L1Teleporter
+        //           it should be fine since L1Teleporter is not expected to hold fund, let's keep an eye on this
         address gateway = L1GatewayRouter(router).getGateway(token);
         if (IERC20(token).allowance(address(this), gateway) == 0) {
             IERC20(token).safeApprove(gateway, type(uint256).max);

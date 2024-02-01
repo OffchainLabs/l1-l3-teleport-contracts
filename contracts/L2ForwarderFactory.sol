@@ -53,21 +53,12 @@ contract L2ForwarderFactory is L2ForwarderPredictor {
     function _tryCreateL2Forwarder(L2ForwarderParams memory params) internal returns (L2Forwarder) {
         address calculatedAddress = l2ForwarderAddress(params.owner);
 
-        if (_hasCode(calculatedAddress)) {
+        if (calculatedAddress.code.length > 0) {
             // contract already exists
             return L2Forwarder(payable(calculatedAddress));
         }
 
         // contract doesn't exist, create it
         return createL2Forwarder(params);
-    }
-
-    /// @dev Check if a contract exists at the target address
-    function _hasCode(address target) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(target)
-        }
-        return size > 0;
     }
 }

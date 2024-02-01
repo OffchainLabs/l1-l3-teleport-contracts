@@ -6,6 +6,7 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 /// @title  L2ForwarderPredictor
 /// @notice Predicts the address of an L2Forwarder based on its parameters
 abstract contract L2ForwarderPredictor {
+    // @review - this struct does not seems to belong here, maybe move to IL2Forwarder?
     /// @notice Parameters for an L2Forwarder
     /// @param  owner           Address of the L2Forwarder owner. Setting this incorrectly could result in loss of funds.
     /// @param  l2Token         Address of the L2 token to bridge to L3

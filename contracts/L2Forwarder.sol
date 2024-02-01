@@ -74,11 +74,14 @@ contract L2Forwarder is L2ForwarderPredictor {
     /// @dev Bridge tokens to an L3 that uses ETH for fees. Entire ETH and token balance is sent.
     function _bridgeToEthFeeL3(L2ForwarderParams memory params) internal {
         // get balance and approve gateway
+        // @review - routerOrInbox is user input, whoever initiated the teleport can set it to anything and get approval
+        //         - currently teleport must use L2Forwarder that is owned by alias(msg.sender), so not a problem now
         uint256 tokenBalance = _approveGatewayForBalance(params.routerOrInbox, params.l2Token);
 
         // send tokens through the bridge to intended recipient
         // (send all the ETH we have too, we could have more than msg.value b/c of fee refunds)
         // overestimate submission cost to ensure all ETH is sent through
+        // @review - this might create some issue when multiple teleporter are simutanously initiated and some are failed
         uint256 ethBalance = address(this).balance;
         uint256 submissionCost = address(this).balance - params.gasLimit * params.gasPrice;
         L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund{value: address(this).balance}(
