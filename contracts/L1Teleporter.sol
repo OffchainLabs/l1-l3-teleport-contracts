@@ -68,7 +68,7 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
                 to: l2Forwarder,
                 amount: requiredFeeToken,
                 gasLimit: params.gasParams.l1l2FeeTokenBridgeGasLimit,
-                gasPrice: params.gasParams.l2GasBid,
+                gasPriceBid: params.gasParams.l2GasPriceBid,
                 maxSubmissionCost: params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost
             });
 
@@ -120,7 +120,7 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
             routerOrInbox: params.l2l3RouterOrInbox,
             to: params.to,
             gasLimit: params.gasParams.l2l3TokenBridgeGasLimit,
-            gasPrice: params.gasParams.l3GasBid
+            gasPriceBid: params.gasParams.l3GasPriceBid
         });
     }
 
@@ -139,7 +139,7 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
             to: l2Forwarder,
             amount: params.amount,
             gasLimit: params.gasParams.l1l2TokenBridgeGasLimit,
-            gasPrice: params.gasParams.l2GasBid,
+            gasPriceBid: params.gasParams.l2GasPriceBid,
             maxSubmissionCost: params.gasParams.l1l2TokenBridgeMaxSubmissionCost
         });
 
@@ -151,7 +151,7 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
             excessFeeRefundAddress: l2Forwarder, // @review - notice these are subject to aliasing
             callValueRefundAddress: l2Forwarder, //           consider burn the nonce that deploy L2ForwarderFactory on L1
             gasLimit: params.gasParams.l2ForwarderFactoryGasLimit,
-            maxFeePerGas: params.gasParams.l2GasBid,
+            maxFeePerGas: params.gasParams.l2GasPriceBid,
             data: abi.encodeCall(
                 IL2ForwarderFactory.callForwarder,
                 buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender))
@@ -166,7 +166,7 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
         address to,
         uint256 amount,
         uint256 gasLimit,
-        uint256 gasPrice,
+        uint256 gasPriceBid,
         uint256 maxSubmissionCost
     ) internal {
         // pull in tokens from caller
@@ -180,13 +180,13 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
             IERC20(token).safeApprove(gateway, type(uint256).max);
         }
 
-        L1GatewayRouter(router).outboundTransferCustomRefund{value: gasLimit * gasPrice + maxSubmissionCost}({
+        L1GatewayRouter(router).outboundTransferCustomRefund{value: gasLimit * gasPriceBid + maxSubmissionCost}({
             _token: address(token),
             _refundTo: to,
             _to: to,
             _amount: amount,
             _maxGas: gasLimit,
-            _gasPriceBid: gasPrice,
+            _gasPriceBid: gasPriceBid,
             _data: abi.encode(maxSubmissionCost, bytes(""))
         });
     }
@@ -224,12 +224,12 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
             IInbox(inbox).calculateRetryableSubmissionFee(l2ForwarderFactoryCalldataSize, l1BaseFee);
 
         results.l1l2FeeTokenBridgeCost =
-            gasParams.l1l2FeeTokenBridgeMaxSubmissionCost + gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasBid;
+            gasParams.l1l2FeeTokenBridgeMaxSubmissionCost + gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid;
         results.l1l2TokenBridgeCost =
-            gasParams.l1l2TokenBridgeMaxSubmissionCost + gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasBid;
+            gasParams.l1l2TokenBridgeMaxSubmissionCost + gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPriceBid;
         results.l2ForwarderFactoryCost =
-            results.l2ForwarderFactoryMaxSubmissionCost + gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasBid;
+            results.l2ForwarderFactoryMaxSubmissionCost + gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid;
         results.l2l3TokenBridgeCost =
-            gasParams.l2l3TokenBridgeMaxSubmissionCost + gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasBid;
+            gasParams.l2l3TokenBridgeMaxSubmissionCost + gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid;
     }
 }

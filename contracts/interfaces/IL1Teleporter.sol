@@ -29,8 +29,8 @@ interface IL1Teleporter is IL2ForwarderPredictor {
 
     /// @notice Gas parameters for each retryable ticket.
     struct RetryableGasParams {
-        uint256 l2GasBid;
-        uint256 l3GasBid;
+        uint256 l2GasPriceBid;
+        uint256 l3GasPriceBid;
         uint64 l2ForwarderFactoryGasLimit;
         uint64 l1l2FeeTokenBridgeGasLimit;
         uint64 l1l2TokenBridgeGasLimit;

@@ -52,14 +52,14 @@ contract L2Forwarder is L2ForwarderPredictor, IL2Forwarder {
         // overestimate submission cost to ensure all ETH is sent through
         // @review - this might create some issue when multiple teleporter are simutanously initiated and some are failed
         uint256 ethBalance = address(this).balance;
-        uint256 maxSubmissionCost = address(this).balance - params.gasLimit * params.gasPrice;
+        uint256 maxSubmissionCost = address(this).balance - params.gasLimit * params.gasPriceBid;
         L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund{value: address(this).balance}(
             params.l2Token,
             params.to,
             params.to,
             tokenBalance,
             params.gasLimit,
-            params.gasPrice,
+            params.gasPriceBid,
             abi.encode(maxSubmissionCost, bytes(""))
         );
 
@@ -78,7 +78,7 @@ contract L2Forwarder is L2ForwarderPredictor, IL2Forwarder {
 
         // create retryable ticket
         uint256 maxSubmissionCost = IERC20Inbox(params.routerOrInbox).calculateRetryableSubmissionFee(0, 0);
-        uint256 callValue = tokenBalance - maxSubmissionCost - params.gasLimit * params.gasPrice;
+        uint256 callValue = tokenBalance - maxSubmissionCost - params.gasLimit * params.gasPriceBid;
         IERC20Inbox(params.routerOrInbox).createRetryableTicket({
             to: params.to,
             l2CallValue: callValue,
@@ -86,12 +86,12 @@ contract L2Forwarder is L2ForwarderPredictor, IL2Forwarder {
             excessFeeRefundAddress: params.to,
             callValueRefundAddress: params.to,
             gasLimit: params.gasLimit,
-            maxFeePerGas: params.gasPrice,
+            maxFeePerGas: params.gasPriceBid,
             tokenTotalFeeAmount: tokenBalance,
             data: ""
         });
 
-        emit BridgedToL3(callValue, maxSubmissionCost + params.gasLimit * params.gasPrice);
+        emit BridgedToL3(callValue, maxSubmissionCost + params.gasLimit * params.gasPriceBid);
     }
 
     /// @dev Bridge non-fee tokens to an L3 that uses a custom fee token.
@@ -110,14 +110,14 @@ contract L2Forwarder is L2ForwarderPredictor, IL2Forwarder {
 
         // send tokens through the bridge to intended recipient
         // overestimate submission cost to ensure all feeToken is sent through
-        uint256 maxSubmissionCost = feeTokenBalance - params.gasLimit * params.gasPrice;
+        uint256 maxSubmissionCost = feeTokenBalance - params.gasLimit * params.gasPriceBid;
         L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund(
             params.l2Token,
             params.to,
             params.to,
             tokenBalance,
             params.gasLimit,
-            params.gasPrice,
+            params.gasPriceBid,
             abi.encode(maxSubmissionCost, bytes(""), feeTokenBalance)
         );
 

@@ -49,7 +49,7 @@ contract L2ForwarderTest is BaseTest {
         _bridgeNativeTokenHappyCase({
             tokenAmount: 1 ether,
             gasLimit: 1_000_000,
-            gasPrice: 0.1 gwei,
+            gasPriceBid: 0.1 gwei,
             forwarderETHBalance: 2 ether,
             msgValue: 3 ether
         });
@@ -59,7 +59,7 @@ contract L2ForwarderTest is BaseTest {
         _bridgeTokenEthFeesHappyCase({
             tokenAmount: 1 ether,
             gasLimit: 1_000_000,
-            gasPrice: 0.1 gwei,
+            gasPriceBid: 0.1 gwei,
             forwarderETHBalance: 0.01 ether,
             msgValue: 0.1 ether
         });
@@ -69,7 +69,7 @@ contract L2ForwarderTest is BaseTest {
         _bridgeNonFeeTokenHappyCase({
             tokenAmount: 1 ether,
             gasLimit: 1_000_000,
-            gasPrice: 0.1 gwei,
+            gasPriceBid: 0.1 gwei,
             forwarderETHBalance: 0.1 ether,
             msgValue: 0.2 ether,
             forwarderNativeBalance: 3 ether
@@ -115,7 +115,7 @@ contract L2ForwarderTest is BaseTest {
     function _bridgeNonFeeTokenHappyCase(
         uint256 tokenAmount,
         uint256 gasLimit,
-        uint256 gasPrice,
+        uint256 gasPriceBid,
         uint256 forwarderETHBalance,
         uint256 msgValue,
         uint256 forwarderNativeBalance
@@ -127,7 +127,7 @@ contract L2ForwarderTest is BaseTest {
             routerOrInbox: address(erc20GatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimit,
-            gasPrice: gasPrice
+            gasPriceBid: gasPriceBid
         });
 
         address forwarder = factory.l2ForwarderAddress(params.owner);
@@ -149,11 +149,11 @@ contract L2ForwarderTest is BaseTest {
             to: childDefaultGateway, // counterpart gateway
             l2CallValue: 0,
             msgValue: forwarderNativeBalance,
-            maxSubmissionCost: forwarderNativeBalance - params.gasLimit * params.gasPrice,
+            maxSubmissionCost: forwarderNativeBalance - params.gasLimit * params.gasPriceBid,
             excessFeeRefundAddress: params.to,
             callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(forwarder),
             gasLimit: params.gasLimit,
-            maxFeePerGas: params.gasPrice,
+            maxFeePerGas: params.gasPriceBid,
             data: data
         });
         vm.expectEmit(address(erc20DefaultGateway));
@@ -174,7 +174,7 @@ contract L2ForwarderTest is BaseTest {
     function _bridgeNativeTokenHappyCase(
         uint256 tokenAmount,
         uint256 gasLimit,
-        uint256 gasPrice,
+        uint256 gasPriceBid,
         uint256 forwarderETHBalance,
         uint256 msgValue
     ) internal {
@@ -185,7 +185,7 @@ contract L2ForwarderTest is BaseTest {
             routerOrInbox: address(erc20Inbox),
             to: l3Recipient,
             gasLimit: gasLimit,
-            gasPrice: gasPrice
+            gasPriceBid: gasPriceBid
         });
 
         address forwarder = factory.l2ForwarderAddress(params.owner);
@@ -201,13 +201,13 @@ contract L2ForwarderTest is BaseTest {
             inbox: address(erc20Inbox),
             msgCount: msgCount,
             to: params.to,
-            l2CallValue: tokenAmount - erc20Inbox.calculateRetryableSubmissionFee(0, 0) - params.gasLimit * params.gasPrice,
+            l2CallValue: tokenAmount - erc20Inbox.calculateRetryableSubmissionFee(0, 0) - params.gasLimit * params.gasPriceBid,
             msgValue: tokenAmount,
             maxSubmissionCost: erc20Inbox.calculateRetryableSubmissionFee(0, 0),
             excessFeeRefundAddress: params.to,
             callValueRefundAddress: params.to,
             gasLimit: params.gasLimit,
-            maxFeePerGas: params.gasPrice,
+            maxFeePerGas: params.gasPriceBid,
             data: ""
         });
         vm.prank(aliasedL1Teleporter);
@@ -220,7 +220,7 @@ contract L2ForwarderTest is BaseTest {
     function _bridgeTokenEthFeesHappyCase(
         uint256 tokenAmount,
         uint256 gasLimit,
-        uint256 gasPrice,
+        uint256 gasPriceBid,
         uint256 forwarderETHBalance,
         uint256 msgValue
     ) internal {
@@ -231,7 +231,7 @@ contract L2ForwarderTest is BaseTest {
             routerOrInbox: address(ethGatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimit,
-            gasPrice: gasPrice
+            gasPriceBid: gasPriceBid
         });
 
         address forwarder = factory.l2ForwarderAddress(params.owner);
@@ -242,7 +242,7 @@ contract L2ForwarderTest is BaseTest {
         // give the forwarder some tokens, the first leg retryable would do this in practice
         l2Token.transfer(forwarder, tokenAmount);
 
-        _expectBridgeTokenEthFeesHappyCaseEvents(params, forwarderETHBalance, msgValue, gasLimit, gasPrice, tokenAmount);
+        _expectBridgeTokenEthFeesHappyCaseEvents(params, forwarderETHBalance, msgValue, gasLimit, gasPriceBid, tokenAmount);
         vm.prank(aliasedL1Teleporter);
         factory.callForwarder{value: msgValue}(params);
 
@@ -255,7 +255,7 @@ contract L2ForwarderTest is BaseTest {
         uint256 forwarderETHBalance,
         uint256 msgValue,
         uint256 gasLimit,
-        uint256 gasPrice,
+        uint256 gasPriceBid,
         uint256 tokenAmount
     ) internal {
         address forwarder = factory.l2ForwarderAddress(params.owner);
@@ -268,11 +268,11 @@ contract L2ForwarderTest is BaseTest {
             to: ethDefaultGateway.counterpartGateway(),
             l2CallValue: 0,
             msgValue: forwarderETHBalance + msgValue,
-            maxSubmissionCost: forwarderETHBalance + msgValue - gasLimit * gasPrice,
+            maxSubmissionCost: forwarderETHBalance + msgValue - gasLimit * gasPriceBid,
             excessFeeRefundAddress: l3Recipient,
             callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(forwarder),
             gasLimit: gasLimit,
-            maxFeePerGas: gasPrice,
+            maxFeePerGas: gasPriceBid,
             data: data
         });
 
