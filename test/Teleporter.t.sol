@@ -41,17 +41,17 @@ contract L1TeleporterTest is BaseTest {
         view
         returns (IL1Teleporter.RetryableGasParams memory newGasParams)
     {
-        newGasParams.l2GasPrice = bound(gasParams.l2GasPrice, 0.01 gwei, 100 gwei);
-        newGasParams.l3GasPrice = bound(gasParams.l3GasPrice, 0.01 gwei, 100 gwei);
+        newGasParams.l2GasBid = bound(gasParams.l2GasBid, 0.01 gwei, 100 gwei);
+        newGasParams.l3GasBid = bound(gasParams.l3GasBid, 0.01 gwei, 100 gwei);
 
-        newGasParams.l2ForwarderFactoryGasLimit = bound(gasParams.l2ForwarderFactoryGasLimit, 100_000, 100_000_000);
-        newGasParams.l1l2FeeTokenBridgeGasLimit = bound(gasParams.l1l2FeeTokenBridgeGasLimit, 100_000, 100_000_000);
-        newGasParams.l1l2TokenBridgeGasLimit = bound(gasParams.l1l2TokenBridgeGasLimit, 100_000, 100_000_000);
-        newGasParams.l2l3TokenBridgeGasLimit = bound(gasParams.l2l3TokenBridgeGasLimit, 100_000, 100_000_000);
+        newGasParams.l2ForwarderFactoryGasLimit = uint64(bound(gasParams.l2ForwarderFactoryGasLimit, 100_000, 100_000_000));
+        newGasParams.l1l2FeeTokenBridgeGasLimit = uint64(bound(gasParams.l1l2FeeTokenBridgeGasLimit, 100_000, 100_000_000));
+        newGasParams.l1l2TokenBridgeGasLimit = uint64(bound(gasParams.l1l2TokenBridgeGasLimit, 100_000, 100_000_000));
+        newGasParams.l2l3TokenBridgeGasLimit = uint64(bound(gasParams.l2l3TokenBridgeGasLimit, 100_000, 100_000_000));
 
-        newGasParams.l1l2FeeTokenBridgeSubmissionCost = bound(gasParams.l1l2FeeTokenBridgeSubmissionCost, 100, 100_000);
-        newGasParams.l1l2TokenBridgeSubmissionCost = bound(gasParams.l1l2TokenBridgeSubmissionCost, 100, 100_000);
-        newGasParams.l2l3TokenBridgeSubmissionCost = bound(gasParams.l2l3TokenBridgeSubmissionCost, 100, 100_000);
+        newGasParams.l1l2FeeTokenBridgeMaxSubmissionCost = bound(gasParams.l1l2FeeTokenBridgeMaxSubmissionCost, 100, 100_000);
+        newGasParams.l1l2TokenBridgeMaxSubmissionCost = bound(gasParams.l1l2TokenBridgeMaxSubmissionCost, 100, 100_000);
+        newGasParams.l2l3TokenBridgeMaxSubmissionCost = bound(gasParams.l2l3TokenBridgeMaxSubmissionCost, 100, 100_000);
     }
 
     function testCalculateRequiredEthAndFeeToken(IL1Teleporter.RetryableGasParams memory gasParams, uint256 baseFee)
@@ -88,12 +88,12 @@ contract L1TeleporterTest is BaseTest {
             // we only check RetryableGasCosts once because it'll be the same for all modes
             assertEq(
                 standardCosts.l1l2FeeTokenBridgeCost,
-                gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPrice + gasParams.l1l2FeeTokenBridgeSubmissionCost,
+                gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasBid + gasParams.l1l2FeeTokenBridgeMaxSubmissionCost,
                 "l1l2FeeTokenBridgeCost"
             );
             assertEq(
                 standardCosts.l1l2TokenBridgeCost,
-                gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPrice + gasParams.l1l2TokenBridgeSubmissionCost,
+                gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasBid + gasParams.l1l2TokenBridgeMaxSubmissionCost,
                 "l1l2TokenBridgeCost"
             );
             IL2Forwarder.L2ForwarderParams memory _x;
@@ -101,16 +101,16 @@ contract L1TeleporterTest is BaseTest {
                 abi.encodeCall(L2ForwarderFactory.callForwarder, _x).length, baseFee
             );
             assertEq(
-                standardCosts.l2ForwarderFactorySubmissionCost, factorySubmissionFee, "l2ForwarderFactorySubmissionCost"
+                standardCosts.l2ForwarderFactoryMaxSubmissionCost, factorySubmissionFee, "l2ForwarderFactoryMaxSubmissionCost"
             );
             assertEq(
                 standardCosts.l2ForwarderFactoryCost,
-                gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPrice + factorySubmissionFee,
+                gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasBid + factorySubmissionFee,
                 "l2ForwarderFactoryCost"
             );
             assertEq(
                 standardCosts.l2l3TokenBridgeCost,
-                gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPrice + gasParams.l2l3TokenBridgeSubmissionCost,
+                gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasBid + gasParams.l2l3TokenBridgeMaxSubmissionCost,
                 "l2l3TokenBridgeCost"
             );
         }
@@ -339,11 +339,11 @@ contract L1TeleporterTest is BaseTest {
             l2CallValue: 0,
             msgValue: retryableCosts.l1l2FeeTokenBridgeCost,
             maxSubmissionCost: retryableCosts.l1l2FeeTokenBridgeCost
-                - params.gasParams.l1l2FeeTokenBridgeGasLimit * params.gasParams.l2GasPrice,
+                - params.gasParams.l1l2FeeTokenBridgeGasLimit * params.gasParams.l2GasBid,
             excessFeeRefundAddress: l2Forwarder,
             callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(address(teleporter)),
             gasLimit: params.gasParams.l1l2FeeTokenBridgeGasLimit,
-            maxFeePerGas: params.gasParams.l2GasPrice,
+            maxFeePerGas: params.gasParams.l2GasBid,
             data: l1l2FeeTokenBridgeRetryableCalldata
         });
     }
@@ -362,11 +362,11 @@ contract L1TeleporterTest is BaseTest {
             l2CallValue: 0,
             msgValue: retryableCosts.l1l2TokenBridgeCost,
             maxSubmissionCost: retryableCosts.l1l2TokenBridgeCost
-                - params.gasParams.l1l2TokenBridgeGasLimit * params.gasParams.l2GasPrice,
+                - params.gasParams.l1l2TokenBridgeGasLimit * params.gasParams.l2GasBid,
             excessFeeRefundAddress: l2Forwarder,
             callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(address(teleporter)),
             gasLimit: params.gasParams.l1l2TokenBridgeGasLimit,
-            maxFeePerGas: params.gasParams.l2GasPrice,
+            maxFeePerGas: params.gasParams.l2GasBid,
             data: l1l2TokenBridgeRetryableCalldata
         });
     }
@@ -386,11 +386,11 @@ contract L1TeleporterTest is BaseTest {
             l2CallValue: l2CallValue,
             msgValue: retryableCosts.l2ForwarderFactoryCost + l2CallValue,
             maxSubmissionCost: retryableCosts.l2ForwarderFactoryCost
-                - params.gasParams.l2ForwarderFactoryGasLimit * params.gasParams.l2GasPrice,
+                - params.gasParams.l2ForwarderFactoryGasLimit * params.gasParams.l2GasBid,
             excessFeeRefundAddress: l2Forwarder,
             callValueRefundAddress: l2Forwarder,
             gasLimit: params.gasParams.l2ForwarderFactoryGasLimit,
-            maxFeePerGas: params.gasParams.l2GasPrice,
+            maxFeePerGas: params.gasParams.l2GasBid,
             data: abi.encodeCall(L2ForwarderFactory.callForwarder, l2ForwarderParams)
         });
     }
