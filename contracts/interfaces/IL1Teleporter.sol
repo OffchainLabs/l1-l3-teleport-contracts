@@ -35,6 +35,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
         uint64 l1l2FeeTokenBridgeGasLimit;
         uint64 l1l2TokenBridgeGasLimit;
         uint64 l2l3TokenBridgeGasLimit;
+        uint256 l2ForwarderFactoryMaxSubmissionCost;
         uint256 l1l2FeeTokenBridgeMaxSubmissionCost;
         uint256 l1l2TokenBridgeMaxSubmissionCost;
         uint256 l2l3TokenBridgeMaxSubmissionCost;
@@ -46,7 +47,6 @@ interface IL1Teleporter is IL2ForwarderPredictor {
         uint256 l1l2TokenBridgeCost;
         uint256 l2ForwarderFactoryCost;
         uint256 l2l3TokenBridgeCost;
-        uint256 l2ForwarderFactoryMaxSubmissionCost;
     }
 
     /// @notice Emitted when a teleportation is initiated.
@@ -68,7 +68,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     );
 
     /// @notice Thrown when the ETH value sent to teleport() is less than the total ETH cost of retryables
-    error InsufficientValue(uint256 required, uint256 provided);
+    error IncorrectValue(uint256 required, uint256 provided);
     /// @notice Thrown when TeleportationType is OnlyCustomFee and the amount of fee tokens to send is less than the cost of the retryable to L3
     error InsufficientFeeToken(uint256 required, uint256 provided);
 
@@ -81,7 +81,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     function teleport(TeleportParams memory params) external payable;
 
     /// @notice Given some teleportation parameters, calculate the total cost of retryables in ETH and the L3's fee token.
-    function determineTypeAndFees(TeleportParams memory params, uint256 l1BaseFee)
+    function determineTypeAndFees(TeleportParams memory params)
         external
         view
         returns (uint256 ethAmount, uint256 feeTokenAmount, RetryableGasCosts memory costs);
