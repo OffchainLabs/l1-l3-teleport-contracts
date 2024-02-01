@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {L1GatewayRouter} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol"; // todo use interface (in other files too)
+    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
