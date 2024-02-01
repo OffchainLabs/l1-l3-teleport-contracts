@@ -6,55 +6,73 @@ import {L2ForwarderContractsDeployer} from "../contracts/L2ForwarderContractsDep
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2Forwarder} from "../contracts/L2Forwarder.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
-import {MockToken} from "./mocks/MockToken.sol";
-import {ForkTest} from "./Fork.t.sol";
+import {BaseTest} from "./Base.t.sol";
 import {L1ArbitrumGateway} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
+import {L1GatewayRouter} from
+    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
-contract L2ForwarderTest is ForkTest {
+contract L2ForwarderTest is BaseTest {
     L2ForwarderFactory factory;
     L2Forwarder implementation;
 
     address owner = address(0x1111);
     address l3Recipient = address(0x2222);
-    MockToken l2Token;
 
-    function setUp() public {
-        L2ForwarderContractsDeployer deployer = new L2ForwarderContractsDeployer();
+    address aliasedL1Teleporter = address(0x2211);
+
+    IERC20 l2Token;
+
+    function setUp() public override {
+        super.setUp();
+        L2ForwarderContractsDeployer deployer = new L2ForwarderContractsDeployer(aliasedL1Teleporter);
         factory = L2ForwarderFactory(deployer.factory());
         implementation = L2Forwarder(payable(deployer.implementation()));
-        l2Token = new MockToken("MOCK", "MOCK", 100 ether, address(this));
+        l2Token = IERC20(new ERC20PresetMinterPauser("MOCK", "MOCK"));
+        ERC20PresetMinterPauser(address(l2Token)).mint(address(this), 10000 ether);
+
+        vm.deal(aliasedL1Teleporter, 10000 ether);
     }
 
-    // make sure the implementation has correct implementation and factory addresses set
-    // this is needed to predict the address of the L2Forwarder based on parameters
-    function testProperConstruction() public {
-        assertEq(implementation.l2ForwarderFactory(), address(factory));
-        assertEq(implementation.l2ForwarderImplementation(), address(implementation));
-    }
-
-    /// forge-config: default.fuzz.runs = 5
-    function testCannotPassBadParams(L2Forwarder.L2ForwarderParams memory params) public {
+    function testOnlyL2ForwarderFactory() public {
+        L2Forwarder.L2ForwarderParams memory params;
         L2Forwarder forwarder = factory.createL2Forwarder(params);
-
-        // change a param
-        unchecked {
-            params.gasLimit++;
-        }
-
-        // try to call the forwarder with the bad params
-        vm.expectRevert(L2Forwarder.IncorrectParams.selector);
+        vm.expectRevert(L2Forwarder.OnlyL2ForwarderFactory.selector);
         forwarder.bridgeToL3(params);
     }
 
-    function testHappyCase() public {
-        _happyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 1 ether);
+    function testNativeTokenHappyCase() public {
+        _bridgeNativeTokenHappyCase({
+            tokenAmount: 1 ether,
+            gasLimit: 1_000_000,
+            gasPrice: 0.1 gwei,
+            forwarderETHBalance: 2 ether,
+            msgValue: 3 ether
+        });
     }
 
-    function testHappyCaseWhenForwarderExists() public {
-        _happyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 1 ether);
-        _happyCase(1 ether, 1_000_000, 0.1 gwei, 0.1 ether, 1 ether);
+    function testEthFeesHappyCase() public {
+        _bridgeTokenEthFeesHappyCase({
+            tokenAmount: 1 ether,
+            gasLimit: 1_000_000,
+            gasPrice: 0.1 gwei,
+            forwarderETHBalance: 0.01 ether,
+            msgValue: 0.1 ether
+        });
+    }
+
+    function testNonFeeTokenHappyCase() public {
+        _bridgeNonFeeTokenHappyCase({
+            tokenAmount: 1 ether,
+            gasLimit: 1_000_000,
+            gasPrice: 0.1 gwei,
+            forwarderETHBalance: 0.1 ether,
+            msgValue: 0.2 ether,
+            forwarderNativeBalance: 3 ether
+        });
     }
 
     function testRescue() public {
@@ -93,26 +111,25 @@ contract L2ForwarderTest is ForkTest {
         forwarder.rescue(targets, values, datas);
     }
 
-    // check that the L2Forwarder creates the correct bridge tx
-    // and pays the relayer
-    function _happyCase(
+    function _bridgeNonFeeTokenHappyCase(
         uint256 tokenAmount,
         uint256 gasLimit,
         uint256 gasPrice,
-        uint256 relayerPayment,
-        uint256 forwarderETHBalance
-    ) public {
+        uint256 forwarderETHBalance,
+        uint256 msgValue,
+        uint256 forwarderNativeBalance
+    ) internal {
         L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
             owner: owner,
-            token: address(l2Token),
-            router: address(l1l2Router),
+            l2Token: address(l2Token),
+            l2FeeToken: address(nativeToken),
+            routerOrInbox: address(erc20GatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimit,
-            gasPrice: gasPrice,
-            relayerPayment: relayerPayment
+            gasPrice: gasPrice
         });
 
-        address forwarder = factory.l2ForwarderAddress(params);
+        address forwarder = factory.l2ForwarderAddress(params.owner);
 
         // give the forwarder some ETH, the first leg retryable would do this in practice
         vm.deal(forwarder, forwarderETHBalance);
@@ -120,44 +137,146 @@ contract L2ForwarderTest is ForkTest {
         // give the forwarder some tokens, the first leg retryable would do this in practice
         l2Token.transfer(forwarder, tokenAmount);
 
-        uint256 relayerBalanceBefore = tx.origin.balance;
+        // give the forwarder some native token, the first leg retryable would do this in practice
+        nativeToken.transfer(forwarder, forwarderNativeBalance);
 
-        _expectHappyCaseEvents(params, forwarderETHBalance, gasLimit, gasPrice, tokenAmount);
-        factory.callForwarder(params);
+        bytes memory data = _getTokenBridgeRetryableCalldata(address(erc20GatewayRouter), forwarder, tokenAmount);
+        uint256 msgCount = erc20Bridge.delayedMessageCount();
+        _expectRetryable({
+            inbox: address(erc20Inbox),
+            msgCount: msgCount,
+            to: childDefaultGateway, // counterpart gateway
+            l2CallValue: 0,
+            msgValue: forwarderNativeBalance,
+            maxSubmissionCost: forwarderNativeBalance - params.gasLimit * params.gasPrice,
+            excessFeeRefundAddress: params.to,
+            callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(forwarder),
+            gasLimit: params.gasLimit,
+            maxFeePerGas: params.gasPrice,
+            data: data
+        });
+        vm.expectEmit(address(erc20DefaultGateway));
+        emit DepositInitiated({
+            l1Token: address(l2Token),
+            _from: address(forwarder),
+            _to: l3Recipient,
+            _sequenceNumber: msgCount,
+            _amount: tokenAmount
+        });
+        vm.prank(aliasedL1Teleporter);
+        factory.callForwarder{value: msgValue}(params);
 
-        // make sure the relayer was paid
-        assertEq(tx.origin.balance, relayerBalanceBefore + relayerPayment);
+        // make sure the forwarder has not moved any ETH
+        assertEq(address(forwarder).balance, forwarderETHBalance + msgValue);
+    }
 
-        // make sure the forwarder has no ETH left
+    function _bridgeNativeTokenHappyCase(
+        uint256 tokenAmount,
+        uint256 gasLimit,
+        uint256 gasPrice,
+        uint256 forwarderETHBalance,
+        uint256 msgValue
+    ) internal {
+        L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
+            owner: owner,
+            l2Token: address(nativeToken),
+            l2FeeToken: address(nativeToken),
+            routerOrInbox: address(erc20Inbox),
+            to: l3Recipient,
+            gasLimit: gasLimit,
+            gasPrice: gasPrice
+        });
+
+        address forwarder = factory.l2ForwarderAddress(params.owner);
+
+        // give the forwarder some ETH, the first leg retryable would do this in practice
+        vm.deal(forwarder, forwarderETHBalance);
+
+        // give the forwarder some native token, the first leg retryable would do this in practice
+        nativeToken.transfer(forwarder, tokenAmount);
+
+        uint256 msgCount = erc20Bridge.delayedMessageCount();
+        _expectRetryable({
+            inbox: address(erc20Inbox),
+            msgCount: msgCount,
+            to: params.to,
+            l2CallValue: tokenAmount - erc20Inbox.calculateRetryableSubmissionFee(0, 0) - params.gasLimit * params.gasPrice,
+            msgValue: tokenAmount,
+            maxSubmissionCost: erc20Inbox.calculateRetryableSubmissionFee(0, 0),
+            excessFeeRefundAddress: params.to,
+            callValueRefundAddress: params.to,
+            gasLimit: params.gasLimit,
+            maxFeePerGas: params.gasPrice,
+            data: ""
+        });
+        vm.prank(aliasedL1Teleporter);
+        factory.callForwarder{value: msgValue}(params);
+
+        // make sure the forwarder has not moved its ETH
+        assertEq(address(forwarder).balance, forwarderETHBalance + msgValue);
+    }
+
+    function _bridgeTokenEthFeesHappyCase(
+        uint256 tokenAmount,
+        uint256 gasLimit,
+        uint256 gasPrice,
+        uint256 forwarderETHBalance,
+        uint256 msgValue
+    ) internal {
+        L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
+            owner: owner,
+            l2Token: address(l2Token),
+            l2FeeToken: address(0),
+            routerOrInbox: address(ethGatewayRouter),
+            to: l3Recipient,
+            gasLimit: gasLimit,
+            gasPrice: gasPrice
+        });
+
+        address forwarder = factory.l2ForwarderAddress(params.owner);
+
+        // give the forwarder some ETH, the first leg retryable would do this in practice
+        vm.deal(forwarder, forwarderETHBalance);
+
+        // give the forwarder some tokens, the first leg retryable would do this in practice
+        l2Token.transfer(forwarder, tokenAmount);
+
+        _expectBridgeTokenEthFeesHappyCaseEvents(params, forwarderETHBalance, msgValue, gasLimit, gasPrice, tokenAmount);
+        vm.prank(aliasedL1Teleporter);
+        factory.callForwarder{value: msgValue}(params);
+
+        // make sure the forwarder has 0 ETH left
         assertEq(address(forwarder).balance, 0);
     }
 
-    function _expectHappyCaseEvents(
+    function _expectBridgeTokenEthFeesHappyCaseEvents(
         L2ForwarderPredictor.L2ForwarderParams memory params,
         uint256 forwarderETHBalance,
+        uint256 msgValue,
         uint256 gasLimit,
         uint256 gasPrice,
         uint256 tokenAmount
     ) internal {
-        address forwarder = factory.l2ForwarderAddress(params);
+        address forwarder = factory.l2ForwarderAddress(params.owner);
 
-        uint256 msgCount = bridge.delayedMessageCount();
-
+        uint256 msgCount = erc20Bridge.delayedMessageCount();
+        bytes memory data = _getTokenBridgeRetryableCalldata(address(ethGatewayRouter), forwarder, tokenAmount);
         _expectRetryable({
+            inbox: address(ethInbox),
             msgCount: msgCount,
-            to: defaultGateway.counterpartGateway(),
+            to: ethDefaultGateway.counterpartGateway(),
             l2CallValue: 0,
-            msgValue: forwarderETHBalance - params.relayerPayment,
-            maxSubmissionCost: forwarderETHBalance - gasLimit * gasPrice - params.relayerPayment,
+            msgValue: forwarderETHBalance + msgValue,
+            maxSubmissionCost: forwarderETHBalance + msgValue - gasLimit * gasPrice,
             excessFeeRefundAddress: l3Recipient,
             callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(forwarder),
             gasLimit: gasLimit,
             maxFeePerGas: gasPrice,
-            data: _getTokenBridgeRetryableCalldata(forwarder, tokenAmount)
+            data: data
         });
 
         // token bridge, indicating an actual bridge tx has been initiated
-        vm.expectEmit(address(defaultGateway));
+        vm.expectEmit(address(ethDefaultGateway));
         emit DepositInitiated({
             l1Token: address(l2Token),
             _from: address(forwarder),
@@ -167,12 +286,12 @@ contract L2ForwarderTest is ForkTest {
         });
     }
 
-    function _getTokenBridgeRetryableCalldata(address l2Forwarder, uint256 tokenAmount)
+    function _getTokenBridgeRetryableCalldata(address gatewayRouter, address l2Forwarder, uint256 tokenAmount)
         internal
         view
         returns (bytes memory)
     {
-        address l1Gateway = l1l2Router.getGateway(address(l2Token));
+        address l1Gateway = L1GatewayRouter(gatewayRouter).getGateway(address(l2Token));
         bytes memory l1l2TokenBridgeRetryableCalldata = L1ArbitrumGateway(l1Gateway).getOutboundCalldata({
             _l1Token: address(l2Token),
             _from: address(l2Forwarder),
