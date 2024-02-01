@@ -16,16 +16,9 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
     // @review - make this contract pausable or deploy behind proxy for safety
     using SafeERC20 for IERC20;
 
-    /// @dev Calldata size of L2ForwarderFactory.callForwarder
-    uint256 immutable l2ForwarderFactoryCalldataSize;
-
     constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation)
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
-    {
-        IL2Forwarder.L2ForwarderParams memory _x;
-        // @review - this would not work if L2ForwarderParams has dynamic size
-        l2ForwarderFactoryCalldataSize = abi.encodeCall(IL2ForwarderFactory.callForwarder, (_x)).length;
-    }
+    {}
 
     /// @inheritdoc IL1Teleporter
     function teleport(TeleportParams memory params) external payable {
