@@ -1,114 +1,39 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.13;
 
-import {L1GatewayRouter} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import {L1GatewayRouter} from
+    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol"; // todo use interface (in other files too)
 import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
+import {IL2ForwarderFactory} from "./interfaces/IL2ForwarderFactory.sol";
+import {IL1Teleporter} from "./interfaces/IL1Teleporter.sol";
+import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
 
-/// @title  L1Teleporter
-/// @notice Initiates L1 -> L3 transfers.
-///         Creates 2 (or 3) retryables: one to bridge tokens (one to bridge the L3's fee token) to an L2Forwarder,
-///         and one to call the L2ForwarderFactory.
-contract L1Teleporter is L2ForwarderPredictor {
-    // @review - should have interface for everything e.g. IL1Teleporter, etc.
-    //           and then have struct, event definitions there
+contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
     // @review - make this contract pausable or deploy behind proxy for safety
     using SafeERC20 for IERC20;
-
-    /// @notice Parameters for teleport()
-    /// @param  l1Token     L1 token being teleported
-    /// @param  l1FeeToken  L1 address of the L3's fee token, or 0x00 for ETH // @review - this naming is confusing
-    /// @param  l1l2Router  L1 to L2 token bridge router
-    /// @param  l2l3Router  L2 to L3 token bridge router
-    /// @param  to          L3 address that will receive the tokens
-    /// @param  amount      Amount of tokens being teleported
-    /// @param  gasParams   Gas parameters for each retryable ticket
-    struct TeleportParams {
-        address l1Token;
-        address l1FeeToken;
-        address l1l2Router;
-        address l2l3RouterOrInbox;
-        address to;
-        uint256 amount;
-        RetryableGasParams gasParams;
-    }
-
-    /// @notice Gas parameters for each retryable ticket.
-    struct RetryableGasParams {
-        uint256 l2GasPrice; // @review - gasPrice -> gasBid
-        uint256 l3GasPrice;
-        uint256 l2ForwarderFactoryGasLimit; // @review - these 4 gas limit can use uint64
-        uint256 l1l2FeeTokenBridgeGasLimit; //         - gas limit cannot exceed uint64
-        uint256 l1l2TokenBridgeGasLimit;
-        uint256 l2l3TokenBridgeGasLimit;
-        uint256 l1l2FeeTokenBridgeSubmissionCost; // @review - "max" submission cost
-        uint256 l1l2TokenBridgeSubmissionCost;
-        uint256 l2l3TokenBridgeSubmissionCost;
-    }
-
-    /// @notice Total cost for each retryable ticket.
-    struct RetryableGasCosts {
-        uint256 l1l2FeeTokenBridgeCost;
-        uint256 l1l2TokenBridgeCost;
-        uint256 l2ForwarderFactoryCost;
-        uint256 l2l3TokenBridgeCost;
-        uint256 l2ForwarderFactorySubmissionCost;
-    }
 
     /// @dev Calldata size of L2ForwarderFactory.callForwarder
     uint256 immutable l2ForwarderFactoryCalldataSize;
 
-    /// @notice Emitted when a teleportation is initiated.
-    /// @param  sender              L1 address that initiated the teleportation
-    /// @param  l1Token             L1 token being teleported
-    /// @param  l1FeeToken          L1 address of the L3's fee token, or 0x00 for ETH
-    /// @param  l1l2Router          L1 to L2 token bridge router
-    /// @param  l2l3RouterOrInbox   L2 to L3 token bridge router or Inbox
-    /// @param  to                  L3 address that will receive the tokens
-    /// @param  amount              Amount of tokens being teleported
-    event Teleported(
-        address indexed sender,
-        address l1Token,
-        address l1FeeToken,
-        address l1l2Router,
-        address l2l3RouterOrInbox,
-        address to,
-        uint256 amount
-    );
-
-    /// @notice Thrown when the ETH value sent to teleport() is less than the total ETH cost of retryables
-    error InsufficientValue(uint256 required, uint256 provided);
-    /// @notice Thrown when TeleportationType is OnlyCustomFee and the amount of fee tokens to send is less than the cost of the retryable to L3
-    error InsufficientFeeToken(uint256 required, uint256 provided);
-
     constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation)
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
     {
-        L2ForwarderParams memory _x;
+        IL2Forwarder.L2ForwarderParams memory _x;
         // @review - this would not work if L2ForwarderParams has dynamic size
-        l2ForwarderFactoryCalldataSize = abi.encodeCall(L2ForwarderFactory.callForwarder, (_x)).length;
+        l2ForwarderFactoryCalldataSize = abi.encodeCall(IL2ForwarderFactory.callForwarder, (_x)).length;
     }
 
-    /// @notice Start an L1 -> L3 transfer. msg.value sent must be >= the total cost of all retryables.
-    ///         Call `determineTypeAndFees` to calculate the total cost of retryables in ETH and the L3's fee token.
-    ///         Any extra ETH will be sent to the receiver on L3.
-    /// @dev    2 retryables will be created: one to send tokens and ETH to the L2Forwarder, and one to call the L2ForwarderFactory.
-    ///         If TeleportationType is NonFeeTokenToCustomFeeL3, a third retryable will be created to send the L3's fee token to the L2Forwarder.
-    ///         Extra ETH is sent through the l2CallValue of the call to the L2ForwarderFactory.
+    /// @inheritdoc IL1Teleporter
     function teleport(TeleportParams memory params) external payable {
         // get inbox
         address inbox = L1GatewayRouter(params.l1l2Router).inbox();
 
-        (
-            uint256 requiredEth,
-            uint256 requiredFeeToken,
-            RetryableGasCosts memory retryableCosts
-        ) = _determineTypeAndFees(params, block.basefee, inbox);
+        (uint256 requiredEth, uint256 requiredFeeToken, RetryableGasCosts memory retryableCosts) =
+            _determineTypeAndFees(params, block.basefee, inbox);
 
         // @review - we should keep this exact if this is deterministic
         //         - excess deposit have a slight risk of getting stolen by reentrancy
@@ -162,24 +87,20 @@ contract L1Teleporter is L2ForwarderPredictor {
         });
     }
 
-    /// @notice Given some teleportation parameters, calculate the total cost of retryables in ETH and the L3's fee token.
+    /// @inheritdoc IL1Teleporter
     function determineTypeAndFees(TeleportParams memory params, uint256 l1BaseFee)
         external
         view
-        returns (
-            uint256 ethAmount,
-            uint256 feeTokenAmount,
-            RetryableGasCosts memory costs
-        )
+        returns (uint256 ethAmount, uint256 feeTokenAmount, RetryableGasCosts memory costs)
     {
         return _determineTypeAndFees(params, l1BaseFee, L1GatewayRouter(params.l1l2Router).inbox());
     }
 
-    /// @notice Given some teleportation parameters, build the L2ForwarderParams for the L2ForwarderFactory.
+    /// @inheritdoc IL1Teleporter
     function buildL2ForwarderParams(TeleportParams memory params, address l2Owner)
         public
         view
-        returns (L2ForwarderParams memory)
+        returns (IL2Forwarder.L2ForwarderParams memory)
     {
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
         address l2FeeToken;
@@ -192,7 +113,7 @@ contract L1Teleporter is L2ForwarderPredictor {
             l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1FeeToken);
         }
 
-        return L2ForwarderParams({
+        return IL2Forwarder.L2ForwarderParams({
             owner: l2Owner,
             l2Token: l2Token,
             l2FeeToken: l2FeeToken,
@@ -232,7 +153,7 @@ contract L1Teleporter is L2ForwarderPredictor {
             gasLimit: params.gasParams.l2ForwarderFactoryGasLimit,
             maxFeePerGas: params.gasParams.l2GasPrice,
             data: abi.encodeCall(
-                L2ForwarderFactory.callForwarder,
+                IL2ForwarderFactory.callForwarder,
                 buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender))
                 )
         });
@@ -274,11 +195,7 @@ contract L1Teleporter is L2ForwarderPredictor {
     function _determineTypeAndFees(TeleportParams memory params, uint256 l1BaseFee, address inbox)
         internal
         view
-        returns (
-            uint256 ethAmount,
-            uint256 feeTokenAmount,
-            RetryableGasCosts memory costs
-        )
+        returns (uint256 ethAmount, uint256 feeTokenAmount, RetryableGasCosts memory costs)
     {
         costs = _calculateRetryableGasCosts(params.gasParams, l1BaseFee, inbox);
 

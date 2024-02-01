@@ -7,41 +7,14 @@ import {IERC20Inbox} from "@arbitrum/nitro-contracts/src/bridge/IERC20Inbox.sol"
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
+import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
 
-/// @title  L2Forwarder
-/// @notice L2 contract that receives ERC20 tokens to forward to L3.
-///         May receive either token and ETH, token and the L3 feeToken, or just feeToken if token == feeToken.
-///         In case funds cannot be bridged to L3, the owner can call rescue to get their funds back.
-contract L2Forwarder is L2ForwarderPredictor {
+contract L2Forwarder is L2ForwarderPredictor, IL2Forwarder {
     using SafeERC20 for IERC20;
-
-    /// @notice Emitted after a successful call to rescue
-    /// @param  targets Addresses that were called
-    /// @param  values  Values that were sent
-    /// @param  datas   Calldata that was sent
-    event Rescued(address[] targets, uint256[] values, bytes[] datas);
-
-    /// @notice Emitted after a successful call to bridgeToL3
-    event BridgedToL3(uint256 tokenAmount, uint256 feeAmount);
-
-    /// @notice Thrown when initialize is called after initialization
-    error AlreadyInitialized();
-    /// @notice Thrown when a non-owner calls rescue
-    error OnlyOwner();
-    /// @notice Thrown when the length of targets, values, and datas are not equal in a call to rescue
-    error LengthMismatch();
-    /// @notice Thrown when an external call in rescue fails
-    error CallFailed(address to, uint256 value, bytes data, bytes returnData);
-    /// @notice Thrown when the relayer payment fails
-    error RelayerPaymentFailed();
-    /// @notice Thrown when bridgeToL3 is called by an address other than the L2ForwarderFactory
-    error OnlyL2ForwarderFactory();
 
     constructor(address _factory) L2ForwarderPredictor(_factory, address(this)) {}
 
-    /// @notice Send tokens + (fee tokens or ETH) through the bridge to a recipient on L3.
-    /// @param  params Parameters of the bridge transaction.
-    /// @dev    Can only be called by the L2ForwarderFactory.
+    /// @inheritdoc IL2Forwarder
     function bridgeToL3(L2ForwarderParams memory params) external payable {
         if (msg.sender != l2ForwarderFactory) revert OnlyL2ForwarderFactory();
 
@@ -54,11 +27,7 @@ contract L2Forwarder is L2ForwarderPredictor {
         }
     }
 
-    /// @notice Allows the owner of this L2Forwarder to make arbitrary calls.
-    ///         If bridgeToL3 cannot succeed, the owner can call this to rescue their tokens and ETH.
-    /// @param  targets Addresses to call
-    /// @param  values  Values to send
-    /// @param  datas   Calldata to send
+    /// @inheritdoc IL2Forwarder
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external payable {
         if (l2ForwarderAddress(msg.sender) != address(this)) revert OnlyOwner();
         if (targets.length != values.length || values.length != datas.length) revert LengthMismatch();

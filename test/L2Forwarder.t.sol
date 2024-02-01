@@ -12,6 +12,7 @@ import {L1ArbitrumGateway} from
 import {L1GatewayRouter} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import {IL2Forwarder} from "../contracts/interfaces/IL2Forwarder.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
@@ -39,8 +40,8 @@ contract L2ForwarderTest is BaseTest {
 
     function testOnlyL2ForwarderFactory() public {
         L2Forwarder.L2ForwarderParams memory params;
-        L2Forwarder forwarder = factory.createL2Forwarder(params);
-        vm.expectRevert(L2Forwarder.OnlyL2ForwarderFactory.selector);
+        IL2Forwarder forwarder = factory.createL2Forwarder(params);
+        vm.expectRevert(IL2Forwarder.OnlyL2ForwarderFactory.selector);
         forwarder.bridgeToL3(params);
     }
 
@@ -76,11 +77,11 @@ contract L2ForwarderTest is BaseTest {
     }
 
     function testRescue() public {
-        L2ForwarderPredictor.L2ForwarderParams memory params;
+        IL2Forwarder.L2ForwarderParams memory params;
         params.owner = owner;
 
         // create the forwarder
-        L2Forwarder forwarder = factory.createL2Forwarder(params);
+        IL2Forwarder forwarder = factory.createL2Forwarder(params);
 
         // create rescue params
         address[] memory targets = new address[](1);
@@ -90,18 +91,18 @@ contract L2ForwarderTest is BaseTest {
         datas[0] = hex"12345678";
 
         // test access control
-        vm.expectRevert(L2Forwarder.OnlyOwner.selector);
+        vm.expectRevert(IL2Forwarder.OnlyOwner.selector);
         forwarder.rescue(targets, values, datas);
 
         // test length mismatch
         vm.prank(owner);
-        vm.expectRevert(L2Forwarder.LengthMismatch.selector);
+        vm.expectRevert(IL2Forwarder.LengthMismatch.selector);
         forwarder.rescue(targets, values, new bytes[](0));
 
         // test call failure
         values[0] = 1;
         vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(L2Forwarder.CallFailed.selector, targets[0], values[0], datas[0], ""));
+        vm.expectRevert(abi.encodeWithSelector(IL2Forwarder.CallFailed.selector, targets[0], values[0], datas[0], ""));
         forwarder.rescue(targets, values, datas);
         values[0] = 0;
 
@@ -119,7 +120,7 @@ contract L2ForwarderTest is BaseTest {
         uint256 msgValue,
         uint256 forwarderNativeBalance
     ) internal {
-        L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
+        IL2Forwarder.L2ForwarderParams memory params = IL2Forwarder.L2ForwarderParams({
             owner: owner,
             l2Token: address(l2Token),
             l2FeeToken: address(nativeToken),
@@ -177,7 +178,7 @@ contract L2ForwarderTest is BaseTest {
         uint256 forwarderETHBalance,
         uint256 msgValue
     ) internal {
-        L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
+        IL2Forwarder.L2ForwarderParams memory params = IL2Forwarder.L2ForwarderParams({
             owner: owner,
             l2Token: address(nativeToken),
             l2FeeToken: address(nativeToken),
@@ -223,7 +224,7 @@ contract L2ForwarderTest is BaseTest {
         uint256 forwarderETHBalance,
         uint256 msgValue
     ) internal {
-        L2ForwarderPredictor.L2ForwarderParams memory params = L2ForwarderPredictor.L2ForwarderParams({
+        IL2Forwarder.L2ForwarderParams memory params = IL2Forwarder.L2ForwarderParams({
             owner: owner,
             l2Token: address(l2Token),
             l2FeeToken: address(0),
@@ -250,7 +251,7 @@ contract L2ForwarderTest is BaseTest {
     }
 
     function _expectBridgeTokenEthFeesHappyCaseEvents(
-        L2ForwarderPredictor.L2ForwarderParams memory params,
+        IL2Forwarder.L2ForwarderParams memory params,
         uint256 forwarderETHBalance,
         uint256 msgValue,
         uint256 gasLimit,
