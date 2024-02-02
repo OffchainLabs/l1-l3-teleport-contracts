@@ -33,19 +33,11 @@ contract L1Teleporter is AccessControlPausable, L2ForwarderPredictor, IL1Telepor
         // calculate forwarder address
         address l2Forwarder = l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender));
 
-        // @review looks like _teleportCommon can be moved outside the if/else block here
-        if (teleportationType == TeleportationType.Standard) {
-            // we are teleporting a token to an ETH fee L3
-            _teleportCommon(params, retryableCosts, l2Forwarder);
-        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
+        if (teleportationType == TeleportationType.OnlyCustomFee) {
             // we are teleporting an L3's fee token
-
             // we have to make sure that the amount specified is enough to cover the retryable costs from L2 -> L3
             if (params.amount < requiredFeeToken) revert InsufficientFeeToken(requiredFeeToken, params.amount);
-
-            // teleportation flow is identical to standard
-            _teleportCommon(params, retryableCosts, l2Forwarder);
-        } else {
+        } else if (teleportationType == TeleportationType.NonFeeTokenToCustomFee) {
             // we are teleporting a non-fee token to a custom fee L3
             // the flow is identical to standard,
             // except we have to send the appropriate amount of fee token through the bridge as well
@@ -60,10 +52,9 @@ contract L1Teleporter is AccessControlPausable, L2ForwarderPredictor, IL1Telepor
                 gasPriceBid: params.gasParams.l2GasPriceBid,
                 maxSubmissionCost: params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost
             });
-
-            // the rest of the flow is identical to standard
-            _teleportCommon(params, retryableCosts, l2Forwarder);
         }
+
+        _teleportCommon(params, retryableCosts, l2Forwarder);
 
         emit Teleported({
             sender: msg.sender,
