@@ -8,21 +8,22 @@ import {L1GatewayRouter} from
 import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
+import {AccessControlPausable} from "./AccessControlPausable.sol";
 import {IL2ForwarderFactory} from "./interfaces/IL2ForwarderFactory.sol";
 import {IL1Teleporter} from "./interfaces/IL1Teleporter.sol";
 import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
 import {TeleportationType, _teleportationType} from "./lib/TeleportationType.sol";
 
-contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
-    // @review - make this contract pausable or deploy behind proxy for safety
+contract L1Teleporter is AccessControlPausable, L2ForwarderPredictor, IL1Teleporter {
     using SafeERC20 for IERC20;
 
-    constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation)
+    constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation, address _admin, address _pauser)
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
+        AccessControlPausable(_admin, _pauser)
     {}
 
     /// @inheritdoc IL1Teleporter
-    function teleport(TeleportParams memory params) external payable {
+    function teleport(TeleportParams memory params) external payable whenNotPaused {
         (uint256 requiredEth, uint256 requiredFeeToken, TeleportationType teleportationType, RetryableGasCosts memory retryableCosts) =
             determineTypeAndFees(params);
 

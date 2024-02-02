@@ -30,7 +30,7 @@ contract L1TeleporterTest is BaseTest {
     function setUp() public override {
         super.setUp();
 
-        teleporter = new L1Teleporter(l2ForwarderFactory, l2ForwarderImpl);
+        teleporter = new L1Teleporter(l2ForwarderFactory, l2ForwarderImpl, address(0), address(0)); // todo test pausing and access control
         l1Token = new ERC20PresetMinterPauser("TOKEN", "TOKEN");
         ERC20PresetMinterPauser(address(l1Token)).mint(address(this), 100 ether);
 
