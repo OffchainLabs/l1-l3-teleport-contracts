@@ -7,6 +7,7 @@ import {IL1Teleporter} from "../contracts/interfaces/IL1Teleporter.sol";
 import {IL2Forwarder} from "../contracts/interfaces/IL2Forwarder.sol";
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
+import {TeleportationType} from "../contracts/lib/TeleportationType.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {L1ArbitrumGateway} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
@@ -75,8 +76,9 @@ contract L1TeleporterTest is BaseTest {
                 amount: 10,
                 gasParams: gasParams
             });
-            (uint256 standardEth, uint256 standardFeeToken, IL1Teleporter.RetryableGasCosts memory standardCosts) =
+            (uint256 standardEth, uint256 standardFeeToken, TeleportationType standardType, IL1Teleporter.RetryableGasCosts memory standardCosts) =
                 teleporter.determineTypeAndFees(standardParams);
+            assertTrue(standardType == TeleportationType.Standard, "standardType");
             assertEq(standardFeeToken, 0, "standardFeeToken");
             assertEq(
                 standardEth,
@@ -118,8 +120,9 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
-        (uint256 feeTokenEth, uint256 feeTokenFeeToken, IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts) =
+        (uint256 feeTokenEth, uint256 feeTokenFeeToken, TeleportationType onlyFeeType, IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts) =
             teleporter.determineTypeAndFees(feeTokenParams);
+        assertTrue(onlyFeeType == TeleportationType.OnlyCustomFee, "onlyFeeType");
         assertEq(feeTokenFeeToken, feeTokenGasCosts.l2l3TokenBridgeCost, "feeTokenFeeToken");
         assertEq(
             feeTokenEth, feeTokenGasCosts.l1l2TokenBridgeCost + feeTokenGasCosts.l2ForwarderFactoryCost, "feeTokenEth"
@@ -135,8 +138,9 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
-        (uint256 feeTokenEth2, uint256 feeTokenFeeToken2, IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts2) =
+        (uint256 feeTokenEth2, uint256 feeTokenFeeToken2, TeleportationType feeType2, IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts2) =
             teleporter.determineTypeAndFees(feeTokenParams2);
+        assertTrue(feeType2 == TeleportationType.NonFeeTokenToCustomFee, "feeType2");
         assertEq(feeTokenFeeToken2, feeTokenGasCosts2.l2l3TokenBridgeCost, "feeTokenFeeToken2");
         assertEq(
             feeTokenEth2,
@@ -164,7 +168,7 @@ contract L1TeleporterTest is BaseTest {
             gasParams: gasParams
         });
 
-        (uint256 requiredEth,, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
+        (uint256 requiredEth,,, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
             teleporter.determineTypeAndFees(params);
         IL2Forwarder.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
@@ -216,7 +220,7 @@ contract L1TeleporterTest is BaseTest {
             gasParams: gasParams
         });
 
-        (uint256 requiredEth, uint256 requiredFeeTokenAmount, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
+        (uint256 requiredEth, uint256 requiredFeeTokenAmount,, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
             teleporter.determineTypeAndFees(params);
 
         // we don't need to check msg.value here because it's already checked in testStandardTeleport
@@ -270,7 +274,7 @@ contract L1TeleporterTest is BaseTest {
             gasParams: gasParams
         });
 
-        (uint256 requiredEth, uint256 requiredFeeTokenAmount, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
+        (uint256 requiredEth, uint256 requiredFeeTokenAmount,, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
             teleporter.determineTypeAndFees(params);
 
         // we don't need to check msg.value here because it's already checked in testStandardTeleport
