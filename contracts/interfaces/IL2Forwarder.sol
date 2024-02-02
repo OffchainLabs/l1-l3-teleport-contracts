@@ -7,7 +7,7 @@ import {IL2ForwarderPredictor} from "./IL2ForwarderPredictor.sol";
 /// @notice L2 contract that receives ERC20 tokens to forward to L3.
 ///         May receive either token and ETH, token and the L3 feeToken, or just feeToken if token == feeToken.
 ///         In case funds cannot be bridged to L3, the owner can call rescue to get their funds back.
-interface IL2Forwarder is IL2ForwarderPredictor {
+interface IL2Forwarder {
     /// @notice Parameters for an L2Forwarder
     /// @param  owner           Address of the L2Forwarder owner. Setting this incorrectly could result in loss of funds.
     /// @param  l2Token         Address of the L2 token to bridge to L3
@@ -36,6 +36,8 @@ interface IL2Forwarder is IL2ForwarderPredictor {
     /// @notice Emitted after a successful call to bridgeToL3
     event BridgedToL3(uint256 tokenAmount, uint256 feeAmount);
 
+    /// @notice Thrown when initialize is called more than once
+    error AlreadyInitialized();
     /// @notice Thrown when a non-owner calls rescue
     error OnlyOwner();
     /// @notice Thrown when the length of targets, values, and datas are not equal in a call to rescue
@@ -44,6 +46,9 @@ interface IL2Forwarder is IL2ForwarderPredictor {
     error CallFailed(address to, uint256 value, bytes data, bytes returnData);
     /// @notice Thrown when bridgeToL3 is called by an address other than the L2ForwarderFactory
     error OnlyL2ForwarderFactory();
+
+    /// @notice Initialize the L2Forwarder with the owner
+    function initialize(address _owner) external;
 
     /// @notice Send tokens + (fee tokens or ETH) through the bridge to a recipient on L3.
     /// @param  params Parameters of the bridge transaction.

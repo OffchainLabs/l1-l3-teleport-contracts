@@ -13,7 +13,15 @@ import {TeleportationType, _teleportationType} from "./lib/TeleportationType.sol
 contract L2Forwarder is L2ForwarderPredictor, IL2Forwarder {
     using SafeERC20 for IERC20;
 
+    address public owner;
+
     constructor(address _factory) L2ForwarderPredictor(_factory, address(this)) {}
+
+    /// @inheritdoc IL2Forwarder
+    function initialize(address _owner) external {
+        if (owner != address(0)) revert AlreadyInitialized();
+        owner = _owner;
+    }
 
     /// @inheritdoc IL2Forwarder
     function bridgeToL3(L2ForwarderParams memory params) external payable {
@@ -35,7 +43,7 @@ contract L2Forwarder is L2ForwarderPredictor, IL2Forwarder {
 
     /// @inheritdoc IL2Forwarder
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external payable {
-        if (l2ForwarderAddress(msg.sender) != address(this)) revert OnlyOwner();
+        if (msg.sender != owner) revert OnlyOwner();
         if (targets.length != values.length || values.length != datas.length) revert LengthMismatch();
 
         for (uint256 i = 0; i < targets.length; i++) {

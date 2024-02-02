@@ -30,7 +30,9 @@ contract L2ForwarderFactory is L2ForwarderPredictor, IL2ForwarderFactory {
     /// @inheritdoc IL2ForwarderFactory
     function createL2Forwarder(IL2Forwarder.L2ForwarderParams memory params) public returns (IL2Forwarder) {
         IL2Forwarder l2Forwarder =
-            IL2Forwarder(payable(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(params.owner))));
+            IL2Forwarder(payable(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(params))));
+
+        l2Forwarder.initialize(params.owner);
 
         emit CreatedL2Forwarder(address(l2Forwarder), params.owner, params);
 
@@ -39,7 +41,7 @@ contract L2ForwarderFactory is L2ForwarderPredictor, IL2ForwarderFactory {
 
     /// @dev Create an L2Forwarder if it doesn't exist, otherwise return the existing one.
     function _tryCreateL2Forwarder(IL2Forwarder.L2ForwarderParams memory params) internal returns (IL2Forwarder) {
-        address calculatedAddress = l2ForwarderAddress(params.owner);
+        address calculatedAddress = l2ForwarderAddress(params);
 
         if (calculatedAddress.code.length > 0) {
             // contract already exists
