@@ -15,7 +15,7 @@ abstract contract AccessControlPausable is Pausable, AccessControl {
     function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
-    
+
     function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
     }

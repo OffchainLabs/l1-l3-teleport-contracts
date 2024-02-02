@@ -45,12 +45,15 @@ contract L1TeleporterTest is BaseTest {
         newGasParams.l2GasPriceBid = bound(gasParams.l2GasPriceBid, 0.01 gwei, 100 gwei);
         newGasParams.l3GasPriceBid = bound(gasParams.l3GasPriceBid, 0.01 gwei, 100 gwei);
 
-        newGasParams.l2ForwarderFactoryGasLimit = uint64(bound(gasParams.l2ForwarderFactoryGasLimit, 100_000, 100_000_000));
-        newGasParams.l1l2FeeTokenBridgeGasLimit = uint64(bound(gasParams.l1l2FeeTokenBridgeGasLimit, 100_000, 100_000_000));
+        newGasParams.l2ForwarderFactoryGasLimit =
+            uint64(bound(gasParams.l2ForwarderFactoryGasLimit, 100_000, 100_000_000));
+        newGasParams.l1l2FeeTokenBridgeGasLimit =
+            uint64(bound(gasParams.l1l2FeeTokenBridgeGasLimit, 100_000, 100_000_000));
         newGasParams.l1l2TokenBridgeGasLimit = uint64(bound(gasParams.l1l2TokenBridgeGasLimit, 100_000, 100_000_000));
         newGasParams.l2l3TokenBridgeGasLimit = uint64(bound(gasParams.l2l3TokenBridgeGasLimit, 100_000, 100_000_000));
 
-        newGasParams.l1l2FeeTokenBridgeMaxSubmissionCost = bound(gasParams.l1l2FeeTokenBridgeMaxSubmissionCost, 100, 100_000);
+        newGasParams.l1l2FeeTokenBridgeMaxSubmissionCost =
+            bound(gasParams.l1l2FeeTokenBridgeMaxSubmissionCost, 100, 100_000);
         newGasParams.l1l2TokenBridgeMaxSubmissionCost = bound(gasParams.l1l2TokenBridgeMaxSubmissionCost, 100, 100_000);
         newGasParams.l2l3TokenBridgeMaxSubmissionCost = bound(gasParams.l2l3TokenBridgeMaxSubmissionCost, 100, 100_000);
     }
@@ -76,8 +79,12 @@ contract L1TeleporterTest is BaseTest {
                 amount: 10,
                 gasParams: gasParams
             });
-            (uint256 standardEth, uint256 standardFeeToken, TeleportationType standardType, IL1Teleporter.RetryableGasCosts memory standardCosts) =
-                teleporter.determineTypeAndFees(standardParams);
+            (
+                uint256 standardEth,
+                uint256 standardFeeToken,
+                TeleportationType standardType,
+                IL1Teleporter.RetryableGasCosts memory standardCosts
+            ) = teleporter.determineTypeAndFees(standardParams);
             assertTrue(standardType == TeleportationType.Standard, "standardType");
             assertEq(standardFeeToken, 0, "standardFeeToken");
             assertEq(
@@ -90,7 +97,8 @@ contract L1TeleporterTest is BaseTest {
             // we only check RetryableGasCosts once because it'll be the same for all modes
             assertEq(
                 standardCosts.l1l2FeeTokenBridgeCost,
-                gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid + gasParams.l1l2FeeTokenBridgeMaxSubmissionCost,
+                gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid
+                    + gasParams.l1l2FeeTokenBridgeMaxSubmissionCost,
                 "l1l2FeeTokenBridgeCost"
             );
             assertEq(
@@ -100,7 +108,8 @@ contract L1TeleporterTest is BaseTest {
             );
             assertEq(
                 standardCosts.l2ForwarderFactoryCost,
-                gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid + gasParams.l2ForwarderFactoryMaxSubmissionCost,
+                gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid
+                    + gasParams.l2ForwarderFactoryMaxSubmissionCost,
                 "l2ForwarderFactoryCost"
             );
             assertEq(
@@ -120,8 +129,12 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
-        (uint256 feeTokenEth, uint256 feeTokenFeeToken, TeleportationType onlyFeeType, IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts) =
-            teleporter.determineTypeAndFees(feeTokenParams);
+        (
+            uint256 feeTokenEth,
+            uint256 feeTokenFeeToken,
+            TeleportationType onlyFeeType,
+            IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts
+        ) = teleporter.determineTypeAndFees(feeTokenParams);
         assertTrue(onlyFeeType == TeleportationType.OnlyCustomFee, "onlyFeeType");
         assertEq(feeTokenFeeToken, feeTokenGasCosts.l2l3TokenBridgeCost, "feeTokenFeeToken");
         assertEq(
@@ -138,8 +151,12 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
-        (uint256 feeTokenEth2, uint256 feeTokenFeeToken2, TeleportationType feeType2, IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts2) =
-            teleporter.determineTypeAndFees(feeTokenParams2);
+        (
+            uint256 feeTokenEth2,
+            uint256 feeTokenFeeToken2,
+            TeleportationType feeType2,
+            IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts2
+        ) = teleporter.determineTypeAndFees(feeTokenParams2);
         assertTrue(feeType2 == TeleportationType.NonFeeTokenToCustomFee, "feeType2");
         assertEq(feeTokenFeeToken2, feeTokenGasCosts2.l2l3TokenBridgeCost, "feeTokenFeeToken2");
         assertEq(
@@ -150,11 +167,9 @@ contract L1TeleporterTest is BaseTest {
         );
     }
 
-    function testStandardTeleport(
-        IL1Teleporter.RetryableGasParams memory gasParams,
-        address receiver,
-        uint256 amount
-    ) public {
+    function testStandardTeleport(IL1Teleporter.RetryableGasParams memory gasParams, address receiver, uint256 amount)
+        public
+    {
         gasParams = _boundGasParams(gasParams);
         amount = bound(amount, 1, 100 ether);
 
@@ -193,12 +208,7 @@ contract L1TeleporterTest is BaseTest {
         });
         _expectTokenBridgeRetryable(msgCount, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata);
         _expectFactoryRetryable(
-            msgCount + 1,
-            params,
-            retryableCosts,
-            l2ForwarderParams,
-            l2Forwarder,
-            retryableCosts.l2l3TokenBridgeCost
+            msgCount + 1, params, retryableCosts, l2ForwarderParams, l2Forwarder, retryableCosts.l2l3TokenBridgeCost
         );
         teleporter.teleport{value: requiredEth}(params);
     }

@@ -85,7 +85,12 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     function determineTypeAndFees(TeleportParams memory params)
         external
         view
-        returns (uint256 ethAmount, uint256 feeTokenAmount, TeleportationType teleportationType, RetryableGasCosts memory costs);
+        returns (
+            uint256 ethAmount,
+            uint256 feeTokenAmount,
+            TeleportationType teleportationType,
+            RetryableGasCosts memory costs
+        );
 
     /// @notice Given some teleportation parameters, build the L2ForwarderParams for the L2ForwarderFactory.
     function buildL2ForwarderParams(TeleportParams memory params, address l2Owner)
