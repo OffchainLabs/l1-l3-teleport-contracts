@@ -7,7 +7,6 @@ import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 /// @title  L2ForwarderContractsDeployer
 /// @notice Deploys the L2Forwarder implementation and factory contracts.
 ///         This contract should be deployed with a generic CREATE2 factory to the same address on each L2.
-// @review - see L1Teleporter aliasing issue, we need to prevent this from deployed on L1 if using CREATE2 factory
 contract L2ForwarderContractsDeployer {
     event Deployed(address implementation, address factory);
 
