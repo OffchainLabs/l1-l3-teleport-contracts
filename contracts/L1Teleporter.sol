@@ -32,8 +32,7 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
         // calculate forwarder address
         address l2Forwarder = l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender));
 
-        // @review we do this check in a few places, consider a library function to return an enum for clarity
-        //         also looks like _teleportCommon can be moved outside the if/else block here
+        // @review looks like _teleportCommon can be moved outside the if/else block here
         if (teleportationType == TeleportationType.Standard) {
             // we are teleporting a token to an ETH fee L3
             _teleportCommon(params, retryableCosts, l2Forwarder);
