@@ -18,11 +18,15 @@ abstract contract L2ForwarderPredictor is IL2ForwarderPredictor {
 
     /// @inheritdoc IL2ForwarderPredictor
     function l2ForwarderAddress(IL2Forwarder.L2ForwarderParams memory params) public view returns (address) {
-        return Clones.predictDeterministicAddress(l2ForwarderImplementation, _salt(params), l2ForwarderFactory);
+        return l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);
+    }
+
+    function l2ForwarderAddress(address owner, address routerOrInbox, address to) public view returns (address) {
+        return Clones.predictDeterministicAddress(l2ForwarderImplementation, _salt(owner, routerOrInbox, to), l2ForwarderFactory);
     }
 
     /// @notice Creates the salt for an L2Forwarder from its owner
-    function _salt(IL2Forwarder.L2ForwarderParams memory params) internal pure returns (bytes32) {
-        return keccak256(abi.encode(params));
+    function _salt(address owner, address routerOrInbox, address to) internal pure returns (bytes32) {
+        return keccak256(abi.encode(owner, routerOrInbox, to));
     }
 }
