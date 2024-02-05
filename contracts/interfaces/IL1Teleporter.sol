@@ -29,15 +29,15 @@ interface IL1Teleporter is IL2ForwarderPredictor {
 
     /// @notice Gas parameters for each retryable ticket.
     struct RetryableGasParams {
-        uint256 l2GasPrice; // @review - gasPrice -> gasBid
-        uint256 l3GasPrice;
-        uint256 l2ForwarderFactoryGasLimit; // @review - these 4 gas limit can use uint64
-        uint256 l1l2FeeTokenBridgeGasLimit; //         - gas limit cannot exceed uint64
-        uint256 l1l2TokenBridgeGasLimit;
-        uint256 l2l3TokenBridgeGasLimit;
-        uint256 l1l2FeeTokenBridgeSubmissionCost; // @review - "max" submission cost
-        uint256 l1l2TokenBridgeSubmissionCost;
-        uint256 l2l3TokenBridgeSubmissionCost;
+        uint256 l2GasPriceBid;
+        uint256 l3GasPriceBid;
+        uint64 l2ForwarderFactoryGasLimit;
+        uint64 l1l2FeeTokenBridgeGasLimit;
+        uint64 l1l2TokenBridgeGasLimit;
+        uint64 l2l3TokenBridgeGasLimit;
+        uint256 l1l2FeeTokenBridgeMaxSubmissionCost;
+        uint256 l1l2TokenBridgeMaxSubmissionCost;
+        uint256 l2l3TokenBridgeMaxSubmissionCost;
     }
 
     /// @notice Total cost for each retryable ticket.
@@ -46,7 +46,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
         uint256 l1l2TokenBridgeCost;
         uint256 l2ForwarderFactoryCost;
         uint256 l2l3TokenBridgeCost;
-        uint256 l2ForwarderFactorySubmissionCost;
+        uint256 l2ForwarderFactoryMaxSubmissionCost;
     }
 
     /// @notice Emitted when a teleportation is initiated.
