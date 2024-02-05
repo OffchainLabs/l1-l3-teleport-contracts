@@ -92,6 +92,48 @@ contract L1TeleporterTest is BaseTest {
         // don't need to test 'doesn't revert when unpaused' because it's already tested in other tests
     }
 
+    function testBuildL2ForwarderParams(IL1Teleporter.TeleportParams memory params, address l2Owner) public {
+        params.l1l2Router = address(ethGatewayRouter);
+        address l2Token = ethGatewayRouter.calculateL2TokenAddress(params.l1Token);
+
+        // test standard mode
+        params.l1FeeToken = address(0);
+        IL2Forwarder.L2ForwarderParams memory standardParams = teleporter.buildL2ForwarderParams(params, l2Owner);
+        assertEq(standardParams.owner, l2Owner, "standardParams.owner");
+        assertEq(standardParams.l2Token, l2Token, "standardParams.l2Token");
+        assertEq(standardParams.l2FeeToken, address(0), "standardParams.l2FeeToken");
+        assertEq(standardParams.routerOrInbox, params.l2l3RouterOrInbox, "standardParams.routerOrInbox");
+        assertEq(standardParams.to, params.to, "standardParams.to");
+        assertEq(standardParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
+        assertEq(standardParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
+        assertEq(standardParams.maxSubmissionCost, 0, "standardParams.maxSubmissionCost");
+
+        // test OnlyCustomFee
+        params.l1FeeToken = params.l1Token;
+        IL2Forwarder.L2ForwarderParams memory onlyFeeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
+        assertEq(onlyFeeParams.owner, l2Owner, "standardParams.owner");
+        assertEq(onlyFeeParams.l2Token, l2Token, "standardParams.l2Token");
+        assertEq(onlyFeeParams.l2FeeToken, l2Token, "standardParams.l2FeeToken");
+        assertEq(onlyFeeParams.routerOrInbox, params.l2l3RouterOrInbox, "standardParams.routerOrInbox");
+        assertEq(onlyFeeParams.to, params.to, "standardParams.to");
+        assertEq(onlyFeeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
+        assertEq(onlyFeeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
+        assertEq(onlyFeeParams.maxSubmissionCost, 0, "standardParams.maxSubmissionCost");
+
+        // test NonFeeTokenToCustomFee
+        params.l1FeeToken = address(0x1234);
+        address l2FeeToken = ethGatewayRouter.calculateL2TokenAddress(params.l1FeeToken);
+        IL2Forwarder.L2ForwarderParams memory feeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
+        assertEq(feeParams.owner, l2Owner, "standardParams.owner");
+        assertEq(feeParams.l2Token, l2Token, "standardParams.l2Token");
+        assertEq(feeParams.l2FeeToken, l2FeeToken, "standardParams.l2FeeToken");
+        assertEq(feeParams.routerOrInbox, params.l2l3RouterOrInbox, "standardParams.routerOrInbox");
+        assertEq(feeParams.to, params.to, "standardParams.to");
+        assertEq(feeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
+        assertEq(feeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
+        assertEq(feeParams.maxSubmissionCost, params.gasParams.l2l3TokenBridgeMaxSubmissionCost, "standardParams.maxSubmissionCost");
+    }
+
     function testCalculateRequiredEthAndFeeToken(IL1Teleporter.RetryableGasParams memory gasParams, uint256 baseFee)
         public
     {

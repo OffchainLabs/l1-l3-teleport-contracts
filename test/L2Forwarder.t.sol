@@ -72,7 +72,8 @@ contract L2ForwarderTest is BaseTest {
             gasPriceBid: 0.1 gwei,
             forwarderETHBalance: 0.1 ether,
             msgValue: 0.2 ether,
-            forwarderNativeBalance: 3 ether
+            forwarderNativeBalance: 3 ether,
+            maxSubmissionCost: 0.11 ether
         });
     }
 
@@ -118,7 +119,8 @@ contract L2ForwarderTest is BaseTest {
         uint256 gasPriceBid,
         uint256 forwarderETHBalance,
         uint256 msgValue,
-        uint256 forwarderNativeBalance
+        uint256 forwarderNativeBalance,
+        uint256 maxSubmissionCost
     ) internal {
         IL2Forwarder.L2ForwarderParams memory params = IL2Forwarder.L2ForwarderParams({
             owner: owner,
@@ -127,7 +129,8 @@ contract L2ForwarderTest is BaseTest {
             routerOrInbox: address(erc20GatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimit,
-            gasPriceBid: gasPriceBid
+            gasPriceBid: gasPriceBid,
+            maxSubmissionCost: maxSubmissionCost
         });
 
         address forwarder = factory.l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);
@@ -148,8 +151,8 @@ contract L2ForwarderTest is BaseTest {
             msgCount: msgCount,
             to: childDefaultGateway, // counterpart gateway
             l2CallValue: 0,
-            msgValue: forwarderNativeBalance,
-            maxSubmissionCost: forwarderNativeBalance - params.gasLimit * params.gasPriceBid,
+            msgValue: maxSubmissionCost + gasLimit * gasPriceBid,
+            maxSubmissionCost: maxSubmissionCost,
             excessFeeRefundAddress: params.to,
             callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(forwarder),
             gasLimit: params.gasLimit,
@@ -185,7 +188,8 @@ contract L2ForwarderTest is BaseTest {
             routerOrInbox: address(erc20Inbox),
             to: l3Recipient,
             gasLimit: gasLimit,
-            gasPriceBid: gasPriceBid
+            gasPriceBid: gasPriceBid,
+            maxSubmissionCost: 1
         });
 
         address forwarder = factory.l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);
@@ -231,7 +235,8 @@ contract L2ForwarderTest is BaseTest {
             routerOrInbox: address(ethGatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimit,
-            gasPriceBid: gasPriceBid
+            gasPriceBid: gasPriceBid,
+            maxSubmissionCost: 1
         });
 
         address forwarder = factory.l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);

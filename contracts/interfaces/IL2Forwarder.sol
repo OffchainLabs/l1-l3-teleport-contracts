@@ -9,13 +9,14 @@ import {IL2ForwarderPredictor} from "./IL2ForwarderPredictor.sol";
 ///         In case funds cannot be bridged to L3, the owner can call rescue to get their funds back.
 interface IL2Forwarder {
     /// @notice Parameters for an L2Forwarder
-    /// @param  owner           Address of the L2Forwarder owner. Setting this incorrectly could result in loss of funds.
-    /// @param  l2Token         Address of the L2 token to bridge to L3
-    /// @param  l2FeeToken      Address of the L3's fee token, or 0x00 for ETH
-    /// @param  routerOrInbox   Address of the L2 -> L3 GatewayRouter or Inbox if depositing only custom fee token
-    /// @param  to              Address of the recipient on L3
-    /// @param  gasLimit        Gas limit for the L2 -> L3 retryable
-    /// @param  gasPriceBid     Gas price for the L2 -> L3 retryable
+    /// @param  owner               Address of the L2Forwarder owner. Setting this incorrectly could result in loss of funds.
+    /// @param  l2Token             Address of the L2 token to bridge to L3
+    /// @param  l2FeeToken          Address of the L3's fee token, or 0x00 for ETH
+    /// @param  routerOrInbox       Address of the L2 -> L3 GatewayRouter or Inbox if depositing only custom fee token
+    /// @param  to                  Address of the recipient on L3
+    /// @param  gasLimit            Gas limit for the L2 -> L3 retryable
+    /// @param  gasPriceBid         Gas price for the L2 -> L3 retryable
+    /// @param  maxSubmissionCost   Max submission fee for the L2 -> L3 retryable. Will be ignored for Standard and OnlyCustomFee teleportation types.
     struct L2ForwarderParams {
         address owner;
         address l2Token;
@@ -24,6 +25,7 @@ interface IL2Forwarder {
         address to;
         uint256 gasLimit;
         uint256 gasPriceBid;
+        uint256 maxSubmissionCost;
     }
 
     /// @notice Emitted after a successful call to rescue

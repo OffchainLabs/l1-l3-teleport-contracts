@@ -61,6 +61,7 @@ contract L2Forwarder is IL2Forwarder {
     }
 
     /// @dev Bridge tokens to an L3 that uses ETH for fees. Entire ETH and token balance is sent.
+    ///      params.maxSubmissionCost is ignored.
     function _bridgeToEthFeeL3(L2ForwarderParams memory params) internal {
         // get balance and approve gateway
         uint256 tokenBalance = _approveGatewayForBalance(params.routerOrInbox, params.l2Token);
@@ -87,6 +88,7 @@ contract L2Forwarder is IL2Forwarder {
     ///      Create a single retryable to call `params.to` with the fee token amount minus fees.
     ///      Entire fee token balance is sent.
     ///      ETH is not sent anywhere even if balance is nonzero.
+    ///      params.maxSubmissionCost is ignored.
     function _bridgeFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
         uint256 tokenBalance = IERC20(params.l2Token).balanceOf(address(this));
 
@@ -114,22 +116,19 @@ contract L2Forwarder is IL2Forwarder {
     }
 
     /// @dev Bridge non-fee tokens to an L3 that uses a custom fee token.
-    ///      Send entire fee token balance to the inbox and call the L3's L1GatewayRouter to bridge entire non-fee token balance.
-    ///      Overestimate the submission cost to ensure all fee tokens are sent through.
     function _bridgeNonFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
         // get balance and approve gateway
         uint256 tokenBalance = _approveGatewayForBalance(params.routerOrInbox, params.l2Token);
 
-        // get feeToken balance
-        uint256 feeTokenBalance = IERC20(params.l2FeeToken).balanceOf(address(this));
+        // calculate total fee amount
+        uint256 totalFeeAmount = params.gasLimit * params.gasPriceBid + params.maxSubmissionCost;
 
         // send feeToken to the inbox
         address inbox = L1GatewayRouter(params.routerOrInbox).inbox();
-        IERC20(params.l2FeeToken).safeTransfer(inbox, feeTokenBalance);
+        IERC20(params.l2FeeToken).safeTransfer(inbox, totalFeeAmount);
 
         // send tokens through the bridge to intended recipient
-        // overestimate submission cost to ensure all feeToken is sent through
-        uint256 maxSubmissionCost = feeTokenBalance - params.gasLimit * params.gasPriceBid;
+        // use user supplied max submission fee instead of sending all the fee token balance
         L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund(
             params.l2Token,
             params.to,
@@ -137,10 +136,10 @@ contract L2Forwarder is IL2Forwarder {
             tokenBalance,
             params.gasLimit,
             params.gasPriceBid,
-            abi.encode(maxSubmissionCost, bytes(""), feeTokenBalance)
+            abi.encode(params.maxSubmissionCost, bytes(""), totalFeeAmount)
         );
 
-        emit BridgedToL3(tokenBalance, feeTokenBalance);
+        emit BridgedToL3(tokenBalance, totalFeeAmount);
     }
 
     function _approveGatewayForBalance(address router, address token) internal returns (uint256) {
