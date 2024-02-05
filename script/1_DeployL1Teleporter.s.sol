@@ -11,6 +11,8 @@ contract DeployL1Teleporter is Script {
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address admin = vm.envAddress("TELEPORTER_ADMIN");
+        address pauser = vm.envAddress("TELEPORTER_PAUSER");
         string memory l2DeploymentJson = vm.readFile("./script-deploy-data/l2.json");
 
         address predictedL1Teleporter = l2DeploymentJson.readAddress(".predictedL1Teleporter");
@@ -19,7 +21,12 @@ contract DeployL1Teleporter is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        L1Teleporter teleporter = new L1Teleporter(l2ForwarderFactory, l2ForwarderImplementation);
+        L1Teleporter teleporter = new L1Teleporter({
+            _l2ForwarderFactory: l2ForwarderFactory,
+            _l2ForwarderImplementation: l2ForwarderImplementation,
+            _admin: admin,
+            _pauser: pauser
+        });
 
         require(address(teleporter) == predictedL1Teleporter, "L1Teleporter address mismatch");
 

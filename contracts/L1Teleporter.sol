@@ -2,6 +2,8 @@
 pragma solidity ^0.8.13;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {L1GatewayRouter} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
@@ -13,16 +15,21 @@ import {IL1Teleporter} from "./interfaces/IL1Teleporter.sol";
 import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
 import {TeleportationType, toTeleportationType} from "./lib/TeleportationType.sol";
 
-contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
-    // @review - make this contract pausable or deploy behind proxy for safety
+contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Teleporter {
     using SafeERC20 for IERC20;
 
-    constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation)
+    /// @notice Accounts with this role can pause and unpause the contract
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+    constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation, address _admin, address _pauser)
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
-    {}
+    {
+        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
+        _setupRole(PAUSER_ROLE, _pauser);
+    }
 
     /// @inheritdoc IL1Teleporter
-    function teleport(TeleportParams memory params) external payable {
+    function teleport(TeleportParams memory params) external payable whenNotPaused {
         (uint256 requiredEth, uint256 requiredFeeToken, TeleportationType teleportationType, RetryableGasCosts memory retryableCosts) =
             determineTypeAndFees(params);
 
@@ -32,19 +39,11 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
         // calculate forwarder address
         address l2Forwarder = l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender));
 
-        // @review looks like _teleportCommon can be moved outside the if/else block here
-        if (teleportationType == TeleportationType.Standard) {
-            // we are teleporting a token to an ETH fee L3
-            _teleportCommon(params, retryableCosts, l2Forwarder);
-        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
+        if (teleportationType == TeleportationType.OnlyCustomFee) {
             // we are teleporting an L3's fee token
-
             // we have to make sure that the amount specified is enough to cover the retryable costs from L2 -> L3
             if (params.amount < requiredFeeToken) revert InsufficientFeeToken(requiredFeeToken, params.amount);
-
-            // teleportation flow is identical to standard
-            _teleportCommon(params, retryableCosts, l2Forwarder);
-        } else {
+        } else if (teleportationType == TeleportationType.NonFeeTokenToCustomFee) {
             // we are teleporting a non-fee token to a custom fee L3
             // the flow is identical to standard,
             // except we have to send the appropriate amount of fee token through the bridge as well
@@ -59,10 +58,9 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
                 gasPriceBid: params.gasParams.l2GasPriceBid,
                 maxSubmissionCost: params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost
             });
-
-            // the rest of the flow is identical to standard
-            _teleportCommon(params, retryableCosts, l2Forwarder);
         }
+
+        _teleportCommon(params, retryableCosts, l2Forwarder);
 
         emit Teleported({
             sender: msg.sender,
@@ -73,6 +71,16 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
             to: params.to,
             amount: params.amount
         });
+    }
+
+    /// @notice Pause the contract
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+    
+    /// @notice Unpause the contract
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
     }
 
     /// @inheritdoc IL1Teleporter

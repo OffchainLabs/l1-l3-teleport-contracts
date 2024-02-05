@@ -24,13 +24,13 @@ contract L1TeleporterTest is BaseTest {
     address constant l2ForwarderFactory = address(0x1100);
     address constant l2ForwarderImpl = address(0x2200);
 
-    // address constant receiver = address(0x3300);
-    // uint256 constant amount = 1 ether;
+    address admin = address(0x110000);
+    address pauser = address(0x220000);
 
     function setUp() public override {
         super.setUp();
 
-        teleporter = new L1Teleporter(l2ForwarderFactory, l2ForwarderImpl);
+        teleporter = new L1Teleporter(l2ForwarderFactory, l2ForwarderImpl, admin, pauser);
         l1Token = new ERC20PresetMinterPauser("TOKEN", "TOKEN");
         ERC20PresetMinterPauser(address(l1Token)).mint(address(this), 100 ether);
 
@@ -53,6 +53,43 @@ contract L1TeleporterTest is BaseTest {
         newGasParams.l1l2FeeTokenBridgeMaxSubmissionCost = bound(gasParams.l1l2FeeTokenBridgeMaxSubmissionCost, 100, 100_000);
         newGasParams.l1l2TokenBridgeMaxSubmissionCost = bound(gasParams.l1l2TokenBridgeMaxSubmissionCost, 100, 100_000);
         newGasParams.l2l3TokenBridgeMaxSubmissionCost = bound(gasParams.l2l3TokenBridgeMaxSubmissionCost, 100, 100_000);
+    }
+
+    function testAccessControl() public {
+        assertTrue(teleporter.hasRole(teleporter.DEFAULT_ADMIN_ROLE(), admin), "admin");
+        assertTrue(teleporter.hasRole(teleporter.PAUSER_ROLE(), pauser), "pauser");
+
+        bytes32 pauserRole = teleporter.PAUSER_ROLE();
+
+        address bob = address(0x330000);
+
+        vm.startPrank(bob);
+        vm.expectRevert("AccessControl: account 0x0000000000000000000000000000000000330000 is missing role 0x65d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a");
+        teleporter.pause();
+        vm.expectRevert("AccessControl: account 0x0000000000000000000000000000000000330000 is missing role 0x65d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a");
+        teleporter.unpause();
+        vm.stopPrank();
+
+        vm.prank(admin);
+        teleporter.grantRole(pauserRole, bob);
+
+        vm.prank(bob);
+        teleporter.pause();
+        vm.prank(pauser);
+        teleporter.unpause();
+    }
+
+    function testPause() public {
+        // don't test access control, it's already tested in testAccessControl
+        
+        vm.prank(pauser);
+        teleporter.pause();
+
+        IL1Teleporter.TeleportParams memory params;
+        vm.expectRevert("Pausable: paused");
+        teleporter.teleport(params);
+
+        // don't need to test 'doesn't revert when unpaused' because it's already tested in other tests
     }
 
     function testCalculateRequiredEthAndFeeToken(IL1Teleporter.RetryableGasParams memory gasParams, uint256 baseFee)
