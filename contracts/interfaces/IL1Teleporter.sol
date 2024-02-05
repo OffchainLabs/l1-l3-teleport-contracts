@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {IL2Forwarder} from "./IL2Forwarder.sol";
 import {IL2ForwarderPredictor} from "./IL2ForwarderPredictor.sol";
+import {TeleportationType} from "../lib/TeleportationType.sol";
 
 /// @title  L1Teleporter
 /// @notice Initiates L1 -> L3 transfers.
@@ -84,7 +85,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     function determineTypeAndFees(TeleportParams memory params)
         external
         view
-        returns (uint256 ethAmount, uint256 feeTokenAmount, RetryableGasCosts memory costs);
+        returns (uint256 ethAmount, uint256 feeTokenAmount, TeleportationType teleportationType, RetryableGasCosts memory costs);
 
     /// @notice Given some teleportation parameters, build the L2ForwarderParams for the L2ForwarderFactory.
     function buildL2ForwarderParams(TeleportParams memory params, address l2Owner)

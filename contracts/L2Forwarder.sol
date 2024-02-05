@@ -8,6 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
+import {TeleportationType, toTeleportationType} from "./lib/TeleportationType.sol";
 
 contract L2Forwarder is L2ForwarderPredictor, IL2Forwarder {
     using SafeERC20 for IERC20;
@@ -18,9 +19,14 @@ contract L2Forwarder is L2ForwarderPredictor, IL2Forwarder {
     function bridgeToL3(L2ForwarderParams memory params) external payable {
         if (msg.sender != l2ForwarderFactory) revert OnlyL2ForwarderFactory();
 
-        if (params.l2FeeToken == address(0)) {
+        TeleportationType teleportationType = toTeleportationType({
+            token: params.l2Token, 
+            feeToken: params.l2FeeToken
+        });
+
+        if (teleportationType == TeleportationType.Standard) {
             _bridgeToEthFeeL3(params);
-        } else if (params.l2FeeToken == params.l2Token) {
+        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
             _bridgeFeeTokenToCustomFeeL3(params);
         } else {
             _bridgeNonFeeTokenToCustomFeeL3(params);

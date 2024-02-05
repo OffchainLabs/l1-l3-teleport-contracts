@@ -11,6 +11,7 @@ import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 import {IL2ForwarderFactory} from "./interfaces/IL2ForwarderFactory.sol";
 import {IL1Teleporter} from "./interfaces/IL1Teleporter.sol";
 import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
+import {TeleportationType, toTeleportationType} from "./lib/TeleportationType.sol";
 
 contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
     // @review - make this contract pausable or deploy behind proxy for safety
@@ -22,7 +23,7 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
 
     /// @inheritdoc IL1Teleporter
     function teleport(TeleportParams memory params) external payable {
-        (uint256 requiredEth, uint256 requiredFeeToken, RetryableGasCosts memory retryableCosts) =
+        (uint256 requiredEth, uint256 requiredFeeToken, TeleportationType teleportationType, RetryableGasCosts memory retryableCosts) =
             determineTypeAndFees(params);
 
         // ensure we have correct msg.value
@@ -31,12 +32,11 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
         // calculate forwarder address
         address l2Forwarder = l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender));
 
-        // @review we do this check in a few places, consider a library function to return an enum for clarity
-        //         also looks like _teleportCommon can be moved outside the if/else block here
-        if (params.l1FeeToken == address(0)) {
+        // @review looks like _teleportCommon can be moved outside the if/else block here
+        if (teleportationType == TeleportationType.Standard) {
             // we are teleporting a token to an ETH fee L3
             _teleportCommon(params, retryableCosts, l2Forwarder);
-        } else if (params.l1Token == params.l1FeeToken) {
+        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
             // we are teleporting an L3's fee token
 
             // we have to make sure that the amount specified is enough to cover the retryable costs from L2 -> L3
@@ -84,9 +84,14 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
         address l2FeeToken;
 
-        if (params.l1FeeToken == address(0)) {
+        TeleportationType teleportationType = toTeleportationType({
+            token: params.l1Token,
+            feeToken: params.l1FeeToken
+        });
+
+        if (teleportationType == TeleportationType.Standard) {
             l2FeeToken = address(0);
-        } else if (params.l1Token == params.l1FeeToken) {
+        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
             l2FeeToken = l2Token;
         } else {
             l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1FeeToken);
@@ -176,14 +181,19 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
     function determineTypeAndFees(TeleportParams memory params)
         public
         pure
-        returns (uint256 ethAmount, uint256 feeTokenAmount, RetryableGasCosts memory costs)
+        returns (uint256 ethAmount, uint256 feeTokenAmount, TeleportationType teleportationType, RetryableGasCosts memory costs)
     {
         costs = _calculateRetryableGasCosts(params.gasParams);
 
-        if (params.l1FeeToken == address(0)) {
+        teleportationType = toTeleportationType({
+            token: params.l1Token,
+            feeToken: params.l1FeeToken
+        });
+
+        if (teleportationType == TeleportationType.Standard) {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
             feeTokenAmount = 0;
-        } else if (params.l1FeeToken == params.l1Token) {
+        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
             feeTokenAmount = costs.l2l3TokenBridgeCost;
         } else {
