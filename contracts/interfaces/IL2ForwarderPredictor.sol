@@ -10,6 +10,8 @@ interface IL2ForwarderPredictor {
     function l2ForwarderFactory() external view returns (address);
     /// @notice Address of the L2Forwarder implementation
     function l2ForwarderImplementation() external view returns (address);
-    /// @notice Predicts the address of an L2Forwarder based on its owner
+    /// @notice Predicts the address of an L2Forwarder based on its owner, routerOrInbox, and to
+    function l2ForwarderAddress(address owner, address routerOrInbox, address to) external view returns (address);
+    /// @notice Predicts the address of an L2Forwarder based on its owner, routerOrInbox, and to
     function l2ForwarderAddress(IL2Forwarder.L2ForwarderParams memory params) external view returns (address);
 }

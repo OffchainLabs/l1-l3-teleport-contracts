@@ -40,7 +40,7 @@ contract L2ForwarderTest is BaseTest {
 
     function testOnlyL2ForwarderFactory() public {
         L2Forwarder.L2ForwarderParams memory params;
-        IL2Forwarder forwarder = factory.createL2Forwarder(params);
+        IL2Forwarder forwarder = factory.createL2Forwarder(params.owner, params.routerOrInbox, params.to);
         vm.expectRevert(IL2Forwarder.OnlyL2ForwarderFactory.selector);
         forwarder.bridgeToL3(params);
     }
@@ -81,7 +81,7 @@ contract L2ForwarderTest is BaseTest {
         params.owner = owner;
 
         // create the forwarder
-        IL2Forwarder forwarder = factory.createL2Forwarder(params);
+        IL2Forwarder forwarder = factory.createL2Forwarder(params.owner, params.routerOrInbox, params.to);
 
         // create rescue params
         address[] memory targets = new address[](1);
