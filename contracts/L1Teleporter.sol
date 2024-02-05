@@ -129,8 +129,8 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
             to: l2ForwarderFactory,
             l2CallValue: address(this).balance - retryableCosts.l2ForwarderFactoryCost,
             maxSubmissionCost: params.gasParams.l2ForwarderFactoryMaxSubmissionCost,
-            excessFeeRefundAddress: l2Forwarder, // @review - notice these are subject to aliasing
-            callValueRefundAddress: l2Forwarder, //           consider burn the nonce that deploy L2ForwarderFactory on L1
+            excessFeeRefundAddress: l2Forwarder,
+            callValueRefundAddress: l2Forwarder,
             gasLimit: params.gasParams.l2ForwarderFactoryGasLimit,
             maxFeePerGas: params.gasParams.l2GasPriceBid,
             data: abi.encodeCall(

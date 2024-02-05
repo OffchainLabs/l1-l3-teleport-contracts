@@ -7,14 +7,21 @@ import {L2ForwarderFactory} from "./L2ForwarderFactory.sol";
 /// @title  L2ForwarderContractsDeployer
 /// @notice Deploys the L2Forwarder implementation and factory contracts.
 ///         This contract should be deployed with a generic CREATE2 factory to the same address on each L2.
-// @review - see L1Teleporter aliasing issue, we need to prevent this from deployed on L1 if using CREATE2 factory
 contract L2ForwarderContractsDeployer {
     event Deployed(address implementation, address factory);
+
+    /// @dev Prevent the L2 contracts being deployed on L1.
+    /// If a predicted L2Forwarder exists on L1, it can lead to incorrect retryable refunds via unintentional address aliasing
+    uint256 public immutable l1ChainId;
 
     address public immutable implementation;
     address public immutable factory;
 
-    constructor(address _aliasedL1Teleporter) {
+    constructor(address _aliasedL1Teleporter, uint256 _l1ChainId) {
+        require(block.chainid != _l1ChainId, "deployer cannot be used on L1");
+
+        l1ChainId = _l1ChainId;
+
         implementation = _contractAddressFrom(1);
         factory = _contractAddressFrom(2);
 

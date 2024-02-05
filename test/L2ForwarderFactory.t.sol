@@ -14,7 +14,7 @@ contract L2ForwarderFactoryTest is Test {
     address aliasedL1Teleporter = address(0x2211);
 
     function setUp() public {
-        factory = L2ForwarderFactory((new L2ForwarderContractsDeployer(aliasedL1Teleporter)).factory());
+        factory = L2ForwarderFactory((new L2ForwarderContractsDeployer(aliasedL1Teleporter, 1)).factory());
     }
 
     /// forge-config: default.fuzz.runs = 20
