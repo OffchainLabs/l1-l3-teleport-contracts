@@ -22,6 +22,7 @@ mkdir -p script-deploy-data
 echo "Predicting L1Teleporter address..."
 DEPLOYER_ADDR=$(cast w address $PRIVATE_KEY)
 export L1_TELEPORTER=$(cast compute-address $DEPLOYER_ADDR --rpc-url $L1_URL | awk '{print $3}')
+export L1_CHAIN_ID=$(cast chain-id --rpc-url $L1_URL)
 
 echo "L1 Teleporter address: $L1_TELEPORTER"
 
@@ -40,7 +41,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # for each L2
-for (( i=1; i<=$#; i++ )); do
+for (( i=2; i<=$#; i++ )); do
     CHAIN_ID=`cast chain-id --rpc-url ${!i}`
     echo "Deploying L2 Contracts to $CHAIN_ID..."
     forge script script/0_DeployL2Contracts.s.sol --rpc-url ${!i} --broadcast --verify --etherscan-api-key $ARBISCAN_API_KEY

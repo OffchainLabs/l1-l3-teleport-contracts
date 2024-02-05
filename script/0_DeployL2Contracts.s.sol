@@ -11,7 +11,7 @@ contract DeployL2Contracts is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         bytes32 salt = vm.envBytes32("CREATE2_SALT");
         address l1Teleporter = vm.envAddress("L1_TELEPORTER");
-        uint256 l1ChainId = vm.envUint("ETH_CHAIN_ID");
+        uint256 l1ChainId = vm.envUint("L1_CHAIN_ID");
 
         vm.startBroadcast(deployerPrivateKey);
 
