@@ -46,6 +46,8 @@ interface IL2Forwarder {
     error CallFailed(address to, uint256 value, bytes data, bytes returnData);
     /// @notice Thrown when bridgeToL3 is called by an address other than the L2ForwarderFactory
     error OnlyL2ForwarderFactory();
+    /// @notice Thrown when the L2Forwarder has no balance of the token to bridge
+    error ZeroTokenBalance(address token);
 
     /// @notice Initialize the L2Forwarder with the owner
     function initialize(address _owner) external;

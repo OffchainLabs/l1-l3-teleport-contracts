@@ -90,6 +90,8 @@ contract L2Forwarder is IL2Forwarder {
     function _bridgeFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
         uint256 tokenBalance = IERC20(params.l2Token).balanceOf(address(this));
 
+        if (tokenBalance == 0) revert ZeroTokenBalance(params.l2Token);
+
         // transfer tokens to the inbox
         IERC20(params.l2Token).safeTransfer(params.routerOrInbox, tokenBalance);
 
@@ -143,6 +145,9 @@ contract L2Forwarder is IL2Forwarder {
 
     function _approveGatewayForBalance(address router, address token) internal returns (uint256) {
         uint256 balance = IERC20(token).balanceOf(address(this));
+
+        if (balance == 0) revert ZeroTokenBalance(token);
+
         address l2l3Gateway = L1GatewayRouter(router).getGateway(token);
         IERC20(token).safeApprove(l2l3Gateway, balance);
         return balance;
