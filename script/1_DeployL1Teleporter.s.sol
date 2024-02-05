@@ -13,11 +13,11 @@ contract DeployL1Teleporter is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address admin = vm.envAddress("TELEPORTER_ADMIN");
         address pauser = vm.envAddress("TELEPORTER_PAUSER");
-        string memory l2DeploymentJson = vm.readFile("./script-deploy-data/l2.json");
+        string memory deploymentJson = vm.readFile("./script-deploy-data/deployment.json");
 
-        address predictedL1Teleporter = l2DeploymentJson.readAddress(".predictedL1Teleporter");
-        address l2ForwarderFactory = l2DeploymentJson.readAddress(".L2ForwarderFactory");
-        address l2ForwarderImplementation = l2DeploymentJson.readAddress(".L2ForwarderImplementation");
+        address teleporterAddress = deploymentJson.readAddress(".L1Teleporter");
+        address l2ForwarderFactory = deploymentJson.readAddress(".L2ForwarderFactory");
+        address l2ForwarderImplementation = deploymentJson.readAddress(".L2ForwarderImplementation");
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -28,10 +28,6 @@ contract DeployL1Teleporter is Script {
             _pauser: pauser
         });
 
-        require(address(teleporter) == predictedL1Teleporter, "L1Teleporter address mismatch");
-
-        string memory finalJson = vm.serializeAddress("deployment", "L1Teleporter", address(teleporter));
-
-        vm.writeJson(finalJson, "./script-deploy-data/l1.json");
+        require(address(teleporter) == teleporterAddress, "L1Teleporter address mismatch");
     }
 }

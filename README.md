@@ -64,14 +64,5 @@ forge test --fork-url $ETH_URL -vvv
 
 To deploy:
 ```
-mkdir script-deploy-data
-
-# set ETH_NONCE so the L1Teleporter address can be predicted by 0_DeployL2Contracts.s.sol
-export ETH_NONCE=$(cast nonce $(cast w address $PRIVATE_KEY) --rpc-url $ETH_URL)
-
-# for each L2
-forge script script/0_DeployL2Contracts.s.sol --rpc-url $L2_URL --broadcast --verify --etherscan-api-key $ARBISCAN_API_KEY
-
-# for L1
-forge script script/1_DeployL1Teleporter.s.sol --rpc-url $ETH_URL --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
+./deploy.sh $L1_URL $L2_URL $OTHER_L2_URL ...
 ```
