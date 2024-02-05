@@ -12,13 +12,15 @@ contract L2ForwarderContractsDeployer {
 
     /// @dev Prevent the L2 contracts being deployed on L1.
     /// If a predicted L2Forwarder exists on L1, it can lead to incorrect retryable refunds via unintentional address aliasing
-    uint256 constant FORBIDDEN_CHAIN_ID = 1;
+    uint256 public immutable l1ChainId;
 
     address public immutable implementation;
     address public immutable factory;
 
-    constructor(address _aliasedL1Teleporter) {
-        require(block.chainid != FORBIDDEN_CHAIN_ID, "deployer cannot be used on L1");
+    constructor(address _aliasedL1Teleporter, uint256 _l1ChainId) {
+        require(block.chainid != _l1ChainId, "deployer cannot be used on L1");
+
+        l1ChainId = _l1ChainId;
 
         implementation = _contractAddressFrom(1);
         factory = _contractAddressFrom(2);

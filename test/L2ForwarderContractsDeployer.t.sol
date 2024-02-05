@@ -9,7 +9,7 @@ import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 contract L2ForwarderContractsDeployerTest is Test {
     function testDeployer() public {
         address aliasedL1Teleporter = address(0x123);
-        L2ForwarderContractsDeployer deployer = new L2ForwarderContractsDeployer(aliasedL1Teleporter);
+        L2ForwarderContractsDeployer deployer = new L2ForwarderContractsDeployer(aliasedL1Teleporter, 1);
         L2Forwarder impl = L2Forwarder(payable(deployer.implementation()));
         L2ForwarderFactory factory = L2ForwarderFactory(deployer.factory());
 
@@ -20,6 +20,6 @@ contract L2ForwarderContractsDeployerTest is Test {
         // ensure FORBIDDEN_CHAIN_ID is respected
         vm.chainId(1);
         vm.expectRevert("deployer cannot be used on L1");
-        new L2ForwarderContractsDeployer(aliasedL1Teleporter);
+        new L2ForwarderContractsDeployer(aliasedL1Teleporter, 1);
     }
 }
