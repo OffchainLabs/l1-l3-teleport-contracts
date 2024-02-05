@@ -11,11 +11,12 @@ contract DeployL2Contracts is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         bytes32 salt = vm.envBytes32("CREATE2_SALT");
         address l1Teleporter = vm.envAddress("L1_TELEPORTER");
+        uint256 l1ChainId = vm.envUint("ETH_CHAIN_ID");
 
         vm.startBroadcast(deployerPrivateKey);
 
         L2ForwarderContractsDeployer deployer =
-            new L2ForwarderContractsDeployer{salt: salt}(AddressAliasHelper.applyL1ToL2Alias(l1Teleporter));
+            new L2ForwarderContractsDeployer{salt: salt}(AddressAliasHelper.applyL1ToL2Alias(l1Teleporter), l1ChainId);
 
         vm.serializeAddress("deployment", "L1Teleporter", l1Teleporter);
         vm.serializeBytes32("deployment", "salt", bytes32(salt));

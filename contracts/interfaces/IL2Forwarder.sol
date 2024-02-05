@@ -68,6 +68,4 @@ interface IL2Forwarder {
 
     /// @notice The address of the L2ForwarderFactory
     function l2ForwarderFactory() external view returns (address);
-
-    receive() external payable;
 }

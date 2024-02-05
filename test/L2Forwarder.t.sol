@@ -29,7 +29,7 @@ contract L2ForwarderTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        L2ForwarderContractsDeployer deployer = new L2ForwarderContractsDeployer(aliasedL1Teleporter);
+        L2ForwarderContractsDeployer deployer = new L2ForwarderContractsDeployer(aliasedL1Teleporter, 1);
         factory = L2ForwarderFactory(deployer.factory());
         implementation = L2Forwarder(payable(deployer.implementation()));
         l2Token = IERC20(new ERC20PresetMinterPauser("MOCK", "MOCK"));
