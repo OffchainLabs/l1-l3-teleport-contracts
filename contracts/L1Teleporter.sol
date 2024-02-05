@@ -2,25 +2,31 @@
 pragma solidity ^0.8.13;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {L1GatewayRouter} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
-import {AccessControlPausable} from "./AccessControlPausable.sol";
 import {IL2ForwarderFactory} from "./interfaces/IL2ForwarderFactory.sol";
 import {IL1Teleporter} from "./interfaces/IL1Teleporter.sol";
 import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
 import {TeleportationType, _teleportationType} from "./lib/TeleportationType.sol";
 
-contract L1Teleporter is AccessControlPausable, L2ForwarderPredictor, IL1Teleporter {
+contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Teleporter {
     using SafeERC20 for IERC20;
+
+    /// @notice Accounts with this role can pause and unpause the contract
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation, address _admin, address _pauser)
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
-        AccessControlPausable(_admin, _pauser)
-    {}
+    {
+        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
+        _setupRole(PAUSER_ROLE, _pauser);
+    }
 
     /// @inheritdoc IL1Teleporter
     function teleport(TeleportParams memory params) external payable whenNotPaused {
@@ -65,6 +71,16 @@ contract L1Teleporter is AccessControlPausable, L2ForwarderPredictor, IL1Telepor
             to: params.to,
             amount: params.amount
         });
+    }
+
+    /// @notice Pause the contract
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+    
+    /// @notice Unpause the contract
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
     }
 
     /// @inheritdoc IL1Teleporter
