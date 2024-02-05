@@ -16,7 +16,6 @@ interface IL2Forwarder {
     /// @param  to              Address of the recipient on L3
     /// @param  gasLimit        Gas limit for the L2 -> L3 retryable
     /// @param  gasPriceBid     Gas price for the L2 -> L3 retryable
-    /// @param  relayerPayment  Amount of ETH to pay the relayer
     struct L2ForwarderParams {
         address owner;
         address l2Token;
