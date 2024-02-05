@@ -7,7 +7,7 @@ enum TeleportationType {
     NonFeeTokenToCustomFee
 }
 
-function _teleportationType(address token, address feeToken) pure returns (TeleportationType) {
+function toTeleportationType(address token, address feeToken) pure returns (TeleportationType) {
     if (feeToken == address(0)) {
         // we are teleporting a token to an ETH fee L3
         return TeleportationType.Standard;

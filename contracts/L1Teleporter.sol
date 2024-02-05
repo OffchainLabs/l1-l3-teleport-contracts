@@ -11,7 +11,7 @@ import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 import {IL2ForwarderFactory} from "./interfaces/IL2ForwarderFactory.sol";
 import {IL1Teleporter} from "./interfaces/IL1Teleporter.sol";
 import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
-import {TeleportationType, _teleportationType} from "./lib/TeleportationType.sol";
+import {TeleportationType, toTeleportationType} from "./lib/TeleportationType.sol";
 
 contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
     // @review - make this contract pausable or deploy behind proxy for safety
@@ -84,7 +84,7 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
         address l2FeeToken;
 
-        TeleportationType teleportationType = _teleportationType({
+        TeleportationType teleportationType = toTeleportationType({
             token: params.l1Token,
             feeToken: params.l1FeeToken
         });
@@ -185,7 +185,7 @@ contract L1Teleporter is L2ForwarderPredictor, IL1Teleporter {
     {
         costs = _calculateRetryableGasCosts(params.gasParams);
 
-        teleportationType = _teleportationType({
+        teleportationType = toTeleportationType({
             token: params.l1Token,
             feeToken: params.l1FeeToken
         });
