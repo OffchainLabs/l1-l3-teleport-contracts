@@ -56,6 +56,4 @@ interface IL2Forwarder is IL2ForwarderPredictor {
     /// @param  values  Values to send
     /// @param  datas   Calldata to send
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external payable;
-
-    receive() external payable;
 }
