@@ -40,7 +40,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         IL2Forwarder.L2ForwarderParams memory l2ForwarderParams = buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender));
 
         // calculate forwarder address from params
-        address l2Forwarder = l2ForwarderAddress(l2ForwarderParams);
+        address l2Forwarder = l2ForwarderAddress(l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to);
 
         if (teleportationType == TeleportationType.OnlyCustomFee) {
             // we are teleporting an L3's fee token

@@ -18,12 +18,10 @@ contract L2ForwarderFactoryTest is Test {
     }
 
     /// forge-config: default.fuzz.runs = 20
-    function testPredictionAndActualForwarderAddresses(IL2Forwarder.L2ForwarderParams memory params) public {
-        address actual = address(factory.createL2Forwarder(params.owner, params.routerOrInbox, params.to));
-        address predicted = factory.l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);
-        address predicted2 = factory.l2ForwarderAddress(params);
+    function testPredictionAndActualForwarderAddresses(address owner, address routerOrInbox, address to) public {
+        address actual = address(factory.createL2Forwarder(owner, routerOrInbox, to));
+        address predicted = factory.l2ForwarderAddress(owner, routerOrInbox, to);
         assertEq(predicted, actual);
-        assertEq(predicted2, actual);
     }
 
     function testOnlyL1Teleporter() public {

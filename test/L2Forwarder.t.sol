@@ -130,7 +130,7 @@ contract L2ForwarderTest is BaseTest {
             gasPriceBid: gasPriceBid
         });
 
-        address forwarder = factory.l2ForwarderAddress(params);
+        address forwarder = factory.l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);
 
         // give the forwarder some ETH, the first leg retryable would do this in practice
         vm.deal(forwarder, forwarderETHBalance);
@@ -188,7 +188,7 @@ contract L2ForwarderTest is BaseTest {
             gasPriceBid: gasPriceBid
         });
 
-        address forwarder = factory.l2ForwarderAddress(params);
+        address forwarder = factory.l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);
 
         // give the forwarder some ETH, the first leg retryable would do this in practice
         vm.deal(forwarder, forwarderETHBalance);
@@ -234,7 +234,7 @@ contract L2ForwarderTest is BaseTest {
             gasPriceBid: gasPriceBid
         });
 
-        address forwarder = factory.l2ForwarderAddress(params);
+        address forwarder = factory.l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);
 
         // give the forwarder some ETH, the first leg retryable would do this in practice
         vm.deal(forwarder, forwarderETHBalance);
@@ -258,7 +258,7 @@ contract L2ForwarderTest is BaseTest {
         uint256 gasPriceBid,
         uint256 tokenAmount
     ) internal {
-        address forwarder = factory.l2ForwarderAddress(params);
+        address forwarder = factory.l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);
 
         uint256 msgCount = erc20Bridge.delayedMessageCount();
         bytes memory data = _getTokenBridgeRetryableCalldata(address(ethGatewayRouter), forwarder, tokenAmount);
