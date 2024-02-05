@@ -62,5 +62,11 @@ interface IL2Forwarder {
     /// @param  datas   Calldata to send
     function rescue(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external payable;
 
+    /// @notice The owner of this L2Forwarder. Authorized to call rescue.
+    function owner() external view returns (address);
+
+    /// @notice The address of the L2ForwarderFactory
+    function l2ForwarderFactory() external view returns (address);
+
     receive() external payable;
 }

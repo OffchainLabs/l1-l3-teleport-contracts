@@ -10,12 +10,18 @@ import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
 import {TeleportationType, _teleportationType} from "./lib/TeleportationType.sol";
 
-contract L2Forwarder is L2ForwarderPredictor, IL2Forwarder {
+contract L2Forwarder is IL2Forwarder {
     using SafeERC20 for IERC20;
 
+    /// @inheritdoc IL2Forwarder
+    address public immutable l2ForwarderFactory;
+
+    /// @inheritdoc IL2Forwarder
     address public owner;
 
-    constructor(address _factory) L2ForwarderPredictor(_factory, address(this)) {}
+    constructor(address _factory) {
+        l2ForwarderFactory = _factory;
+    }
 
     /// @inheritdoc IL2Forwarder
     function initialize(address _owner) external {
