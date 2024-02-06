@@ -40,8 +40,9 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         // ensure we have correct msg.value
         if (msg.value != requiredEth) revert IncorrectValue(requiredEth, msg.value);
 
-        // calculate forwarder address
-        address l2Forwarder = l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender));
+        // calculate forwarder address from params
+        address l2Forwarder =
+            l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender), params.l2l3RouterOrInbox, params.to);
 
         if (teleportationType == TeleportationType.OnlyCustomFee) {
             // we are teleporting an L3's fee token
@@ -95,6 +96,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     {
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
         address l2FeeToken;
+        uint256 maxSubmissionCost;
 
         TeleportationType teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
 
@@ -104,6 +106,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             l2FeeToken = l2Token;
         } else {
             l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1FeeToken);
+            maxSubmissionCost = params.gasParams.l2l3TokenBridgeMaxSubmissionCost;
         }
 
         return IL2Forwarder.L2ForwarderParams({
@@ -113,7 +116,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             routerOrInbox: params.l2l3RouterOrInbox,
             to: params.to,
             gasLimit: params.gasParams.l2l3TokenBridgeGasLimit,
-            gasPriceBid: params.gasParams.l3GasPriceBid
+            gasPriceBid: params.gasParams.l3GasPriceBid,
+            maxSubmissionCost: maxSubmissionCost
         });
     }
 
@@ -184,6 +188,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         });
     }
 
+    // todo: move this up with other public views
     /// @inheritdoc IL1Teleporter
     function determineTypeAndFees(TeleportParams memory params)
         public

@@ -9,7 +9,7 @@ import {IL2Forwarder} from "./IL2Forwarder.sol";
 ///         L2Forwarders are created via CREATE2 / clones.
 interface IL2ForwarderFactory is IL2ForwarderPredictor {
     /// @notice Emitted when a new L2Forwarder is created
-    event CreatedL2Forwarder(address indexed l2Forwarder, address indexed owner, IL2Forwarder.L2ForwarderParams params);
+    event CreatedL2Forwarder(address indexed l2Forwarder, address indexed owner, address routerOrInbox, address to);
 
     /// @notice Emitted when an L2Forwarder is called to bridge tokens to L3
     event CalledL2Forwarder(address indexed l2Forwarder, IL2Forwarder.L2ForwarderParams params);
@@ -22,8 +22,10 @@ interface IL2ForwarderFactory is IL2ForwarderPredictor {
     function callForwarder(IL2Forwarder.L2ForwarderParams memory params) external payable;
 
     /// @notice Creates an L2Forwarder for the given parameters.
-    /// @param  params Parameters for the L2Forwarder
-    function createL2Forwarder(IL2Forwarder.L2ForwarderParams memory params) external returns (IL2Forwarder);
+    /// @param  owner           Owner of the L2Forwarder
+    /// @param  routerOrInbox   Address of the L1GatewayRouter or Inbox
+    /// @param  to              Address to bridge tokens to
+    function createL2Forwarder(address owner, address routerOrInbox, address to) external returns (IL2Forwarder);
 
     /// @notice Aliased address of the L1Teleporter contract
     function aliasedL1Teleporter() external view returns (address);
