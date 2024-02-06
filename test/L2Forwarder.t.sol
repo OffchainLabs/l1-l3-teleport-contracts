@@ -205,7 +205,8 @@ contract L2ForwarderTest is BaseTest {
             inbox: address(erc20Inbox),
             msgCount: msgCount,
             to: params.to,
-            l2CallValue: tokenAmount - erc20Inbox.calculateRetryableSubmissionFee(0, 0) - params.gasLimit * params.gasPriceBid,
+            l2CallValue: tokenAmount - erc20Inbox.calculateRetryableSubmissionFee(0, 0)
+                - params.gasLimit * params.gasPriceBid,
             msgValue: tokenAmount,
             maxSubmissionCost: erc20Inbox.calculateRetryableSubmissionFee(0, 0),
             excessFeeRefundAddress: params.to,
@@ -247,7 +248,9 @@ contract L2ForwarderTest is BaseTest {
         // give the forwarder some tokens, the first leg retryable would do this in practice
         l2Token.transfer(forwarder, tokenAmount);
 
-        _expectBridgeTokenEthFeesHappyCaseEvents(params, forwarderETHBalance, msgValue, gasLimit, gasPriceBid, tokenAmount);
+        _expectBridgeTokenEthFeesHappyCaseEvents(
+            params, forwarderETHBalance, msgValue, gasLimit, gasPriceBid, tokenAmount
+        );
         vm.prank(aliasedL1Teleporter);
         factory.callForwarder{value: msgValue}(params);
 
