@@ -30,17 +30,19 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
 
     /// @inheritdoc IL1Teleporter
     function teleport(TeleportParams memory params) external payable whenNotPaused {
-        (uint256 requiredEth, uint256 requiredFeeToken, TeleportationType teleportationType, RetryableGasCosts memory retryableCosts) =
-            determineTypeAndFees(params);
+        (
+            uint256 requiredEth,
+            uint256 requiredFeeToken,
+            TeleportationType teleportationType,
+            RetryableGasCosts memory retryableCosts
+        ) = determineTypeAndFees(params);
 
         // ensure we have correct msg.value
         if (msg.value != requiredEth) revert IncorrectValue(requiredEth, msg.value);
 
-        // build L2ForwarderParams
-        IL2Forwarder.L2ForwarderParams memory l2ForwarderParams = buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender));
-
         // calculate forwarder address from params
-        address l2Forwarder = l2ForwarderAddress(l2ForwarderParams);
+        address l2Forwarder =
+            l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender), params.l2l3RouterOrInbox, params.to);
 
         if (teleportationType == TeleportationType.OnlyCustomFee) {
             // we are teleporting an L3's fee token
@@ -63,7 +65,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             });
         }
 
-        _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder);
+        _teleportCommon(params, retryableCosts, l2Forwarder);
 
         emit Teleported({
             sender: msg.sender,
@@ -80,7 +82,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
-    
+
     /// @notice Unpause the contract
     function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
@@ -94,11 +96,9 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     {
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
         address l2FeeToken;
+        uint256 maxSubmissionCost;
 
-        TeleportationType teleportationType = toTeleportationType({
-            token: params.l1Token,
-            feeToken: params.l1FeeToken
-        });
+        TeleportationType teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
 
         if (teleportationType == TeleportationType.Standard) {
             l2FeeToken = address(0);
@@ -106,6 +106,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             l2FeeToken = l2Token;
         } else {
             l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1FeeToken);
+            maxSubmissionCost = params.gasParams.l2l3TokenBridgeMaxSubmissionCost;
         }
 
         return IL2Forwarder.L2ForwarderParams({
@@ -115,18 +116,16 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             routerOrInbox: params.l2l3RouterOrInbox,
             to: params.to,
             gasLimit: params.gasParams.l2l3TokenBridgeGasLimit,
-            gasPriceBid: params.gasParams.l3GasPriceBid
+            gasPriceBid: params.gasParams.l3GasPriceBid,
+            maxSubmissionCost: maxSubmissionCost
         });
     }
 
     /// @notice Common logic for teleport()
     /// @dev    Pulls in `params.l1Token` and creates 2 retryables: one to bridge tokens to the L2Forwarder, and one to call the L2ForwarderFactory.
-    function _teleportCommon(
-        TeleportParams memory params,
-        RetryableGasCosts memory retryableCosts,
-        IL2Forwarder.L2ForwarderParams memory l2ForwarderParams,
-        address l2Forwarder
-    ) internal {
+    function _teleportCommon(TeleportParams memory params, RetryableGasCosts memory retryableCosts, address l2Forwarder)
+        internal
+    {
         // send tokens through the bridge to predicted forwarder
         _pullAndBridgeToken({
             router: params.l1l2Router,
@@ -152,7 +151,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             maxFeePerGas: params.gasParams.l2GasPriceBid,
             data: abi.encodeCall(
                 IL2ForwarderFactory.callForwarder,
-                l2ForwarderParams
+                buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender))
                 )
         });
     }
@@ -194,14 +193,16 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     function determineTypeAndFees(TeleportParams memory params)
         public
         pure
-        returns (uint256 ethAmount, uint256 feeTokenAmount, TeleportationType teleportationType, RetryableGasCosts memory costs)
+        returns (
+            uint256 ethAmount,
+            uint256 feeTokenAmount,
+            TeleportationType teleportationType,
+            RetryableGasCosts memory costs
+        )
     {
         costs = _calculateRetryableGasCosts(params.gasParams);
 
-        teleportationType = toTeleportationType({
-            token: params.l1Token,
-            feeToken: params.l1FeeToken
-        });
+        teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
 
         if (teleportationType == TeleportationType.Standard) {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
@@ -222,12 +223,12 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         pure
         returns (RetryableGasCosts memory results)
     {
-        results.l1l2FeeTokenBridgeCost =
-            gasParams.l1l2FeeTokenBridgeMaxSubmissionCost + gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid;
+        results.l1l2FeeTokenBridgeCost = gasParams.l1l2FeeTokenBridgeMaxSubmissionCost
+            + gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid;
         results.l1l2TokenBridgeCost =
             gasParams.l1l2TokenBridgeMaxSubmissionCost + gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPriceBid;
-        results.l2ForwarderFactoryCost =
-            gasParams.l2ForwarderFactoryMaxSubmissionCost + gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid;
+        results.l2ForwarderFactoryCost = gasParams.l2ForwarderFactoryMaxSubmissionCost
+            + gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid;
         results.l2l3TokenBridgeCost =
             gasParams.l2l3TokenBridgeMaxSubmissionCost + gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid;
     }

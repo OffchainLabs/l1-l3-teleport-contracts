@@ -45,12 +45,15 @@ contract L1TeleporterTest is BaseTest {
         newGasParams.l2GasPriceBid = bound(gasParams.l2GasPriceBid, 0.01 gwei, 100 gwei);
         newGasParams.l3GasPriceBid = bound(gasParams.l3GasPriceBid, 0.01 gwei, 100 gwei);
 
-        newGasParams.l2ForwarderFactoryGasLimit = uint64(bound(gasParams.l2ForwarderFactoryGasLimit, 100_000, 100_000_000));
-        newGasParams.l1l2FeeTokenBridgeGasLimit = uint64(bound(gasParams.l1l2FeeTokenBridgeGasLimit, 100_000, 100_000_000));
+        newGasParams.l2ForwarderFactoryGasLimit =
+            uint64(bound(gasParams.l2ForwarderFactoryGasLimit, 100_000, 100_000_000));
+        newGasParams.l1l2FeeTokenBridgeGasLimit =
+            uint64(bound(gasParams.l1l2FeeTokenBridgeGasLimit, 100_000, 100_000_000));
         newGasParams.l1l2TokenBridgeGasLimit = uint64(bound(gasParams.l1l2TokenBridgeGasLimit, 100_000, 100_000_000));
         newGasParams.l2l3TokenBridgeGasLimit = uint64(bound(gasParams.l2l3TokenBridgeGasLimit, 100_000, 100_000_000));
 
-        newGasParams.l1l2FeeTokenBridgeMaxSubmissionCost = bound(gasParams.l1l2FeeTokenBridgeMaxSubmissionCost, 100, 100_000);
+        newGasParams.l1l2FeeTokenBridgeMaxSubmissionCost =
+            bound(gasParams.l1l2FeeTokenBridgeMaxSubmissionCost, 100, 100_000);
         newGasParams.l1l2TokenBridgeMaxSubmissionCost = bound(gasParams.l1l2TokenBridgeMaxSubmissionCost, 100, 100_000);
         newGasParams.l2l3TokenBridgeMaxSubmissionCost = bound(gasParams.l2l3TokenBridgeMaxSubmissionCost, 100, 100_000);
     }
@@ -64,9 +67,13 @@ contract L1TeleporterTest is BaseTest {
         address bob = address(0x330000);
 
         vm.startPrank(bob);
-        vm.expectRevert("AccessControl: account 0x0000000000000000000000000000000000330000 is missing role 0x65d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a");
+        vm.expectRevert(
+            "AccessControl: account 0x0000000000000000000000000000000000330000 is missing role 0x65d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a"
+        );
         teleporter.pause();
-        vm.expectRevert("AccessControl: account 0x0000000000000000000000000000000000330000 is missing role 0x65d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a");
+        vm.expectRevert(
+            "AccessControl: account 0x0000000000000000000000000000000000330000 is missing role 0x65d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a"
+        );
         teleporter.unpause();
         vm.stopPrank();
 
@@ -81,7 +88,7 @@ contract L1TeleporterTest is BaseTest {
 
     function testPause() public {
         // don't test access control, it's already tested in testAccessControl
-        
+
         vm.prank(pauser);
         teleporter.pause();
 
@@ -90,6 +97,52 @@ contract L1TeleporterTest is BaseTest {
         teleporter.teleport(params);
 
         // don't need to test 'doesn't revert when unpaused' because it's already tested in other tests
+    }
+
+    function testBuildL2ForwarderParams(IL1Teleporter.TeleportParams memory params, address l2Owner) public {
+        params.l1l2Router = address(ethGatewayRouter);
+        address l2Token = ethGatewayRouter.calculateL2TokenAddress(params.l1Token);
+
+        // test standard mode
+        params.l1FeeToken = address(0);
+        IL2Forwarder.L2ForwarderParams memory standardParams = teleporter.buildL2ForwarderParams(params, l2Owner);
+        assertEq(standardParams.owner, l2Owner, "standardParams.owner");
+        assertEq(standardParams.l2Token, l2Token, "standardParams.l2Token");
+        assertEq(standardParams.l2FeeToken, address(0), "standardParams.l2FeeToken");
+        assertEq(standardParams.routerOrInbox, params.l2l3RouterOrInbox, "standardParams.routerOrInbox");
+        assertEq(standardParams.to, params.to, "standardParams.to");
+        assertEq(standardParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
+        assertEq(standardParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
+        assertEq(standardParams.maxSubmissionCost, 0, "standardParams.maxSubmissionCost");
+
+        // test OnlyCustomFee
+        params.l1FeeToken = params.l1Token;
+        IL2Forwarder.L2ForwarderParams memory onlyFeeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
+        assertEq(onlyFeeParams.owner, l2Owner, "standardParams.owner");
+        assertEq(onlyFeeParams.l2Token, l2Token, "standardParams.l2Token");
+        assertEq(onlyFeeParams.l2FeeToken, l2Token, "standardParams.l2FeeToken");
+        assertEq(onlyFeeParams.routerOrInbox, params.l2l3RouterOrInbox, "standardParams.routerOrInbox");
+        assertEq(onlyFeeParams.to, params.to, "standardParams.to");
+        assertEq(onlyFeeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
+        assertEq(onlyFeeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
+        assertEq(onlyFeeParams.maxSubmissionCost, 0, "standardParams.maxSubmissionCost");
+
+        // test NonFeeTokenToCustomFee
+        params.l1FeeToken = address(0x1234);
+        address l2FeeToken = ethGatewayRouter.calculateL2TokenAddress(params.l1FeeToken);
+        IL2Forwarder.L2ForwarderParams memory feeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
+        assertEq(feeParams.owner, l2Owner, "standardParams.owner");
+        assertEq(feeParams.l2Token, l2Token, "standardParams.l2Token");
+        assertEq(feeParams.l2FeeToken, l2FeeToken, "standardParams.l2FeeToken");
+        assertEq(feeParams.routerOrInbox, params.l2l3RouterOrInbox, "standardParams.routerOrInbox");
+        assertEq(feeParams.to, params.to, "standardParams.to");
+        assertEq(feeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
+        assertEq(feeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
+        assertEq(
+            feeParams.maxSubmissionCost,
+            params.gasParams.l2l3TokenBridgeMaxSubmissionCost,
+            "standardParams.maxSubmissionCost"
+        );
     }
 
     function testCalculateRequiredEthAndFeeToken(IL1Teleporter.RetryableGasParams memory gasParams, uint256 baseFee)
@@ -113,8 +166,12 @@ contract L1TeleporterTest is BaseTest {
                 amount: 10,
                 gasParams: gasParams
             });
-            (uint256 standardEth, uint256 standardFeeToken, TeleportationType standardType, IL1Teleporter.RetryableGasCosts memory standardCosts) =
-                teleporter.determineTypeAndFees(standardParams);
+            (
+                uint256 standardEth,
+                uint256 standardFeeToken,
+                TeleportationType standardType,
+                IL1Teleporter.RetryableGasCosts memory standardCosts
+            ) = teleporter.determineTypeAndFees(standardParams);
             assertTrue(standardType == TeleportationType.Standard, "standardType");
             assertEq(standardFeeToken, 0, "standardFeeToken");
             assertEq(
@@ -127,7 +184,8 @@ contract L1TeleporterTest is BaseTest {
             // we only check RetryableGasCosts once because it'll be the same for all modes
             assertEq(
                 standardCosts.l1l2FeeTokenBridgeCost,
-                gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid + gasParams.l1l2FeeTokenBridgeMaxSubmissionCost,
+                gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid
+                    + gasParams.l1l2FeeTokenBridgeMaxSubmissionCost,
                 "l1l2FeeTokenBridgeCost"
             );
             assertEq(
@@ -137,7 +195,8 @@ contract L1TeleporterTest is BaseTest {
             );
             assertEq(
                 standardCosts.l2ForwarderFactoryCost,
-                gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid + gasParams.l2ForwarderFactoryMaxSubmissionCost,
+                gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid
+                    + gasParams.l2ForwarderFactoryMaxSubmissionCost,
                 "l2ForwarderFactoryCost"
             );
             assertEq(
@@ -157,8 +216,12 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
-        (uint256 feeTokenEth, uint256 feeTokenFeeToken, TeleportationType onlyFeeType, IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts) =
-            teleporter.determineTypeAndFees(feeTokenParams);
+        (
+            uint256 feeTokenEth,
+            uint256 feeTokenFeeToken,
+            TeleportationType onlyFeeType,
+            IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts
+        ) = teleporter.determineTypeAndFees(feeTokenParams);
         assertTrue(onlyFeeType == TeleportationType.OnlyCustomFee, "onlyFeeType");
         assertEq(feeTokenFeeToken, feeTokenGasCosts.l2l3TokenBridgeCost, "feeTokenFeeToken");
         assertEq(
@@ -175,8 +238,12 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
-        (uint256 feeTokenEth2, uint256 feeTokenFeeToken2, TeleportationType feeType2, IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts2) =
-            teleporter.determineTypeAndFees(feeTokenParams2);
+        (
+            uint256 feeTokenEth2,
+            uint256 feeTokenFeeToken2,
+            TeleportationType feeType2,
+            IL1Teleporter.RetryableGasCosts memory feeTokenGasCosts2
+        ) = teleporter.determineTypeAndFees(feeTokenParams2);
         assertTrue(feeType2 == TeleportationType.NonFeeTokenToCustomFee, "feeType2");
         assertEq(feeTokenFeeToken2, feeTokenGasCosts2.l2l3TokenBridgeCost, "feeTokenFeeToken2");
         assertEq(
@@ -187,11 +254,9 @@ contract L1TeleporterTest is BaseTest {
         );
     }
 
-    function testStandardTeleport(
-        IL1Teleporter.RetryableGasParams memory gasParams,
-        address receiver,
-        uint256 amount
-    ) public {
+    function testStandardTeleport(IL1Teleporter.RetryableGasParams memory gasParams, address receiver, uint256 amount)
+        public
+    {
         gasParams = _boundGasParams(gasParams);
         amount = bound(amount, 1, 100 ether);
 
@@ -209,7 +274,9 @@ contract L1TeleporterTest is BaseTest {
             teleporter.determineTypeAndFees(params);
         IL2Forwarder.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
-        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
+        address l2Forwarder = teleporter.l2ForwarderAddress(
+            l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to
+        );
 
         l1Token.approve(address(teleporter), amount);
 
@@ -230,12 +297,7 @@ contract L1TeleporterTest is BaseTest {
         });
         _expectTokenBridgeRetryable(msgCount, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata);
         _expectFactoryRetryable(
-            msgCount + 1,
-            params,
-            retryableCosts,
-            l2ForwarderParams,
-            l2Forwarder,
-            retryableCosts.l2l3TokenBridgeCost
+            msgCount + 1, params, retryableCosts, l2ForwarderParams, l2Forwarder, retryableCosts.l2l3TokenBridgeCost
         );
         teleporter.teleport{value: requiredEth}(params);
     }
@@ -275,7 +337,9 @@ contract L1TeleporterTest is BaseTest {
 
         IL2Forwarder.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
-        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
+        address l2Forwarder = teleporter.l2ForwarderAddress(
+            l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to
+        );
 
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();
@@ -321,7 +385,9 @@ contract L1TeleporterTest is BaseTest {
 
         IL2Forwarder.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
-        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams);
+        address l2Forwarder = teleporter.l2ForwarderAddress(
+            l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to
+        );
 
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();
