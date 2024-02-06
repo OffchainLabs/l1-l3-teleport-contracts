@@ -96,7 +96,6 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     {
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
         address l2FeeToken;
-        uint256 maxSubmissionCost;
 
         TeleportationType teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
 
@@ -106,7 +105,6 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             l2FeeToken = l2Token;
         } else {
             l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1FeeToken);
-            maxSubmissionCost = params.gasParams.l2l3TokenBridgeMaxSubmissionCost;
         }
 
         return IL2Forwarder.L2ForwarderParams({
@@ -116,8 +114,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             routerOrInbox: params.l2l3RouterOrInbox,
             to: params.to,
             gasLimit: params.gasParams.l2l3TokenBridgeGasLimit,
-            gasPriceBid: params.gasParams.l3GasPriceBid,
-            maxSubmissionCost: maxSubmissionCost
+            gasPriceBid: params.gasParams.l3GasPriceBid
         });
     }
 
@@ -204,6 +201,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
 
         teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
 
+        // todo revert if things are nonzero when they should be
         if (teleportationType == TeleportationType.Standard) {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
             feeTokenAmount = 0;
