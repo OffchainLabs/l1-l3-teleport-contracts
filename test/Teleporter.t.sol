@@ -138,7 +138,11 @@ contract L1TeleporterTest is BaseTest {
         assertEq(feeParams.to, params.to, "standardParams.to");
         assertEq(feeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
         assertEq(feeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
-        assertEq(feeParams.maxSubmissionCost, params.gasParams.l2l3TokenBridgeMaxSubmissionCost, "standardParams.maxSubmissionCost");
+        assertEq(
+            feeParams.maxSubmissionCost,
+            params.gasParams.l2l3TokenBridgeMaxSubmissionCost,
+            "standardParams.maxSubmissionCost"
+        );
     }
 
     function testCalculateRequiredEthAndFeeToken(IL1Teleporter.RetryableGasParams memory gasParams, uint256 baseFee)
@@ -270,7 +274,9 @@ contract L1TeleporterTest is BaseTest {
             teleporter.determineTypeAndFees(params);
         IL2Forwarder.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
-        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to);
+        address l2Forwarder = teleporter.l2ForwarderAddress(
+            l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to
+        );
 
         l1Token.approve(address(teleporter), amount);
 
@@ -331,7 +337,9 @@ contract L1TeleporterTest is BaseTest {
 
         IL2Forwarder.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
-        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to);
+        address l2Forwarder = teleporter.l2ForwarderAddress(
+            l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to
+        );
 
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();
@@ -377,7 +385,9 @@ contract L1TeleporterTest is BaseTest {
 
         IL2Forwarder.L2ForwarderParams memory l2ForwarderParams =
             teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
-        address l2Forwarder = teleporter.l2ForwarderAddress(l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to);
+        address l2Forwarder = teleporter.l2ForwarderAddress(
+            l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to
+        );
 
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();

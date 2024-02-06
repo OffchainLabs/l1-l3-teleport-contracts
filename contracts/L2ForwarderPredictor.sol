@@ -18,7 +18,9 @@ abstract contract L2ForwarderPredictor is IL2ForwarderPredictor {
 
     /// @inheritdoc IL2ForwarderPredictor
     function l2ForwarderAddress(address owner, address routerOrInbox, address to) public view returns (address) {
-        return Clones.predictDeterministicAddress(l2ForwarderImplementation, _salt(owner, routerOrInbox, to), l2ForwarderFactory);
+        return Clones.predictDeterministicAddress(
+            l2ForwarderImplementation, _salt(owner, routerOrInbox, to), l2ForwarderFactory
+        );
     }
 
     /// @notice Creates the salt for an L2Forwarder from its owner, routerOrInbox, and to address
