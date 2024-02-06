@@ -36,11 +36,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         // ensure we have correct msg.value
         if (msg.value != requiredEth) revert IncorrectValue(requiredEth, msg.value);
 
-        // build L2ForwarderParams
-        IL2Forwarder.L2ForwarderParams memory l2ForwarderParams = buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender));
-
         // calculate forwarder address from params
-        address l2Forwarder = l2ForwarderAddress(l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to);
+        address l2Forwarder = l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender), params.l2l3RouterOrInbox, params.to);
 
         if (teleportationType == TeleportationType.OnlyCustomFee) {
             // we are teleporting an L3's fee token
@@ -63,7 +60,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             });
         }
 
-        _teleportCommon(params, retryableCosts, l2ForwarderParams, l2Forwarder);
+        _teleportCommon(params, retryableCosts, l2Forwarder);
 
         emit Teleported({
             sender: msg.sender,
@@ -127,7 +124,6 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     function _teleportCommon(
         TeleportParams memory params,
         RetryableGasCosts memory retryableCosts,
-        IL2Forwarder.L2ForwarderParams memory l2ForwarderParams,
         address l2Forwarder
     ) internal {
         // send tokens through the bridge to predicted forwarder
@@ -155,7 +151,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             maxFeePerGas: params.gasParams.l2GasPriceBid,
             data: abi.encodeCall(
                 IL2ForwarderFactory.callForwarder,
-                l2ForwarderParams
+                buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender))
                 )
         });
     }
