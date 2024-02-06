@@ -86,9 +86,7 @@ contract L2ForwarderTest is BaseTest {
         vm.deal(l2ForwarderAddress, tokenBridgeEthRefunds);
 
         // simulate A2 (calling the factory)
-        _expectStandardHappyCaseEvents(
-            params, tokenBridgeEthRefunds, factoryCallMsgValue, gasLimit, gasPriceBid, tokenAmount
-        );
+        _expectStandardEvents(params, tokenBridgeEthRefunds, factoryCallMsgValue, tokenAmount);
         vm.prank(aliasedL1Teleporter);
         factory.callForwarder{value: factoryCallMsgValue}(params);
 
@@ -136,8 +134,7 @@ contract L2ForwarderTest is BaseTest {
             inbox: address(erc20Inbox),
             msgCount: msgCount,
             to: params.to,
-            l2CallValue: tokenAmount
-                - params.gasLimit * params.gasPriceBid,
+            l2CallValue: tokenAmount - params.gasLimit * params.gasPriceBid,
             msgValue: tokenAmount,
             maxSubmissionCost: 0,
             excessFeeRefundAddress: params.to,
@@ -159,6 +156,9 @@ contract L2ForwarderTest is BaseTest {
     }
 
     // simulating A1, A2, B1, B2, A3
+    // - All TOKEN from A2 and B2 are sent to L3 by A3
+    // - Some FEETOKEN may be left in the forwarder
+    // - B3 cannot redeem because of zero TOKEN balance
     function testNonFeeTokenToCustomFeeHappyCase(
         uint256 tokenAmount,
         uint256 feeTokenAmount,
@@ -174,8 +174,7 @@ contract L2ForwarderTest is BaseTest {
             factoryCallMsgValue = bound(factoryCallMsgValue, 0, 0.001 ether);
             gasLimit = bound(gasLimit, 21000, 1_000_000);
             gasPriceBid = bound(gasPriceBid, 0.1 gwei, 0.2 gwei);
-            feeTokenAmount =
-                gasLimit * gasPriceBid + bound(feeTokenAmount, 0, 0.001 ether);
+            feeTokenAmount = gasLimit * gasPriceBid + bound(feeTokenAmount, 0, 0.001 ether);
         }
 
         IL2Forwarder.L2ForwarderParams memory params = IL2Forwarder.L2ForwarderParams({
@@ -193,38 +192,86 @@ contract L2ForwarderTest is BaseTest {
 
         // simulate A1 and B1
         nativeToken.transfer(l2ForwarderAddress, feeTokenAmount);
-        
+
         // simulate A2 and B2
         l2Token.transfer(l2ForwarderAddress, tokenAmount);
 
-        bytes memory data = _getTokenBridgeRetryableCalldata(address(erc20GatewayRouter), l2ForwarderAddress, tokenAmount);
-        uint256 msgCount = erc20Bridge.delayedMessageCount();
-        _expectRetryable({
-            inbox: address(erc20Inbox),
-            msgCount: msgCount,
-            to: childDefaultGateway, // counterpart gateway
-            l2CallValue: 0,
-            msgValue: gasLimit * gasPriceBid,
-            maxSubmissionCost: 0,
-            excessFeeRefundAddress: params.to,
-            callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(l2ForwarderAddress),
-            gasLimit: params.gasLimit,
-            maxFeePerGas: params.gasPriceBid,
-            data: data
-        });
-        vm.expectEmit(address(erc20DefaultGateway));
-        emit DepositInitiated({
-            l1Token: address(l2Token),
-            _from: l2ForwarderAddress,
-            _to: l3Recipient,
-            _sequenceNumber: msgCount,
-            _amount: tokenAmount
-        });
+        // A3
+        _expectNonFeeTokenToCustomFeeEvents(params, tokenAmount);
         vm.prank(aliasedL1Teleporter);
         factory.callForwarder{value: factoryCallMsgValue}(params);
 
         // make sure the forwarder has not moved any ETH
         assertEq(l2ForwarderAddress.balance, factoryCallMsgValue + tokenBridgeEthRefunds);
+
+        // B3
+        // should revert because of zero TOKEN balance
+        vm.expectRevert(abi.encodeWithSelector(IL2Forwarder.ZeroTokenBalance.selector, l2Token));
+        vm.prank(aliasedL1Teleporter);
+        factory.callForwarder{value: factoryCallMsgValue}(params);
+    }
+
+    // NonFeeTokenToCustomFee
+    // simulating A1, A2, B1, A3, B2, B3
+    // - All TOKEN from A2 is forwarded by A3
+    // - All TOKEN from B2 is forwarded by B3
+    function testOutOfOrder1(
+        uint256 tokenAmountA,
+        uint256 tokenAmountB,
+        uint256 gasLimitA,
+        uint256 gasPriceBidA,
+        uint256 gasLimitB,
+        uint256 gasPriceBidB
+    ) public {
+        address l2ForwarderAddress = factory.l2ForwarderAddress(owner, address(erc20GatewayRouter), l3Recipient);
+        {
+            tokenAmountA = bound(tokenAmountA, 2, 10 ether);
+            tokenAmountB = bound(tokenAmountB, 2, 10 ether);
+            gasLimitA = bound(gasLimitA, 21000, 1_000_000);
+            gasPriceBidA = bound(gasPriceBidA, 0.1 gwei, 0.2 gwei);
+            gasLimitB = bound(gasLimitB, 21000, 1_000_000);
+            gasPriceBidB = bound(gasPriceBidB, 0.1 gwei, 0.2 gwei);
+        }
+
+        IL2Forwarder.L2ForwarderParams memory paramsA = IL2Forwarder.L2ForwarderParams({
+            owner: owner,
+            l2Token: address(l2Token),
+            l2FeeToken: address(nativeToken),
+            routerOrInbox: address(erc20GatewayRouter),
+            to: l3Recipient,
+            gasLimit: gasLimitA,
+            gasPriceBid: gasPriceBidA
+        });
+
+        // skip simulating ETH refunds from A1, A2, B1
+
+        // simulate A1 and B1
+        nativeToken.transfer(l2ForwarderAddress, gasLimitA * gasPriceBidA + gasLimitB * gasPriceBidB);
+
+        // simulate A2
+        l2Token.transfer(l2ForwarderAddress, tokenAmountA);
+
+        // A3
+        _expectNonFeeTokenToCustomFeeEvents(paramsA, tokenAmountA);
+        vm.prank(aliasedL1Teleporter);
+        factory.callForwarder(paramsA);
+
+        // simulate B2
+        l2Token.transfer(l2ForwarderAddress, tokenAmountB);
+
+        // B3
+        IL2Forwarder.L2ForwarderParams memory paramsB = IL2Forwarder.L2ForwarderParams({
+            owner: owner,
+            l2Token: address(l2Token),
+            l2FeeToken: address(nativeToken),
+            routerOrInbox: address(erc20GatewayRouter),
+            to: l3Recipient,
+            gasLimit: gasLimitB,
+            gasPriceBid: gasPriceBidB
+        });
+        _expectNonFeeTokenToCustomFeeEvents(paramsB, tokenAmountB);
+        vm.prank(aliasedL1Teleporter);
+        factory.callForwarder(paramsB);
     }
 
     function testRescue() public {
@@ -263,37 +310,70 @@ contract L2ForwarderTest is BaseTest {
         forwarder.rescue(targets, values, datas);
     }
 
-    function _expectStandardHappyCaseEvents(
+    function _expectStandardEvents(
         IL2Forwarder.L2ForwarderParams memory params,
         uint256 forwarderETHBalance,
         uint256 msgValue,
-        uint256 gasLimit,
-        uint256 gasPriceBid,
         uint256 tokenAmount
     ) internal {
         address forwarder = factory.l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);
 
         uint256 msgCount = erc20Bridge.delayedMessageCount();
-        bytes memory data = _getTokenBridgeRetryableCalldata(address(ethGatewayRouter), forwarder, tokenAmount);
-        _expectRetryable({
-            inbox: address(ethInbox),
-            msgCount: msgCount,
-            to: ethDefaultGateway.counterpartGateway(),
-            l2CallValue: 0,
-            msgValue: forwarderETHBalance + msgValue,
-            maxSubmissionCost: forwarderETHBalance + msgValue - gasLimit * gasPriceBid,
-            excessFeeRefundAddress: l3Recipient,
-            callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(forwarder),
-            gasLimit: gasLimit,
-            maxFeePerGas: gasPriceBid,
-            data: data
-        });
+        {
+            uint256 gasLimit = params.gasLimit;
+            uint256 gasPriceBid = params.gasPriceBid;
+            bytes memory data = _getTokenBridgeRetryableCalldata(address(ethGatewayRouter), forwarder, tokenAmount);
+            _expectRetryable({
+                inbox: address(ethInbox),
+                msgCount: msgCount,
+                to: ethDefaultGateway.counterpartGateway(),
+                l2CallValue: 0,
+                msgValue: forwarderETHBalance + msgValue,
+                maxSubmissionCost: forwarderETHBalance + msgValue - gasLimit * gasPriceBid,
+                excessFeeRefundAddress: l3Recipient,
+                callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(forwarder),
+                gasLimit: gasLimit,
+                maxFeePerGas: gasPriceBid,
+                data: data
+            });
+        }
 
         // token bridge, indicating an actual bridge tx has been initiated
         vm.expectEmit(address(ethDefaultGateway));
         emit DepositInitiated({
             l1Token: address(l2Token),
             _from: address(forwarder),
+            _to: l3Recipient,
+            _sequenceNumber: msgCount,
+            _amount: tokenAmount
+        });
+    }
+
+    function _expectNonFeeTokenToCustomFeeEvents(IL2Forwarder.L2ForwarderParams memory params, uint256 tokenAmount)
+        internal
+    {
+        address forwarder = factory.l2ForwarderAddress(params.owner, params.routerOrInbox, params.to);
+        uint256 msgCount = erc20Bridge.delayedMessageCount();
+        {
+            bytes memory data = _getTokenBridgeRetryableCalldata(address(erc20GatewayRouter), forwarder, tokenAmount);
+            _expectRetryable({
+                inbox: address(erc20Inbox),
+                msgCount: msgCount,
+                to: childDefaultGateway, // counterpart gateway
+                l2CallValue: 0,
+                msgValue: params.gasLimit * params.gasPriceBid,
+                maxSubmissionCost: 0,
+                excessFeeRefundAddress: params.to,
+                callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(forwarder),
+                gasLimit: params.gasLimit,
+                maxFeePerGas: params.gasPriceBid,
+                data: data
+            });
+        }
+        vm.expectEmit(address(erc20DefaultGateway));
+        emit DepositInitiated({
+            l1Token: address(l2Token),
+            _from: forwarder,
             _to: l3Recipient,
             _sequenceNumber: msgCount,
             _amount: tokenAmount
