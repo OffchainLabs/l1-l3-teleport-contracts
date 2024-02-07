@@ -56,7 +56,7 @@ interface IL2Forwarder {
     /// @notice Send tokens + (fee tokens or ETH) through the bridge to a recipient on L3.
     /// @param  params Parameters of the bridge transaction.
     /// @dev    Can only be called by the L2ForwarderFactory.
-    function bridgeToL3(L2ForwarderParams memory params) external payable;
+    function bridgeToL3(L2ForwarderParams calldata params) external payable;
 
     /// @notice Allows the owner of this L2Forwarder to make arbitrary calls.
     ///         If bridgeToL3 cannot succeed, the owner can call this to rescue their tokens and ETH.

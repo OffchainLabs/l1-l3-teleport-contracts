@@ -25,6 +25,7 @@ interface IL2ForwarderFactory is IL2ForwarderPredictor {
     /// @param  owner           Owner of the L2Forwarder
     /// @param  routerOrInbox   Address of the L1GatewayRouter or Inbox
     /// @param  to              Address to bridge tokens to
+    /// @dev    This method is external to allow fund rescue when `callForwarder` reverts.
     function createL2Forwarder(address owner, address routerOrInbox, address to) external returns (IL2Forwarder);
 
     /// @notice Aliased address of the L1Teleporter contract

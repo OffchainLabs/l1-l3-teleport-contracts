@@ -104,7 +104,7 @@ contract L1TeleporterTest is BaseTest {
         address l2Token = ethGatewayRouter.calculateL2TokenAddress(params.l1Token);
 
         // test standard mode
-        params.l1FeeToken = address(0);
+        params.l3FeeTokenL1Addr = address(0);
         IL2Forwarder.L2ForwarderParams memory standardParams = teleporter.buildL2ForwarderParams(params, l2Owner);
         assertEq(standardParams.owner, l2Owner, "standardParams.owner");
         assertEq(standardParams.l2Token, l2Token, "standardParams.l2Token");
@@ -116,7 +116,7 @@ contract L1TeleporterTest is BaseTest {
         assertEq(standardParams.maxSubmissionCost, 0, "standardParams.maxSubmissionCost");
 
         // test OnlyCustomFee
-        params.l1FeeToken = params.l1Token;
+        params.l3FeeTokenL1Addr = params.l1Token;
         IL2Forwarder.L2ForwarderParams memory onlyFeeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
         assertEq(onlyFeeParams.owner, l2Owner, "standardParams.owner");
         assertEq(onlyFeeParams.l2Token, l2Token, "standardParams.l2Token");
@@ -128,8 +128,8 @@ contract L1TeleporterTest is BaseTest {
         assertEq(onlyFeeParams.maxSubmissionCost, 0, "standardParams.maxSubmissionCost");
 
         // test NonFeeTokenToCustomFee
-        params.l1FeeToken = address(0x1234);
-        address l2FeeToken = ethGatewayRouter.calculateL2TokenAddress(params.l1FeeToken);
+        params.l3FeeTokenL1Addr = address(0x1234);
+        address l2FeeToken = ethGatewayRouter.calculateL2TokenAddress(params.l3FeeTokenL1Addr);
         IL2Forwarder.L2ForwarderParams memory feeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
         assertEq(feeParams.owner, l2Owner, "standardParams.owner");
         assertEq(feeParams.l2Token, l2Token, "standardParams.l2Token");
@@ -159,7 +159,7 @@ contract L1TeleporterTest is BaseTest {
             // test standard mode
             IL1Teleporter.TeleportParams memory standardParams = IL1Teleporter.TeleportParams({
                 l1Token: address(l1Token),
-                l1FeeToken: address(0),
+                l3FeeTokenL1Addr: address(0),
                 l1l2Router: address(ethGatewayRouter),
                 l2l3RouterOrInbox: l2l3RouterOrInbox,
                 to: address(1),
@@ -209,7 +209,7 @@ contract L1TeleporterTest is BaseTest {
         // test fee token mode
         IL1Teleporter.TeleportParams memory feeTokenParams = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
-            l1FeeToken: address(l1Token),
+            l3FeeTokenL1Addr: address(l1Token),
             l1l2Router: address(ethGatewayRouter),
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: address(1),
@@ -231,7 +231,7 @@ contract L1TeleporterTest is BaseTest {
         // test fee token mode with fee token != l1 token
         IL1Teleporter.TeleportParams memory feeTokenParams2 = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
-            l1FeeToken: address(0x1234),
+            l3FeeTokenL1Addr: address(0x1234),
             l1l2Router: address(ethGatewayRouter),
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: address(1),
@@ -262,7 +262,7 @@ contract L1TeleporterTest is BaseTest {
 
         IL1Teleporter.TeleportParams memory params = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
-            l1FeeToken: address(0),
+            l3FeeTokenL1Addr: address(0),
             l1l2Router: address(ethGatewayRouter),
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: receiver,
@@ -313,7 +313,7 @@ contract L1TeleporterTest is BaseTest {
 
         IL1Teleporter.TeleportParams memory params = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
-            l1FeeToken: address(l1Token),
+            l3FeeTokenL1Addr: address(l1Token),
             l1l2Router: address(ethGatewayRouter),
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: receiver,
@@ -371,7 +371,7 @@ contract L1TeleporterTest is BaseTest {
 
         IL1Teleporter.TeleportParams memory params = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
-            l1FeeToken: address(nativeToken),
+            l3FeeTokenL1Addr: address(nativeToken),
             l1l2Router: address(ethGatewayRouter),
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: receiver,
