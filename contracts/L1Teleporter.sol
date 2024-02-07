@@ -199,14 +199,14 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         // pull in tokens from caller
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
-        // approve gateway
-        // @review - gateway is user supplied, an attacker can hence approve arbitrary address to spend fund from L1Teleporter
-        //           it should be fine since L1Teleporter is not expected to hold fund, let's keep an eye on this
+        // gateway is user supplied, an attacker can hence approve arbitrary address to spend fund from L1Teleporter
+        // this is fine since L1Teleporter is not expected to hold fund between transactions
         address gateway = L1GatewayRouter(router).getGateway(token);
         if (IERC20(token).allowance(address(this), gateway) == 0) {
             IERC20(token).safeApprove(gateway, type(uint256).max);
         }
 
+        // fee on transfer tokens are not supported as the amount would not match
         L1GatewayRouter(router).outboundTransferCustomRefund{value: gasLimit * gasPriceBid + maxSubmissionCost}({
             _token: address(token),
             _refundTo: to,
