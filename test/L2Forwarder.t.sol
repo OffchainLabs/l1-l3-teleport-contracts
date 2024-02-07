@@ -137,8 +137,7 @@ contract L2ForwarderTest is BaseTest {
             inbox: address(erc20Inbox),
             msgCount: msgCount,
             to: params.to,
-            l2CallValue: tokenAmount - expectedSubmissionCost
-                - params.gasLimit * params.gasPriceBid,
+            l2CallValue: tokenAmount - expectedSubmissionCost - params.gasLimit * params.gasPriceBid,
             msgValue: tokenAmount,
             maxSubmissionCost: expectedSubmissionCost,
             excessFeeRefundAddress: params.to,
@@ -181,8 +180,7 @@ contract L2ForwarderTest is BaseTest {
             factoryCallMsgValue = bound(factoryCallMsgValue, 0, 0.001 ether);
             gasLimit = bound(gasLimit, 21000, 1_000_000);
             gasPriceBid = bound(gasPriceBid, 0.1 gwei, 0.2 gwei);
-            feeTokenAmount =
-                expectedSubmissionCost + gasLimit * gasPriceBid + bound(feeTokenAmount, 0, 0.001 ether);
+            feeTokenAmount = expectedSubmissionCost + gasLimit * gasPriceBid + bound(feeTokenAmount, 0, 0.001 ether);
         }
 
         IL2Forwarder.L2ForwarderParams memory params = IL2Forwarder.L2ForwarderParams({
@@ -262,7 +260,10 @@ contract L2ForwarderTest is BaseTest {
         // skip simulating ETH refunds from A1, A2, B1
 
         // simulate A1 and B1
-        nativeToken.transfer(l2ForwarderAddress, gasLimitA * gasPriceBidA + gasLimitB * gasPriceBidB + expectedSubmissionCostA + expectedSubmissionCostB);
+        nativeToken.transfer(
+            l2ForwarderAddress,
+            gasLimitA * gasPriceBidA + gasLimitB * gasPriceBidB + expectedSubmissionCostA + expectedSubmissionCostB
+        );
 
         // simulate A2
         l2Token.transfer(l2ForwarderAddress, tokenAmountA);
