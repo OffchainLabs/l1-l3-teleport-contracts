@@ -3,7 +3,6 @@ pragma solidity ^0.8.13;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IL2ForwarderPredictor} from "./interfaces/IL2ForwarderPredictor.sol";
-import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
 
 abstract contract L2ForwarderPredictor is IL2ForwarderPredictor {
     /// @inheritdoc IL2ForwarderPredictor

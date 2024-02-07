@@ -28,8 +28,18 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         _setupRole(PAUSER_ROLE, _pauser);
     }
 
+    /// @notice Pause the contract
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    /// @notice Unpause the contract
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
     /// @inheritdoc IL1Teleporter
-    function teleport(TeleportParams memory params) external payable whenNotPaused {
+    function teleport(TeleportParams calldata params) external payable whenNotPaused {
         (
             uint256 requiredEth,
             uint256 requiredFeeToken,
@@ -45,18 +55,18 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender), params.l2l3RouterOrInbox, params.to);
 
         if (teleportationType == TeleportationType.OnlyCustomFee) {
-            // we are teleporting an L3's fee token
+            // teleporting a L3's custom fee token to a custom (non-eth) fee L3
             // we have to make sure that the amount specified is enough to cover the retryable costs from L2 -> L3
             if (params.amount < requiredFeeToken) revert InsufficientFeeToken(requiredFeeToken, params.amount);
         } else if (teleportationType == TeleportationType.NonFeeTokenToCustomFee) {
-            // we are teleporting a non-fee token to a custom fee L3
+            // teleporting a non-fee token to a custom (non-eth) fee L3
             // the flow is identical to standard,
             // except we have to send the appropriate amount of fee token through the bridge as well
 
             // pull in and send fee tokens through the bridge to predicted forwarder
             _pullAndBridgeToken({
                 router: params.l1l2Router,
-                token: params.l1FeeToken,
+                token: params.l3FeeTokenL1Addr,
                 to: l2Forwarder,
                 amount: requiredFeeToken,
                 gasLimit: params.gasParams.l1l2FeeTokenBridgeGasLimit,
@@ -70,7 +80,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         emit Teleported({
             sender: msg.sender,
             l1Token: params.l1Token,
-            l1FeeToken: params.l1FeeToken,
+            l3FeeTokenL1Addr: params.l3FeeTokenL1Addr,
             l1l2Router: params.l1l2Router,
             l2l3RouterOrInbox: params.l2l3RouterOrInbox,
             to: params.to,
@@ -78,18 +88,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         });
     }
 
-    /// @notice Pause the contract
-    function pause() external onlyRole(PAUSER_ROLE) {
-        _pause();
-    }
-
-    /// @notice Unpause the contract
-    function unpause() external onlyRole(PAUSER_ROLE) {
-        _unpause();
-    }
-
     /// @inheritdoc IL1Teleporter
-    function buildL2ForwarderParams(TeleportParams memory params, address l2Owner)
+    function buildL2ForwarderParams(TeleportParams calldata params, address l2Owner)
         public
         view
         returns (IL2Forwarder.L2ForwarderParams memory)
@@ -98,14 +98,15 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         address l2FeeToken;
         uint256 maxSubmissionCost;
 
-        TeleportationType teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
+        TeleportationType teleportationType =
+            toTeleportationType({token: params.l1Token, feeToken: params.l3FeeTokenL1Addr});
 
         if (teleportationType == TeleportationType.Standard) {
             l2FeeToken = address(0);
         } else if (teleportationType == TeleportationType.OnlyCustomFee) {
             l2FeeToken = l2Token;
         } else {
-            l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1FeeToken);
+            l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l3FeeTokenL1Addr);
             maxSubmissionCost = params.gasParams.l2l3TokenBridgeMaxSubmissionCost;
         }
 
@@ -121,11 +122,40 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         });
     }
 
+    /// @inheritdoc IL1Teleporter
+    function determineTypeAndFees(TeleportParams calldata params)
+        public
+        pure
+        returns (
+            uint256 ethAmount,
+            uint256 feeTokenAmount,
+            TeleportationType teleportationType,
+            RetryableGasCosts memory costs
+        )
+    {
+        costs = _calculateRetryableGasCosts(params.gasParams);
+
+        teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l3FeeTokenL1Addr});
+
+        if (teleportationType == TeleportationType.Standard) {
+            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
+            feeTokenAmount = 0;
+        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
+            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
+            feeTokenAmount = costs.l2l3TokenBridgeCost;
+        } else {
+            ethAmount = costs.l1l2TokenBridgeCost + costs.l1l2FeeTokenBridgeCost + costs.l2ForwarderFactoryCost;
+            feeTokenAmount = costs.l2l3TokenBridgeCost;
+        }
+    }
+
     /// @notice Common logic for teleport()
     /// @dev    Pulls in `params.l1Token` and creates 2 retryables: one to bridge tokens to the L2Forwarder, and one to call the L2ForwarderFactory.
-    function _teleportCommon(TeleportParams memory params, RetryableGasCosts memory retryableCosts, address l2Forwarder)
-        internal
-    {
+    function _teleportCommon(
+        TeleportParams calldata params,
+        RetryableGasCosts memory retryableCosts,
+        address l2Forwarder
+    ) internal {
         // send tokens through the bridge to predicted forwarder
         _pullAndBridgeToken({
             router: params.l1l2Router,
@@ -151,8 +181,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             maxFeePerGas: params.gasParams.l2GasPriceBid,
             data: abi.encodeCall(
                 IL2ForwarderFactory.callForwarder,
-                buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender))
-                )
+                buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender)) // @review - we can toggle aliasing depending on if msg.sender has code to make rescuing easier
+            )
         });
     }
 
@@ -169,14 +199,14 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         // pull in tokens from caller
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
-        // approve gateway
-        // @review - gateway is user supplied, an attacker can hence approve arbitrary address to spend fund from L1Teleporter
-        //           it should be fine since L1Teleporter is not expected to hold fund, let's keep an eye on this
+        // gateway is user supplied, an attacker can hence approve arbitrary address to spend fund from L1Teleporter
+        // this is fine since L1Teleporter is not expected to hold fund between transactions
         address gateway = L1GatewayRouter(router).getGateway(token);
         if (IERC20(token).allowance(address(this), gateway) == 0) {
             IERC20(token).safeApprove(gateway, type(uint256).max);
         }
 
+        // fee on transfer tokens are not supported as the amount would not match
         L1GatewayRouter(router).outboundTransferCustomRefund{value: gasLimit * gasPriceBid + maxSubmissionCost}({
             _token: address(token),
             _refundTo: to,
@@ -188,37 +218,9 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         });
     }
 
-    // todo: move this up with other public views
-    /// @inheritdoc IL1Teleporter
-    function determineTypeAndFees(TeleportParams memory params)
-        public
-        pure
-        returns (
-            uint256 ethAmount,
-            uint256 feeTokenAmount,
-            TeleportationType teleportationType,
-            RetryableGasCosts memory costs
-        )
-    {
-        costs = _calculateRetryableGasCosts(params.gasParams);
-
-        teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
-
-        if (teleportationType == TeleportationType.Standard) {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
-            feeTokenAmount = 0;
-        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
-            feeTokenAmount = costs.l2l3TokenBridgeCost;
-        } else {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l1l2FeeTokenBridgeCost + costs.l2ForwarderFactoryCost;
-            feeTokenAmount = costs.l2l3TokenBridgeCost;
-        }
-    }
-
     /// @notice Given some gas parameters, calculate costs for each retryable ticket.
     /// @param  gasParams   Gas parameters for each retryable ticket
-    function _calculateRetryableGasCosts(RetryableGasParams memory gasParams)
+    function _calculateRetryableGasCosts(RetryableGasParams calldata gasParams)
         internal
         pure
         returns (RetryableGasCosts memory results)

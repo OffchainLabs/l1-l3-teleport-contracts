@@ -11,16 +11,16 @@ import {TeleportationType} from "../lib/TeleportationType.sol";
 ///         and one to call the L2ForwarderFactory.
 interface IL1Teleporter is IL2ForwarderPredictor {
     /// @notice Parameters for teleport()
-    /// @param  l1Token     L1 token being teleported
-    /// @param  l1FeeToken  L1 address of the L3's fee token, or 0x00 for ETH // @review - this naming is confusing
-    /// @param  l1l2Router  L1 to L2 token bridge router
-    /// @param  l2l3Router  L2 to L3 token bridge router
-    /// @param  to          L3 address that will receive the tokens
-    /// @param  amount      Amount of tokens being teleported
-    /// @param  gasParams   Gas parameters for each retryable ticket
+    /// @param  l1Token           L1 token being teleported
+    /// @param  l3FeeTokenL1Addr  L1 address of the L3's fee token, or 0x00 for ETH
+    /// @param  l1l2Router        L1 to L2 token bridge router
+    /// @param  l2l3Router        L2 to L3 token bridge router
+    /// @param  to                L3 address that will receive the tokens
+    /// @param  amount            Amount of tokens being teleported
+    /// @param  gasParams         Gas parameters for each retryable ticket
     struct TeleportParams {
         address l1Token;
-        address l1FeeToken;
+        address l3FeeTokenL1Addr;
         address l1l2Router;
         address l2l3RouterOrInbox;
         address to;
@@ -53,7 +53,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @notice Emitted when a teleportation is initiated.
     /// @param  sender              L1 address that initiated the teleportation
     /// @param  l1Token             L1 token being teleported
-    /// @param  l1FeeToken          L1 address of the L3's fee token, or 0x00 for ETH
+    /// @param  l3FeeTokenL1Addr          L1 address of the L3's fee token, or 0x00 for ETH
     /// @param  l1l2Router          L1 to L2 token bridge router
     /// @param  l2l3RouterOrInbox   L2 to L3 token bridge router or Inbox
     /// @param  to                  L3 address that will receive the tokens
@@ -61,7 +61,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     event Teleported(
         address indexed sender,
         address l1Token,
-        address l1FeeToken,
+        address l3FeeTokenL1Addr,
         address l1l2Router,
         address l2l3RouterOrInbox,
         address to,
@@ -79,10 +79,10 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @dev    2 retryables will be created: one to send tokens and ETH to the L2Forwarder, and one to call the L2ForwarderFactory.
     ///         If TeleportationType is NonFeeTokenToCustomFeeL3, a third retryable will be created to send the L3's fee token to the L2Forwarder.
     ///         Extra ETH is sent through the l2CallValue of the call to the L2ForwarderFactory.
-    function teleport(TeleportParams memory params) external payable;
+    function teleport(TeleportParams calldata params) external payable;
 
     /// @notice Given some teleportation parameters, calculate the total cost of retryables in ETH and the L3's fee token.
-    function determineTypeAndFees(TeleportParams memory params)
+    function determineTypeAndFees(TeleportParams calldata params)
         external
         view
         returns (
@@ -93,7 +93,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
         );
 
     /// @notice Given some teleportation parameters, build the L2ForwarderParams for the L2ForwarderFactory.
-    function buildL2ForwarderParams(TeleportParams memory params, address l2Owner)
+    function buildL2ForwarderParams(TeleportParams calldata params, address l2Owner)
         external
         view
         returns (IL2Forwarder.L2ForwarderParams memory);
