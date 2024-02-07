@@ -30,7 +30,7 @@ contract L2Forwarder is IL2Forwarder {
     }
 
     /// @inheritdoc IL2Forwarder
-    function bridgeToL3(L2ForwarderParams memory params) external payable {
+    function bridgeToL3(L2ForwarderParams calldata params) external payable {
         if (msg.sender != l2ForwarderFactory) revert OnlyL2ForwarderFactory();
 
         TeleportationType teleportationType = toTeleportationType({token: params.l2Token, feeToken: params.l2FeeToken});
@@ -59,7 +59,7 @@ contract L2Forwarder is IL2Forwarder {
 
     /// @dev Bridge tokens to an L3 that uses ETH for fees. Entire ETH and token balance is sent.
     ///      params.maxSubmissionCost is ignored.
-    function _bridgeToEthFeeL3(L2ForwarderParams memory params) internal {
+    function _bridgeToEthFeeL3(L2ForwarderParams calldata params) internal {
         // get balance and approve gateway
         uint256 tokenBalance = _approveGatewayForBalance(params.routerOrInbox, params.l2Token);
 
@@ -86,7 +86,7 @@ contract L2Forwarder is IL2Forwarder {
     ///      Entire fee token balance is sent.
     ///      ETH is not sent anywhere even if balance is nonzero.
     ///      params.maxSubmissionCost is ignored.
-    function _bridgeFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
+    function _bridgeFeeTokenToCustomFeeL3(L2ForwarderParams calldata params) internal {
         uint256 tokenBalance = IERC20(params.l2Token).balanceOf(address(this));
 
         if (tokenBalance == 0) revert ZeroTokenBalance(params.l2Token);
@@ -113,7 +113,7 @@ contract L2Forwarder is IL2Forwarder {
     }
 
     /// @dev Bridge non-fee tokens to an L3 that uses a custom fee token.
-    function _bridgeNonFeeTokenToCustomFeeL3(L2ForwarderParams memory params) internal {
+    function _bridgeNonFeeTokenToCustomFeeL3(L2ForwarderParams calldata params) internal {
         // get balance and approve gateway
         uint256 tokenBalance = _approveGatewayForBalance(params.routerOrInbox, params.l2Token);
 
