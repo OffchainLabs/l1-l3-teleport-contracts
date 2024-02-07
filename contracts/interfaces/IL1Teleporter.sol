@@ -79,10 +79,10 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @dev    2 retryables will be created: one to send tokens and ETH to the L2Forwarder, and one to call the L2ForwarderFactory.
     ///         If TeleportationType is NonFeeTokenToCustomFeeL3, a third retryable will be created to send the L3's fee token to the L2Forwarder.
     ///         Extra ETH is sent through the l2CallValue of the call to the L2ForwarderFactory.
-    function teleport(TeleportParams memory params) external payable;
+    function teleport(TeleportParams calldata params) external payable;
 
     /// @notice Given some teleportation parameters, calculate the total cost of retryables in ETH and the L3's fee token.
-    function determineTypeAndFees(TeleportParams memory params)
+    function determineTypeAndFees(TeleportParams calldata params)
         external
         view
         returns (
@@ -93,7 +93,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
         );
 
     /// @notice Given some teleportation parameters, build the L2ForwarderParams for the L2ForwarderFactory.
-    function buildL2ForwarderParams(TeleportParams memory params, address l2Owner)
+    function buildL2ForwarderParams(TeleportParams calldata params, address l2Owner)
         external
         view
         returns (IL2Forwarder.L2ForwarderParams memory);
