@@ -29,7 +29,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     }
 
     /// @inheritdoc IL1Teleporter
-    function teleport(TeleportParams memory params) external payable whenNotPaused {
+    function teleport(TeleportParams calldata params) external payable whenNotPaused {
         (
             uint256 requiredEth,
             uint256 requiredFeeToken,
@@ -89,7 +89,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     }
 
     /// @inheritdoc IL1Teleporter
-    function buildL2ForwarderParams(TeleportParams memory params, address l2Owner)
+    function buildL2ForwarderParams(TeleportParams calldata params, address l2Owner)
         public
         view
         returns (IL2Forwarder.L2ForwarderParams memory)
@@ -123,7 +123,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
 
     /// @notice Common logic for teleport()
     /// @dev    Pulls in `params.l1Token` and creates 2 retryables: one to bridge tokens to the L2Forwarder, and one to call the L2ForwarderFactory.
-    function _teleportCommon(TeleportParams memory params, RetryableGasCosts memory retryableCosts, address l2Forwarder)
+    function _teleportCommon(TeleportParams calldata params, RetryableGasCosts memory retryableCosts, address l2Forwarder)
         internal
     {
         // send tokens through the bridge to predicted forwarder
@@ -190,7 +190,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
 
     // todo: move this up with other public views
     /// @inheritdoc IL1Teleporter
-    function determineTypeAndFees(TeleportParams memory params)
+    function determineTypeAndFees(TeleportParams calldata params)
         public
         pure
         returns (
@@ -218,7 +218,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
 
     /// @notice Given some gas parameters, calculate costs for each retryable ticket.
     /// @param  gasParams   Gas parameters for each retryable ticket
-    function _calculateRetryableGasCosts(RetryableGasParams memory gasParams)
+    function _calculateRetryableGasCosts(RetryableGasParams calldata gasParams)
         internal
         pure
         returns (RetryableGasCosts memory results)
