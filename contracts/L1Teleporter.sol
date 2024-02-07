@@ -28,6 +28,16 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         _setupRole(PAUSER_ROLE, _pauser);
     }
 
+    /// @notice Pause the contract
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    /// @notice Unpause the contract
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
     /// @inheritdoc IL1Teleporter
     function teleport(TeleportParams calldata params) external payable whenNotPaused {
         (
@@ -76,16 +86,6 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             to: params.to,
             amount: params.amount
         });
-    }
-
-    /// @notice Pause the contract
-    function pause() external onlyRole(PAUSER_ROLE) {
-        _pause();
-    }
-
-    /// @notice Unpause the contract
-    function unpause() external onlyRole(PAUSER_ROLE) {
-        _unpause();
     }
 
     /// @inheritdoc IL1Teleporter
