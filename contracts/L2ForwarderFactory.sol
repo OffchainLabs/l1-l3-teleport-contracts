@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
-
 import {IL2ForwarderFactory} from "./interfaces/IL2ForwarderFactory.sol";
 import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
 
