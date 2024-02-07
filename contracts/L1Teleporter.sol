@@ -52,7 +52,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
 
         // calculate forwarder address from params
         address l2Forwarder =
-            l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender), params.l2l3RouterOrInbox, params.to);
+            l2ForwarderAddress(_aliasIfContract(msg.sender), params.l2l3RouterOrInbox, params.to);
 
         if (teleportationType == TeleportationType.OnlyCustomFee) {
             // teleporting a L3's custom fee token to a custom (non-eth) fee L3
@@ -89,7 +89,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     }
 
     /// @inheritdoc IL1Teleporter
-    function buildL2ForwarderParams(TeleportParams calldata params, address l2Owner)
+    function buildL2ForwarderParams(TeleportParams calldata params, address caller)
         public
         view
         returns (IL2Forwarder.L2ForwarderParams memory)
@@ -111,7 +111,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         }
 
         return IL2Forwarder.L2ForwarderParams({
-            owner: l2Owner,
+            owner: _aliasIfContract(caller),
             l2Token: l2Token,
             l2FeeToken: l2FeeToken,
             routerOrInbox: params.l2l3RouterOrInbox,
@@ -181,7 +181,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             maxFeePerGas: params.gasParams.l2GasPriceBid,
             data: abi.encodeCall(
                 IL2ForwarderFactory.callForwarder,
-                buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender)) // @review - we can toggle aliasing depending on if msg.sender has code to make rescuing easier
+                buildL2ForwarderParams(params, msg.sender)
             )
         });
     }
@@ -233,5 +233,10 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             + gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid;
         results.l2l3TokenBridgeCost =
             gasParams.l2l3TokenBridgeMaxSubmissionCost + gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid;
+    }
+
+    /// @dev Alias the address if it has code, otherwise return the address as is
+    function _aliasIfContract(address addr) internal view returns (address) {
+        return addr.code.length > 0 ? AddressAliasHelper.applyL1ToL2Alias(addr) : addr;
     }
 }
