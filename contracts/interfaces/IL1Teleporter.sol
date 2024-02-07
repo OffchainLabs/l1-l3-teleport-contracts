@@ -11,16 +11,16 @@ import {TeleportationType} from "../lib/TeleportationType.sol";
 ///         and one to call the L2ForwarderFactory.
 interface IL1Teleporter is IL2ForwarderPredictor {
     /// @notice Parameters for teleport()
-    /// @param  l1Token     L1 token being teleported
-    /// @param  l1FeeToken  L1 address of the L3's fee token, or 0x00 for ETH // @review - this naming is confusing
-    /// @param  l1l2Router  L1 to L2 token bridge router
-    /// @param  l2l3Router  L2 to L3 token bridge router
-    /// @param  to          L3 address that will receive the tokens
-    /// @param  amount      Amount of tokens being teleported
-    /// @param  gasParams   Gas parameters for each retryable ticket
+    /// @param  l1Token           L1 token being teleported
+    /// @param  l3FeeTokenL1Addr  L1 address of the L3's fee token, or 0x00 for ETH
+    /// @param  l1l2Router        L1 to L2 token bridge router
+    /// @param  l2l3Router        L2 to L3 token bridge router
+    /// @param  to                L3 address that will receive the tokens
+    /// @param  amount            Amount of tokens being teleported
+    /// @param  gasParams         Gas parameters for each retryable ticket
     struct TeleportParams {
         address l1Token;
-        address l1FeeToken;
+        address l3FeeTokenL1Addr;
         address l1l2Router;
         address l2l3RouterOrInbox;
         address to;
@@ -53,7 +53,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @notice Emitted when a teleportation is initiated.
     /// @param  sender              L1 address that initiated the teleportation
     /// @param  l1Token             L1 token being teleported
-    /// @param  l1FeeToken          L1 address of the L3's fee token, or 0x00 for ETH
+    /// @param  l3FeeTokenL1Addr          L1 address of the L3's fee token, or 0x00 for ETH
     /// @param  l1l2Router          L1 to L2 token bridge router
     /// @param  l2l3RouterOrInbox   L2 to L3 token bridge router or Inbox
     /// @param  to                  L3 address that will receive the tokens
@@ -61,7 +61,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     event Teleported(
         address indexed sender,
         address l1Token,
-        address l1FeeToken,
+        address l3FeeTokenL1Addr,
         address l1l2Router,
         address l2l3RouterOrInbox,
         address to,

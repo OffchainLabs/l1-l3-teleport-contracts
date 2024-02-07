@@ -66,7 +66,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             // pull in and send fee tokens through the bridge to predicted forwarder
             _pullAndBridgeToken({
                 router: params.l1l2Router,
-                token: params.l1FeeToken,
+                token: params.l3FeeTokenL1Addr,
                 to: l2Forwarder,
                 amount: requiredFeeToken,
                 gasLimit: params.gasParams.l1l2FeeTokenBridgeGasLimit,
@@ -80,7 +80,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         emit Teleported({
             sender: msg.sender,
             l1Token: params.l1Token,
-            l1FeeToken: params.l1FeeToken,
+            l3FeeTokenL1Addr: params.l3FeeTokenL1Addr,
             l1l2Router: params.l1l2Router,
             l2l3RouterOrInbox: params.l2l3RouterOrInbox,
             to: params.to,
@@ -98,14 +98,15 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         address l2FeeToken;
         uint256 maxSubmissionCost;
 
-        TeleportationType teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
+        TeleportationType teleportationType =
+            toTeleportationType({token: params.l1Token, feeToken: params.l3FeeTokenL1Addr});
 
         if (teleportationType == TeleportationType.Standard) {
             l2FeeToken = address(0);
         } else if (teleportationType == TeleportationType.OnlyCustomFee) {
             l2FeeToken = l2Token;
         } else {
-            l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1FeeToken);
+            l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l3FeeTokenL1Addr);
             maxSubmissionCost = params.gasParams.l2l3TokenBridgeMaxSubmissionCost;
         }
 
@@ -134,7 +135,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     {
         costs = _calculateRetryableGasCosts(params.gasParams);
 
-        teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
+        teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l3FeeTokenL1Addr});
 
         if (teleportationType == TeleportationType.Standard) {
             ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
