@@ -235,7 +235,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             gasParams.l2l3TokenBridgeMaxSubmissionCost + gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid;
     }
 
-    /// @dev Alias the address if it is a contract
+    /// @dev Alias the address if it has code, otherwise return the address as is
     function _aliasIfContract(address addr) internal view returns (address) {
         return addr.code.length > 0 ? AddressAliasHelper.applyL1ToL2Alias(addr) : addr;
     }
