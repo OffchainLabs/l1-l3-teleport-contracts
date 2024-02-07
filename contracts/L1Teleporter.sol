@@ -181,8 +181,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             maxFeePerGas: params.gasParams.l2GasPriceBid,
             data: abi.encodeCall(
                 IL2ForwarderFactory.callForwarder,
-                buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender))
-                )
+                buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(msg.sender)) // @review - we can toggle aliasing depending on if msg.sender has code to make rescuing easier
+            )
         });
     }
 
