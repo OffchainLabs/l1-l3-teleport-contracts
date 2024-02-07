@@ -121,6 +121,33 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         });
     }
 
+    /// @inheritdoc IL1Teleporter
+    function determineTypeAndFees(TeleportParams calldata params)
+        public
+        pure
+        returns (
+            uint256 ethAmount,
+            uint256 feeTokenAmount,
+            TeleportationType teleportationType,
+            RetryableGasCosts memory costs
+        )
+    {
+        costs = _calculateRetryableGasCosts(params.gasParams);
+
+        teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
+
+        if (teleportationType == TeleportationType.Standard) {
+            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
+            feeTokenAmount = 0;
+        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
+            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
+            feeTokenAmount = costs.l2l3TokenBridgeCost;
+        } else {
+            ethAmount = costs.l1l2TokenBridgeCost + costs.l1l2FeeTokenBridgeCost + costs.l2ForwarderFactoryCost;
+            feeTokenAmount = costs.l2l3TokenBridgeCost;
+        }
+    }
+
     /// @notice Common logic for teleport()
     /// @dev    Pulls in `params.l1Token` and creates 2 retryables: one to bridge tokens to the L2Forwarder, and one to call the L2ForwarderFactory.
     function _teleportCommon(TeleportParams calldata params, RetryableGasCosts memory retryableCosts, address l2Forwarder)
@@ -186,34 +213,6 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             _gasPriceBid: gasPriceBid,
             _data: abi.encode(maxSubmissionCost, bytes(""))
         });
-    }
-
-    // todo: move this up with other public views
-    /// @inheritdoc IL1Teleporter
-    function determineTypeAndFees(TeleportParams calldata params)
-        public
-        pure
-        returns (
-            uint256 ethAmount,
-            uint256 feeTokenAmount,
-            TeleportationType teleportationType,
-            RetryableGasCosts memory costs
-        )
-    {
-        costs = _calculateRetryableGasCosts(params.gasParams);
-
-        teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l1FeeToken});
-
-        if (teleportationType == TeleportationType.Standard) {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
-            feeTokenAmount = 0;
-        } else if (teleportationType == TeleportationType.OnlyCustomFee) {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
-            feeTokenAmount = costs.l2l3TokenBridgeCost;
-        } else {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l1l2FeeTokenBridgeCost + costs.l2ForwarderFactoryCost;
-            feeTokenAmount = costs.l2l3TokenBridgeCost;
-        }
     }
 
     /// @notice Given some gas parameters, calculate costs for each retryable ticket.
