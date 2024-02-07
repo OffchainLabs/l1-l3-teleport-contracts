@@ -103,6 +103,18 @@ contract L1TeleporterTest is BaseTest {
         params.l1l2Router = address(ethGatewayRouter);
         address l2Token = ethGatewayRouter.calculateL2TokenAddress(params.l1Token);
 
+        // test conditional address aliasing
+        {
+            IL2Forwarder.L2ForwarderParams memory noAliasParams = teleporter.buildL2ForwarderParams(params, l2Owner);
+            assertEq(noAliasParams.owner, l2Owner, "noAliasParams.owner");
+
+            IL2Forwarder.L2ForwarderParams memory aliasParams = teleporter.buildL2ForwarderParams(
+                params,
+                address(this)
+            );
+            assertEq(aliasParams.owner, AddressAliasHelper.applyL1ToL2Alias(address(this)), "aliasParams.owner");
+        }
+
         // test standard mode
         params.l3FeeTokenL1Addr = address(0);
         IL2Forwarder.L2ForwarderParams memory standardParams = teleporter.buildL2ForwarderParams(params, l2Owner);
