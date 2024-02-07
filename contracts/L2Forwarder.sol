@@ -6,7 +6,6 @@ import {L1GatewayRouter} from
 import {IERC20Inbox} from "@arbitrum/nitro-contracts/src/bridge/IERC20Inbox.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
 import {IL2Forwarder} from "./interfaces/IL2Forwarder.sol";
 import {TeleportationType, toTeleportationType} from "./lib/TeleportationType.sol";
 
