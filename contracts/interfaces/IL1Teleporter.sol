@@ -76,6 +76,8 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @notice Start an L1 -> L3 transfer. msg.value sent must be >= the total cost of all retryables.
     ///         Call `determineTypeAndFees` to calculate the total cost of retryables in ETH and the L3's fee token.
     ///         Any extra ETH will be sent to the receiver on L3.
+    ///         If called by an EOA or contract during construction, the L2Forwarder will be owned by the caller's address,
+    ///         otherwise the L2Forwarder will be owned by the caller's alias.
     /// @dev    2 retryables will be created: one to send tokens and ETH to the L2Forwarder, and one to call the L2ForwarderFactory.
     ///         If TeleportationType is NonFeeTokenToCustomFeeL3, a third retryable will be created to send the L3's fee token to the L2Forwarder.
     ///         Extra ETH is sent through the l2CallValue of the call to the L2ForwarderFactory.
