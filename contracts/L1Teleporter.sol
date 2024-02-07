@@ -55,11 +55,11 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             l2ForwarderAddress(AddressAliasHelper.applyL1ToL2Alias(msg.sender), params.l2l3RouterOrInbox, params.to);
 
         if (teleportationType == TeleportationType.OnlyCustomFee) {
-            // we are teleporting an L3's fee token
+            // teleporting a L3's custom fee token to a custom (non-eth) fee L3
             // we have to make sure that the amount specified is enough to cover the retryable costs from L2 -> L3
             if (params.amount < requiredFeeToken) revert InsufficientFeeToken(requiredFeeToken, params.amount);
         } else if (teleportationType == TeleportationType.NonFeeTokenToCustomFee) {
-            // we are teleporting a non-fee token to a custom fee L3
+            // teleporting a non-fee token to a custom (non-eth) fee L3
             // the flow is identical to standard,
             // except we have to send the appropriate amount of fee token through the bridge as well
 
