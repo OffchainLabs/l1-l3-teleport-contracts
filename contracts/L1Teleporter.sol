@@ -150,9 +150,11 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
 
     /// @notice Common logic for teleport()
     /// @dev    Pulls in `params.l1Token` and creates 2 retryables: one to bridge tokens to the L2Forwarder, and one to call the L2ForwarderFactory.
-    function _teleportCommon(TeleportParams calldata params, RetryableGasCosts memory retryableCosts, address l2Forwarder)
-        internal
-    {
+    function _teleportCommon(
+        TeleportParams calldata params,
+        RetryableGasCosts memory retryableCosts,
+        address l2Forwarder
+    ) internal {
         // send tokens through the bridge to predicted forwarder
         _pullAndBridgeToken({
             router: params.l1l2Router,
