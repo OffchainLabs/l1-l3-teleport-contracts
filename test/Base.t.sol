@@ -82,6 +82,7 @@ contract BaseTest is Test {
         vm.label(address(ethInbox), "ethInbox");
         vm.label(address(erc20Bridge), "erc20Bridge");
         vm.label(address(erc20Inbox), "erc20Inbox");
+        vm.label(address(nativeToken), "nativeToken");
 
         _deployTokenBridge();
     }

@@ -300,6 +300,8 @@ contract L1TeleporterTest is BaseTest {
             msgCount + 1, params, retryableCosts, l2ForwarderParams, l2Forwarder, retryableCosts.l2l3TokenBridgeCost
         );
         teleporter.teleport{value: requiredEth}(params);
+
+        _sanityCheckZeroTeleporterBalances();
     }
 
     function testFeeTokenOnlyTeleport(
@@ -355,6 +357,8 @@ contract L1TeleporterTest is BaseTest {
         }
         _expectFactoryRetryable(msgCount + 1, params, retryableCosts, l2ForwarderParams, l2Forwarder, 0);
         teleporter.teleport{value: requiredEth}(params);
+
+        _sanityCheckZeroTeleporterBalances();
     }
 
     function testNonFeeTokenTeleport(
@@ -415,6 +419,14 @@ contract L1TeleporterTest is BaseTest {
         }
         _expectFactoryRetryable(msgCount + 2, params, retryableCosts, l2ForwarderParams, l2Forwarder, 0);
         teleporter.teleport{value: requiredEth}(params);
+
+        _sanityCheckZeroTeleporterBalances();
+    }
+
+    function _sanityCheckZeroTeleporterBalances() internal {
+        assertEq(l1Token.balanceOf(address(teleporter)), 0, "l1Token balance");
+        assertEq(nativeToken.balanceOf(address(teleporter)), 0, "nativeToken balance");
+        assertEq(address(teleporter).balance, 0, "eth balance");
     }
 
     function _expectFeeTokenBridgeRetryable(
@@ -430,8 +442,7 @@ contract L1TeleporterTest is BaseTest {
             to: childDefaultGateway,
             l2CallValue: 0,
             msgValue: retryableCosts.l1l2FeeTokenBridgeCost,
-            maxSubmissionCost: retryableCosts.l1l2FeeTokenBridgeCost
-                - params.gasParams.l1l2FeeTokenBridgeGasLimit * params.gasParams.l2GasPriceBid,
+            maxSubmissionCost: params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost,
             excessFeeRefundAddress: l2Forwarder,
             callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(address(teleporter)),
             gasLimit: params.gasParams.l1l2FeeTokenBridgeGasLimit,
@@ -453,8 +464,7 @@ contract L1TeleporterTest is BaseTest {
             to: childDefaultGateway,
             l2CallValue: 0,
             msgValue: retryableCosts.l1l2TokenBridgeCost,
-            maxSubmissionCost: retryableCosts.l1l2TokenBridgeCost
-                - params.gasParams.l1l2TokenBridgeGasLimit * params.gasParams.l2GasPriceBid,
+            maxSubmissionCost: params.gasParams.l1l2TokenBridgeMaxSubmissionCost,
             excessFeeRefundAddress: l2Forwarder,
             callValueRefundAddress: AddressAliasHelper.applyL1ToL2Alias(address(teleporter)),
             gasLimit: params.gasParams.l1l2TokenBridgeGasLimit,
@@ -477,8 +487,7 @@ contract L1TeleporterTest is BaseTest {
             to: l2ForwarderFactory,
             l2CallValue: l2CallValue,
             msgValue: retryableCosts.l2ForwarderFactoryCost + l2CallValue,
-            maxSubmissionCost: retryableCosts.l2ForwarderFactoryCost
-                - params.gasParams.l2ForwarderFactoryGasLimit * params.gasParams.l2GasPriceBid,
+            maxSubmissionCost: params.gasParams.l2ForwarderFactoryMaxSubmissionCost,
             excessFeeRefundAddress: l2Forwarder,
             callValueRefundAddress: l2Forwarder,
             gasLimit: params.gasParams.l2ForwarderFactoryGasLimit,
