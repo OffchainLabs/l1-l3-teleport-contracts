@@ -15,7 +15,6 @@ contract DeployL2Contracts is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // @review - this is not deployed using a CREATE2 factory as described in README
         L2ForwarderContractsDeployer deployer =
             new L2ForwarderContractsDeployer{salt: salt}(AddressAliasHelper.applyL1ToL2Alias(l1Teleporter), l1ChainId);
 
