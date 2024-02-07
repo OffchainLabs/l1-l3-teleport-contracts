@@ -77,7 +77,8 @@ contract L2ForwarderTest is BaseTest {
             routerOrInbox: address(ethGatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimit,
-            gasPriceBid: gasPriceBid
+            gasPriceBid: gasPriceBid,
+            maxSubmissionCost: 0
         });
 
         // simulate A1 and B1 (bridging TOKEN to L2)
@@ -107,11 +108,12 @@ contract L2ForwarderTest is BaseTest {
         uint256 gasPriceBid
     ) public {
         address l2ForwarderAddress = factory.l2ForwarderAddress(owner, address(erc20Inbox), l3Recipient);
+        uint256 expectedSubmissionCost = erc20Inbox.calculateRetryableSubmissionFee(0, 0);
         {
             tokenBridgeEthRefunds = bound(tokenBridgeEthRefunds, 0, 0.01 ether);
             gasLimit = bound(gasLimit, 21000, 1_000_000);
             gasPriceBid = bound(gasPriceBid, 0.1 gwei, 0.2 gwei);
-            tokenAmount = bound(tokenAmount, gasLimit * gasPriceBid, 100 ether);
+            tokenAmount = bound(tokenAmount, expectedSubmissionCost + gasLimit * gasPriceBid, 100 ether);
             factoryCallMsgValue = bound(factoryCallMsgValue, 0, 0.001 ether);
         }
 
@@ -122,7 +124,8 @@ contract L2ForwarderTest is BaseTest {
             routerOrInbox: address(erc20Inbox),
             to: l3Recipient,
             gasLimit: gasLimit,
-            gasPriceBid: gasPriceBid
+            gasPriceBid: gasPriceBid,
+            maxSubmissionCost: 1
         });
 
         // simulate A1 and B1 (bridging TOKEN to L2)
@@ -134,9 +137,10 @@ contract L2ForwarderTest is BaseTest {
             inbox: address(erc20Inbox),
             msgCount: msgCount,
             to: params.to,
-            l2CallValue: tokenAmount - params.gasLimit * params.gasPriceBid,
+            l2CallValue: tokenAmount - expectedSubmissionCost
+                - params.gasLimit * params.gasPriceBid,
             msgValue: tokenAmount,
-            maxSubmissionCost: 0,
+            maxSubmissionCost: expectedSubmissionCost,
             excessFeeRefundAddress: params.to,
             callValueRefundAddress: params.to,
             gasLimit: params.gasLimit,
@@ -170,11 +174,15 @@ contract L2ForwarderTest is BaseTest {
         address l2ForwarderAddress = factory.l2ForwarderAddress(owner, address(erc20GatewayRouter), l3Recipient);
         {
             tokenAmount = bound(tokenAmount, 2, 10 ether);
+            uint256 expectedSubmissionCost = _getExpectedTokenBridgeSubmissionCost(
+                IInbox(address(erc20Inbox)), address(erc20GatewayRouter), l2ForwarderAddress, tokenAmount
+            );
             tokenBridgeEthRefunds = bound(tokenBridgeEthRefunds, 0, 0.01 ether);
             factoryCallMsgValue = bound(factoryCallMsgValue, 0, 0.001 ether);
             gasLimit = bound(gasLimit, 21000, 1_000_000);
             gasPriceBid = bound(gasPriceBid, 0.1 gwei, 0.2 gwei);
-            feeTokenAmount = gasLimit * gasPriceBid + bound(feeTokenAmount, 0, 0.001 ether);
+            feeTokenAmount =
+                expectedSubmissionCost + gasLimit * gasPriceBid + bound(feeTokenAmount, 0, 0.001 ether);
         }
 
         IL2Forwarder.L2ForwarderParams memory params = IL2Forwarder.L2ForwarderParams({
@@ -184,7 +192,8 @@ contract L2ForwarderTest is BaseTest {
             routerOrInbox: address(erc20GatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimit,
-            gasPriceBid: gasPriceBid
+            gasPriceBid: gasPriceBid,
+            maxSubmissionCost: 0
         });
 
         // simulate ETH refunds from A1, A2, B1, B2

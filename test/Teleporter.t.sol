@@ -113,6 +113,7 @@ contract L1TeleporterTest is BaseTest {
         assertEq(standardParams.to, params.to, "standardParams.to");
         assertEq(standardParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
         assertEq(standardParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
+        assertEq(standardParams.maxSubmissionCost, 0, "standardParams.maxSubmissionCost");
 
         // test OnlyCustomFee
         params.l1FeeToken = params.l1Token;
@@ -124,6 +125,7 @@ contract L1TeleporterTest is BaseTest {
         assertEq(onlyFeeParams.to, params.to, "standardParams.to");
         assertEq(onlyFeeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
         assertEq(onlyFeeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
+        assertEq(onlyFeeParams.maxSubmissionCost, 0, "standardParams.maxSubmissionCost");
 
         // test NonFeeTokenToCustomFee
         params.l1FeeToken = address(0x1234);
@@ -136,6 +138,11 @@ contract L1TeleporterTest is BaseTest {
         assertEq(feeParams.to, params.to, "standardParams.to");
         assertEq(feeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
         assertEq(feeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
+        assertEq(
+            feeParams.maxSubmissionCost,
+            params.gasParams.l2l3TokenBridgeMaxSubmissionCost,
+            "standardParams.maxSubmissionCost"
+        );
     }
 
     function testCalculateRequiredEthAndFeeToken(IL1Teleporter.RetryableGasParams memory gasParams, uint256 baseFee)
