@@ -100,13 +100,14 @@ contract L1TeleporterTest is BaseTest {
     }
 
     function testBuildL2ForwarderParams(IL1Teleporter.TeleportParams memory params, address l2Owner) public {
+        params.l1l2Router = address(ethGatewayRouter);
+
         if (params.l1Token == address(0)) {
             vm.expectRevert(InvalidTeleportation.selector);
             teleporter.buildL2ForwarderParams(params, l2Owner);
             return;
         }
 
-        params.l1l2Router = address(ethGatewayRouter);
         address l2Token = ethGatewayRouter.calculateL2TokenAddress(params.l1Token);
 
         // test standard mode
