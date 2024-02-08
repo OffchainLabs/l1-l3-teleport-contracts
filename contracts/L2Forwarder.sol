@@ -146,7 +146,7 @@ contract L2Forwarder is IL2Forwarder {
         if (balance == 0) revert ZeroTokenBalance(token);
 
         address l2l3Gateway = L1GatewayRouter(router).getGateway(token);
-        IERC20(token).safeIncreaseAllowance(l2l3Gateway, balance);
+        IERC20(token).forceApprove(l2l3Gateway, balance);
         return balance;
     }
 
