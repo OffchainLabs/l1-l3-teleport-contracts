@@ -51,8 +51,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         if (msg.value != requiredEth) revert IncorrectValue(requiredEth, msg.value);
 
         // calculate forwarder address from params
-        address l2Forwarder =
-            l2ForwarderAddress(_aliasIfContract(msg.sender), params.l2l3RouterOrInbox, params.to);
+        address l2Forwarder = l2ForwarderAddress(_aliasIfContract(msg.sender), params.l2l3RouterOrInbox, params.to);
 
         if (teleportationType == TeleportationType.OnlyCustomFee) {
             // teleporting a L3's custom fee token to a custom (non-eth) fee L3
@@ -179,10 +178,7 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             callValueRefundAddress: l2Forwarder,
             gasLimit: params.gasParams.l2ForwarderFactoryGasLimit,
             maxFeePerGas: params.gasParams.l2GasPriceBid,
-            data: abi.encodeCall(
-                IL2ForwarderFactory.callForwarder,
-                buildL2ForwarderParams(params, msg.sender)
-            )
+            data: abi.encodeCall(IL2ForwarderFactory.callForwarder, buildL2ForwarderParams(params, msg.sender))
         });
     }
 

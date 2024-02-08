@@ -8,8 +8,12 @@ enum TeleportationType {
 
 }
 
+error InvalidTeleportation();
+
 function toTeleportationType(address token, address feeToken) pure returns (TeleportationType) {
-    if (feeToken == address(0)) {
+    if (token == address(0)) {
+        revert InvalidTeleportation();
+    } else if (feeToken == address(0)) {
         return TeleportationType.Standard;
     } else if (token == feeToken) {
         return TeleportationType.OnlyCustomFee;

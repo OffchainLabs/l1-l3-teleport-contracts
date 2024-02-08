@@ -20,10 +20,12 @@ contract L2Forwarder is IL2Forwarder {
 
     constructor(address _factory) {
         l2ForwarderFactory = _factory;
+        owner = _factory;
     }
 
     /// @inheritdoc IL2Forwarder
     function initialize(address _owner) external {
+        if (msg.sender != l2ForwarderFactory) revert OnlyL2ForwarderFactory();
         if (owner != address(0)) revert AlreadyInitialized();
         owner = _owner;
     }
@@ -144,7 +146,7 @@ contract L2Forwarder is IL2Forwarder {
         if (balance == 0) revert ZeroTokenBalance(token);
 
         address l2l3Gateway = L1GatewayRouter(router).getGateway(token);
-        IERC20(token).safeApprove(l2l3Gateway, balance);
+        IERC20(token).forceApprove(l2l3Gateway, balance);
         return balance;
     }
 
