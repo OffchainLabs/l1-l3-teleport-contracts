@@ -20,6 +20,7 @@ contract L2Forwarder is IL2Forwarder {
 
     constructor(address _factory) {
         l2ForwarderFactory = _factory;
+        owner = 0x000000000000000000000000000000000000dEaD;
     }
 
     /// @inheritdoc IL2Forwarder
