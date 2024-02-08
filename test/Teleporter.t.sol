@@ -100,6 +100,7 @@ contract L1TeleporterTest is BaseTest {
     }
 
     function testBuildL2ForwarderParamsAliased(IL1Teleporter.TeleportParams memory params) public {
+        assertTrue(address(this).code.length > 0, "address(this).code.length > 0");
         testBuildL2ForwarderParams(params, address(this));
     }
 
