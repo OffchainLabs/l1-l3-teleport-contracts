@@ -41,6 +41,11 @@ contract L2ForwarderTest is BaseTest {
         vm.deal(aliasedL1Teleporter, 1_000_000 ether);
     }
 
+    function testAlreadyInitialized() public {
+        vm.expectRevert(IL2Forwarder.AlreadyInitialized.selector);
+        implementation.initialize(owner);
+    }
+
     function testOnlyL2ForwarderFactory() public {
         L2Forwarder.L2ForwarderParams memory params;
         IL2Forwarder forwarder = factory.createL2Forwarder(params.owner, params.routerOrInbox, params.to);
