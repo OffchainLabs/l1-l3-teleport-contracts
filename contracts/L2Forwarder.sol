@@ -25,6 +25,7 @@ contract L2Forwarder is IL2Forwarder {
 
     /// @inheritdoc IL2Forwarder
     function initialize(address _owner) external {
+        if (msg.sender != l2ForwarderFactory) revert OnlyL2ForwarderFactory();
         if (owner != address(0)) revert AlreadyInitialized();
         owner = _owner;
     }
