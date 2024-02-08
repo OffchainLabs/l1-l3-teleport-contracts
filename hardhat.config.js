@@ -5,11 +5,11 @@ module.exports = {
     artifacts: 'build/contracts',
   },
   solidity: {
-    version: "0.8.13",
+    version: "0.8.23",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200
+        runs: 20000
       }
     }
   }
