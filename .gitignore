@@ -21,3 +21,4 @@ script-deploy-data
 broadcast
 
 hardhat-abigen.js
+lcov.info
