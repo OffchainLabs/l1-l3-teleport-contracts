@@ -99,14 +99,11 @@ contract L1TeleporterTest is BaseTest {
         // don't need to test 'doesn't revert when unpaused' because it's already tested in other tests
     }
 
-    function testBuildL2ForwarderParams(IL1Teleporter.TeleportParams memory params, uint64 l2OwnerKey) public {
-        // 50/50 etch the l2Owner with some code to test conditional address aliasing
-        // use a key to make sure the fuzzer doesn't collide with an existing contract and etch over it
-        address l2Owner = vm.addr(l2OwnerKey == 0 ? 1 : l2OwnerKey);
-        if (l2OwnerKey % 2 == 0) {
-            vm.etch(l2Owner, hex"1234");
-        }
+    function testBuildL2ForwarderParamsAliased(IL1Teleporter.TeleportParams memory params) public {
+        testBuildL2ForwarderParams(params, address(this));
+    }
 
+    function testBuildL2ForwarderParams(IL1Teleporter.TeleportParams memory params, address l2Owner) public {
         params.l1l2Router = address(ethGatewayRouter);
 
         if (params.l1Token == address(0)) {
