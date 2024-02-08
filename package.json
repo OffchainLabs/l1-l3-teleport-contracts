@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@arbitrum/nitro-contracts": "^1.1.0",
-    "@arbitrum/token-bridge-contracts": "1.2.0"
+    "@arbitrum/token-bridge-contracts": "1.2.0",
+    "@openzeppelin/contracts": "4.9.4"
   },
   "scripts": {
     "prepublishOnly": "hardhat clean && hardhat compile",
