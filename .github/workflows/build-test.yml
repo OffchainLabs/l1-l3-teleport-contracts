@@ -1,0 +1,54 @@
+name: Build and test
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  test-unit:
+    name: Test unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup node/yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install packages
+        run: yarn
+
+      - name: Check format
+        run: forge fmt --check
+
+      - name: Build
+        run: forge build
+
+      - name: Run foundry tests
+        run: forge test
+
+  test-format:
+    name: Test format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Check format
+        run: forge fmt --check

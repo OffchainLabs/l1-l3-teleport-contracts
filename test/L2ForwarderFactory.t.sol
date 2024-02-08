@@ -26,6 +26,7 @@ contract L2ForwarderFactoryTest is Test {
 
     function testOnlyL1Teleporter() public {
         IL2Forwarder.L2ForwarderParams memory params;
+        params.l2Token = address(1);
         vm.expectRevert(IL2ForwarderFactory.OnlyL1Teleporter.selector);
         factory.callForwarder(params);
         vm.prank(aliasedL1Teleporter);

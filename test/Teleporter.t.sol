@@ -7,7 +7,7 @@ import {IL1Teleporter} from "../contracts/interfaces/IL1Teleporter.sol";
 import {IL2Forwarder} from "../contracts/interfaces/IL2Forwarder.sol";
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
-import {TeleportationType} from "../contracts/lib/TeleportationType.sol";
+import {TeleportationType, InvalidTeleportation} from "../contracts/lib/TeleportationType.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {L1ArbitrumGateway} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
@@ -99,26 +99,30 @@ contract L1TeleporterTest is BaseTest {
         // don't need to test 'doesn't revert when unpaused' because it's already tested in other tests
     }
 
+    function testBuildL2ForwarderParamsAliased(IL1Teleporter.TeleportParams memory params) public {
+        assertTrue(address(this).code.length > 0, "address(this).code.length > 0");
+        testBuildL2ForwarderParams(params, address(this));
+    }
+
     function testBuildL2ForwarderParams(IL1Teleporter.TeleportParams memory params, address l2Owner) public {
         params.l1l2Router = address(ethGatewayRouter);
-        address l2Token = ethGatewayRouter.calculateL2TokenAddress(params.l1Token);
 
-        // test conditional address aliasing
-        {
-            IL2Forwarder.L2ForwarderParams memory noAliasParams = teleporter.buildL2ForwarderParams(params, l2Owner);
-            assertEq(noAliasParams.owner, l2Owner, "noAliasParams.owner");
-
-            IL2Forwarder.L2ForwarderParams memory aliasParams = teleporter.buildL2ForwarderParams(
-                params,
-                address(this)
-            );
-            assertEq(aliasParams.owner, AddressAliasHelper.applyL1ToL2Alias(address(this)), "aliasParams.owner");
+        if (params.l1Token == address(0)) {
+            vm.expectRevert(InvalidTeleportation.selector);
+            teleporter.buildL2ForwarderParams(params, l2Owner);
+            return;
         }
+
+        address l2Token = ethGatewayRouter.calculateL2TokenAddress(params.l1Token);
 
         // test standard mode
         params.l3FeeTokenL1Addr = address(0);
         IL2Forwarder.L2ForwarderParams memory standardParams = teleporter.buildL2ForwarderParams(params, l2Owner);
-        assertEq(standardParams.owner, l2Owner, "standardParams.owner");
+        if (l2Owner.code.length == 0) {
+            assertEq(standardParams.owner, l2Owner, "standardParams.owner");
+        } else {
+            assertEq(standardParams.owner, AddressAliasHelper.applyL1ToL2Alias(l2Owner), "standardParams.owner");
+        }
         assertEq(standardParams.l2Token, l2Token, "standardParams.l2Token");
         assertEq(standardParams.l2FeeToken, address(0), "standardParams.l2FeeToken");
         assertEq(standardParams.routerOrInbox, params.l2l3RouterOrInbox, "standardParams.routerOrInbox");
@@ -130,30 +134,38 @@ contract L1TeleporterTest is BaseTest {
         // test OnlyCustomFee
         params.l3FeeTokenL1Addr = params.l1Token;
         IL2Forwarder.L2ForwarderParams memory onlyFeeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
-        assertEq(onlyFeeParams.owner, l2Owner, "standardParams.owner");
-        assertEq(onlyFeeParams.l2Token, l2Token, "standardParams.l2Token");
-        assertEq(onlyFeeParams.l2FeeToken, l2Token, "standardParams.l2FeeToken");
-        assertEq(onlyFeeParams.routerOrInbox, params.l2l3RouterOrInbox, "standardParams.routerOrInbox");
-        assertEq(onlyFeeParams.to, params.to, "standardParams.to");
-        assertEq(onlyFeeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
-        assertEq(onlyFeeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
-        assertEq(onlyFeeParams.maxSubmissionCost, 0, "standardParams.maxSubmissionCost");
+        if (l2Owner.code.length == 0) {
+            assertEq(onlyFeeParams.owner, l2Owner, "onlyFeeParams.owner");
+        } else {
+            assertEq(onlyFeeParams.owner, AddressAliasHelper.applyL1ToL2Alias(l2Owner), "onlyFeeParams.owner");
+        }
+        assertEq(onlyFeeParams.l2Token, l2Token, "onlyFeeParams.l2Token");
+        assertEq(onlyFeeParams.l2FeeToken, l2Token, "onlyFeeParams.l2FeeToken");
+        assertEq(onlyFeeParams.routerOrInbox, params.l2l3RouterOrInbox, "onlyFeeParams.routerOrInbox");
+        assertEq(onlyFeeParams.to, params.to, "onlyFeeParams.to");
+        assertEq(onlyFeeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "onlyFeeParams.gasLimit");
+        assertEq(onlyFeeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "onlyFeeParams.gasPriceBid");
+        assertEq(onlyFeeParams.maxSubmissionCost, 0, "onlyFeeParams.maxSubmissionCost");
 
         // test NonFeeTokenToCustomFee
         params.l3FeeTokenL1Addr = address(0x1234);
         address l2FeeToken = ethGatewayRouter.calculateL2TokenAddress(params.l3FeeTokenL1Addr);
         IL2Forwarder.L2ForwarderParams memory feeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
-        assertEq(feeParams.owner, l2Owner, "standardParams.owner");
-        assertEq(feeParams.l2Token, l2Token, "standardParams.l2Token");
-        assertEq(feeParams.l2FeeToken, l2FeeToken, "standardParams.l2FeeToken");
-        assertEq(feeParams.routerOrInbox, params.l2l3RouterOrInbox, "standardParams.routerOrInbox");
-        assertEq(feeParams.to, params.to, "standardParams.to");
-        assertEq(feeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
-        assertEq(feeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "standardParams.gasPriceBid");
+        if (l2Owner.code.length == 0) {
+            assertEq(feeParams.owner, l2Owner, "feeParams.owner");
+        } else {
+            assertEq(feeParams.owner, AddressAliasHelper.applyL1ToL2Alias(l2Owner), "feeParams.owner");
+        }
+        assertEq(feeParams.l2Token, l2Token, "feeParams.l2Token");
+        assertEq(feeParams.l2FeeToken, l2FeeToken, "feeParams.l2FeeToken");
+        assertEq(feeParams.routerOrInbox, params.l2l3RouterOrInbox, "feeParams.routerOrInbox");
+        assertEq(feeParams.to, params.to, "feeParams.to");
+        assertEq(feeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "feeParams.gasLimit");
+        assertEq(feeParams.gasPriceBid, params.gasParams.l3GasPriceBid, "feeParams.gasPriceBid");
         assertEq(
             feeParams.maxSubmissionCost,
             params.gasParams.l2l3TokenBridgeMaxSubmissionCost,
-            "standardParams.maxSubmissionCost"
+            "feeParams.maxSubmissionCost"
         );
     }
 
