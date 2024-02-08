@@ -93,8 +93,6 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         view
         returns (IL2Forwarder.L2ForwarderParams memory)
     {
-        if (params.l1Token == address(0)) revert IncorrectL1Token();
-
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
         address l2FeeToken;
         uint256 maxSubmissionCost;

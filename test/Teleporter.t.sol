@@ -7,7 +7,7 @@ import {IL1Teleporter} from "../contracts/interfaces/IL1Teleporter.sol";
 import {IL2Forwarder} from "../contracts/interfaces/IL2Forwarder.sol";
 import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
-import {TeleportationType} from "../contracts/lib/TeleportationType.sol";
+import {TeleportationType, InvalidTeleportation} from "../contracts/lib/TeleportationType.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {L1ArbitrumGateway} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
@@ -101,7 +101,7 @@ contract L1TeleporterTest is BaseTest {
 
     function testBuildL2ForwarderParams(IL1Teleporter.TeleportParams memory params, address l2Owner) public {
         if (params.l1Token == address(0)) {
-            vm.expectRevert(IL1Teleporter.IncorrectL1Token.selector);
+            vm.expectRevert(InvalidTeleportation.selector);
             teleporter.buildL2ForwarderParams(params, l2Owner);
             return;
         }
