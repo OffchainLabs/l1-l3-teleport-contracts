@@ -34,7 +34,7 @@ contract L2Forwarder is IL2Forwarder {
     function bridgeToL3(L2ForwarderParams calldata params) external payable {
         if (msg.sender != l2ForwarderFactory) revert OnlyL2ForwarderFactory();
 
-        TeleportationType teleportationType = toTeleportationType({token: params.l2Token, feeToken: params.l2FeeToken});
+        TeleportationType teleportationType = toTeleportationType({token: params.l2Token, feeToken: params.l3FeeTokenL2Addr});
 
         if (teleportationType == TeleportationType.Standard) {
             _bridgeToEthFeeL3(params);
@@ -122,7 +122,7 @@ contract L2Forwarder is IL2Forwarder {
 
         // send feeToken to the inbox
         address inbox = L1GatewayRouter(params.routerOrInbox).inbox();
-        IERC20(params.l2FeeToken).safeTransfer(inbox, totalFeeAmount);
+        IERC20(params.l3FeeTokenL2Addr).safeTransfer(inbox, totalFeeAmount);
 
         // send tokens through the bridge to intended recipient
         // use user supplied max submission fee instead of sending all the fee token balance

@@ -11,7 +11,7 @@ interface IL2Forwarder {
     /// @notice Parameters for an L2Forwarder
     /// @param  owner               Address of the L2Forwarder owner. Setting this incorrectly could result in loss of funds.
     /// @param  l2Token             Address of the L2 token to bridge to L3
-    /// @param  l2FeeToken          Address of the L3's fee token, or 0x00 for ETH
+    /// @param  l3FeeTokenL2Addr    Address of the L3's fee token, or 0x00 for ETH
     /// @param  routerOrInbox       Address of the L2 -> L3 GatewayRouter or Inbox if depositing only custom fee token
     /// @param  to                  Address of the recipient on L3
     /// @param  gasLimit            Gas limit for the L2 -> L3 retryable
@@ -20,7 +20,7 @@ interface IL2Forwarder {
     struct L2ForwarderParams {
         address owner;
         address l2Token;
-        address l2FeeToken;
+        address l3FeeTokenL2Addr;
         address routerOrInbox;
         address to;
         uint256 gasLimit;

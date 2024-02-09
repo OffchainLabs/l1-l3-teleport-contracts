@@ -124,7 +124,7 @@ contract L1TeleporterTest is BaseTest {
             assertEq(standardParams.owner, AddressAliasHelper.applyL1ToL2Alias(l2Owner), "standardParams.owner");
         }
         assertEq(standardParams.l2Token, l2Token, "standardParams.l2Token");
-        assertEq(standardParams.l2FeeToken, address(0), "standardParams.l2FeeToken");
+        assertEq(standardParams.l3FeeTokenL2Addr, address(0), "standardParams.l3FeeTokenL2Addr");
         assertEq(standardParams.routerOrInbox, params.l2l3RouterOrInbox, "standardParams.routerOrInbox");
         assertEq(standardParams.to, params.to, "standardParams.to");
         assertEq(standardParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "standardParams.gasLimit");
@@ -140,7 +140,7 @@ contract L1TeleporterTest is BaseTest {
             assertEq(onlyFeeParams.owner, AddressAliasHelper.applyL1ToL2Alias(l2Owner), "onlyFeeParams.owner");
         }
         assertEq(onlyFeeParams.l2Token, l2Token, "onlyFeeParams.l2Token");
-        assertEq(onlyFeeParams.l2FeeToken, l2Token, "onlyFeeParams.l2FeeToken");
+        assertEq(onlyFeeParams.l3FeeTokenL2Addr, l2Token, "onlyFeeParams.l3FeeTokenL2Addr");
         assertEq(onlyFeeParams.routerOrInbox, params.l2l3RouterOrInbox, "onlyFeeParams.routerOrInbox");
         assertEq(onlyFeeParams.to, params.to, "onlyFeeParams.to");
         assertEq(onlyFeeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "onlyFeeParams.gasLimit");
@@ -149,7 +149,7 @@ contract L1TeleporterTest is BaseTest {
 
         // test NonFeeTokenToCustomFee
         params.l3FeeTokenL1Addr = address(0x1234);
-        address l2FeeToken = ethGatewayRouter.calculateL2TokenAddress(params.l3FeeTokenL1Addr);
+        address feeToken = ethGatewayRouter.calculateL2TokenAddress(params.l3FeeTokenL1Addr);
         IL2Forwarder.L2ForwarderParams memory feeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
         if (l2Owner.code.length == 0) {
             assertEq(feeParams.owner, l2Owner, "feeParams.owner");
@@ -157,7 +157,7 @@ contract L1TeleporterTest is BaseTest {
             assertEq(feeParams.owner, AddressAliasHelper.applyL1ToL2Alias(l2Owner), "feeParams.owner");
         }
         assertEq(feeParams.l2Token, l2Token, "feeParams.l2Token");
-        assertEq(feeParams.l2FeeToken, l2FeeToken, "feeParams.l2FeeToken");
+        assertEq(feeParams.l3FeeTokenL2Addr, feeToken, "feeParams.l3FeeTokenL2Addr");
         assertEq(feeParams.routerOrInbox, params.l2l3RouterOrInbox, "feeParams.routerOrInbox");
         assertEq(feeParams.to, params.to, "feeParams.to");
         assertEq(feeParams.gasLimit, params.gasParams.l2l3TokenBridgeGasLimit, "feeParams.gasLimit");

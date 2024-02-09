@@ -91,25 +91,25 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         returns (IL2Forwarder.L2ForwarderParams memory)
     {
         address l2Token = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l1Token);
-        address l2FeeToken;
+        address l3FeeTokenL2Addr;
         uint256 maxSubmissionCost;
 
         TeleportationType teleportationType =
             toTeleportationType({token: params.l1Token, feeToken: params.l3FeeTokenL1Addr});
 
         if (teleportationType == TeleportationType.Standard) {
-            l2FeeToken = address(0);
+            l3FeeTokenL2Addr = address(0);
         } else if (teleportationType == TeleportationType.OnlyCustomFee) {
-            l2FeeToken = l2Token;
+            l3FeeTokenL2Addr = l2Token;
         } else {
-            l2FeeToken = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l3FeeTokenL1Addr);
+            l3FeeTokenL2Addr = L1GatewayRouter(params.l1l2Router).calculateL2TokenAddress(params.l3FeeTokenL1Addr);
             maxSubmissionCost = params.gasParams.l2l3TokenBridgeMaxSubmissionCost;
         }
 
         return IL2Forwarder.L2ForwarderParams({
             owner: _aliasIfContract(caller),
             l2Token: l2Token,
-            l2FeeToken: l2FeeToken,
+            l3FeeTokenL2Addr: l3FeeTokenL2Addr,
             routerOrInbox: params.l2l3RouterOrInbox,
             to: params.to,
             gasLimit: params.gasParams.l2l3TokenBridgeGasLimit,

@@ -81,7 +81,7 @@ contract L2ForwarderTest is BaseTest {
         IL2Forwarder.L2ForwarderParams memory params = IL2Forwarder.L2ForwarderParams({
             owner: owner,
             l2Token: address(l2Token),
-            l2FeeToken: address(0),
+            l3FeeTokenL2Addr: address(0),
             routerOrInbox: address(ethGatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimit,
@@ -128,7 +128,7 @@ contract L2ForwarderTest is BaseTest {
         IL2Forwarder.L2ForwarderParams memory params = IL2Forwarder.L2ForwarderParams({
             owner: owner,
             l2Token: address(nativeToken),
-            l2FeeToken: address(nativeToken),
+            l3FeeTokenL2Addr: address(nativeToken),
             routerOrInbox: address(erc20Inbox),
             to: l3Recipient,
             gasLimit: gasLimit,
@@ -194,7 +194,7 @@ contract L2ForwarderTest is BaseTest {
         IL2Forwarder.L2ForwarderParams memory params = IL2Forwarder.L2ForwarderParams({
             owner: owner,
             l2Token: address(l2Token),
-            l2FeeToken: address(nativeToken),
+            l3FeeTokenL2Addr: address(nativeToken),
             routerOrInbox: address(erc20GatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimit,
@@ -257,7 +257,7 @@ contract L2ForwarderTest is BaseTest {
         IL2Forwarder.L2ForwarderParams memory paramsA = IL2Forwarder.L2ForwarderParams({
             owner: owner,
             l2Token: address(l2Token),
-            l2FeeToken: address(nativeToken),
+            l3FeeTokenL2Addr: address(nativeToken),
             routerOrInbox: address(erc20GatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimitA,
@@ -288,7 +288,7 @@ contract L2ForwarderTest is BaseTest {
         IL2Forwarder.L2ForwarderParams memory paramsB = IL2Forwarder.L2ForwarderParams({
             owner: owner,
             l2Token: address(l2Token),
-            l2FeeToken: address(nativeToken),
+            l3FeeTokenL2Addr: address(nativeToken),
             routerOrInbox: address(erc20GatewayRouter),
             to: l3Recipient,
             gasLimit: gasLimitB,
