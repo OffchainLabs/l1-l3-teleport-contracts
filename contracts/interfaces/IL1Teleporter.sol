@@ -14,7 +14,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @param  l1Token           L1 token being teleported
     /// @param  l3FeeTokenL1Addr  L1 address of the L3's fee token, or 0x00 for ETH
     /// @param  l1l2Router        L1 to L2 token bridge router
-    /// @param  l2l3Router        L2 to L3 token bridge router
+    /// @param  l2l3RouterOrInbox L2 to L3 token bridge router or L2 to L3 Inbox
     /// @param  to                L3 address that will receive the tokens
     /// @param  amount            Amount of tokens being teleported
     /// @param  gasParams         Gas parameters for each retryable ticket
