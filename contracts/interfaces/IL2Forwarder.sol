@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {IL2ForwarderPredictor} from "./IL2ForwarderPredictor.sol";
 
-/// @title  L2Forwarder
+/// @title  IL2Forwarder
 /// @notice L2 contract that receives ERC20 tokens to forward to L3.
 ///         May receive either token and ETH, token and the L3 feeToken, or just feeToken if token == feeToken.
 ///         In case funds cannot be bridged to L3, the owner can call rescue to get their funds back.
@@ -16,7 +16,7 @@ interface IL2Forwarder {
     /// @param  to                  Address of the recipient on L3
     /// @param  gasLimit            Gas limit for the L2 -> L3 retryable
     /// @param  gasPriceBid         Gas price for the L2 -> L3 retryable
-    /// @param  maxSubmissionCost   Max submission fee for the L2 -> L3 retryable. Will be ignored for Standard and OnlyCustomFee teleportation types.
+    /// @param  maxSubmissionCost   Max submission fee for the L2 -> L3 retryable. Is ignored for Standard and OnlyCustomFee teleportation types.
     struct L2ForwarderParams {
         address owner;
         address l2Token;

@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {IL2ForwarderPredictor} from "./IL2ForwarderPredictor.sol";
 import {IL2Forwarder} from "./IL2Forwarder.sol";
 
-/// @title  L2ForwarderFactory
+/// @title  IL2ForwarderFactory
 /// @notice Creates L2Forwarders and calls them to bridge tokens to L3.
 ///         L2Forwarders are created via CREATE2 / clones.
 interface IL2ForwarderFactory is IL2ForwarderPredictor {
@@ -18,6 +18,7 @@ interface IL2ForwarderFactory is IL2ForwarderPredictor {
     error OnlyL1Teleporter();
 
     /// @notice Calls an L2Forwarder to bridge tokens to L3. Will create the L2Forwarder first if it doesn't exist.
+    /// @dev    Only callable by the aliased L1Teleporter.
     /// @param  params Parameters for the L2Forwarder
     function callForwarder(IL2Forwarder.L2ForwarderParams memory params) external payable;
 
