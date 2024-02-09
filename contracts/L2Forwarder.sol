@@ -85,7 +85,6 @@ contract L2Forwarder is IL2Forwarder {
     /// @dev Bridge fee tokens to an L3 that uses a custom fee token.
     ///      Create a single retryable to call `params.to` with the fee token amount minus fees.
     ///      Entire fee token balance is sent.
-    ///      ETH is not sent anywhere even if balance is nonzero.
     ///      params.maxSubmissionCost is ignored.
     function _bridgeFeeTokenToCustomFeeL3(L2ForwarderParams calldata params) internal {
         uint256 tokenBalance = IERC20(params.l2Token).balanceOf(address(this));

@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {IL2Forwarder} from "./IL2Forwarder.sol";
 
-/// @title  L2ForwarderPredictor
+/// @title  IL2ForwarderPredictor
 /// @notice Predicts the address of an L2Forwarder based on its parameters
 interface IL2ForwarderPredictor {
     /// @notice Address of the L2ForwarderFactory
