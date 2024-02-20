@@ -208,24 +208,26 @@ contract L1TeleporterTest is BaseTest {
             // we only check RetryableGasCosts once because it'll be the same for all modes
             assertEq(
                 standardCosts.l1l2FeeTokenBridgeCost,
-                gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid
+                (gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid)
                     + gasParams.l1l2FeeTokenBridgeMaxSubmissionCost,
                 "l1l2FeeTokenBridgeCost"
             );
             assertEq(
                 standardCosts.l1l2TokenBridgeCost,
-                gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPriceBid + gasParams.l1l2TokenBridgeMaxSubmissionCost,
+                (gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPriceBid)
+                    + gasParams.l1l2TokenBridgeMaxSubmissionCost,
                 "l1l2TokenBridgeCost"
             );
             assertEq(
                 standardCosts.l2ForwarderFactoryCost,
-                gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid
+                (gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid)
                     + gasParams.l2ForwarderFactoryMaxSubmissionCost,
                 "l2ForwarderFactoryCost"
             );
             assertEq(
                 standardCosts.l2l3TokenBridgeCost,
-                gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid + gasParams.l2l3TokenBridgeMaxSubmissionCost,
+                (gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid)
+                    + gasParams.l2l3TokenBridgeMaxSubmissionCost,
                 "l2l3TokenBridgeCost"
             );
         }

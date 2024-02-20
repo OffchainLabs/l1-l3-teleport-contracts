@@ -219,13 +219,13 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         returns (RetryableGasCosts memory results)
     {
         results.l1l2FeeTokenBridgeCost = gasParams.l1l2FeeTokenBridgeMaxSubmissionCost
-            + gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid;
+            + (gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid);
         results.l1l2TokenBridgeCost =
-            gasParams.l1l2TokenBridgeMaxSubmissionCost + gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPriceBid;
+            gasParams.l1l2TokenBridgeMaxSubmissionCost + (gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPriceBid);
         results.l2ForwarderFactoryCost = gasParams.l2ForwarderFactoryMaxSubmissionCost
-            + gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid;
+            + (gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid);
         results.l2l3TokenBridgeCost =
-            gasParams.l2l3TokenBridgeMaxSubmissionCost + gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid;
+            gasParams.l2l3TokenBridgeMaxSubmissionCost + (gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid);
     }
 
     /// @dev Alias the address if it has code, otherwise return the address as is
