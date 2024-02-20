@@ -97,7 +97,8 @@ contract L2Forwarder is IL2Forwarder {
 
         // create retryable ticket
         uint256 maxSubmissionCost = IERC20Inbox(params.routerOrInbox).calculateRetryableSubmissionFee(0, 0);
-        uint256 callValue = tokenBalance - maxSubmissionCost - params.gasLimit * params.gasPriceBid;
+        uint256 totalFeeAmount = maxSubmissionCost + (params.gasLimit * params.gasPriceBid);
+        uint256 callValue = tokenBalance - totalFeeAmount;
         IERC20Inbox(params.routerOrInbox).createRetryableTicket({
             to: params.to,
             l2CallValue: callValue,
@@ -110,7 +111,7 @@ contract L2Forwarder is IL2Forwarder {
             data: ""
         });
 
-        emit BridgedToL3(callValue, maxSubmissionCost + params.gasLimit * params.gasPriceBid);
+        emit BridgedToL3(callValue, totalFeeAmount);
     }
 
     /// @dev Bridge non-fee tokens to an L3 that uses a custom fee token.

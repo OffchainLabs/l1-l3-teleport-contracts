@@ -132,15 +132,23 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         costs = _calculateRetryableGasCosts(params.gasParams);
 
         teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l3FeeTokenL1Addr});
-
+        
+        // all teleportation types require at least these 2 retryables to L2
+        ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
+        
+        // in addition to the above ETH amount, we need more fee token and/or ETH depending on the teleportation type
         if (teleportationType == TeleportationType.Standard) {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
+            // standard type requires 1 retryable to L3 paid for in ETH
+            ethAmount += costs.l2l3TokenBridgeCost;
             feeTokenAmount = 0;
         } else if (teleportationType == TeleportationType.OnlyCustomFee) {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
+            // only custom fee type requires 1 retryable to L3 paid for in fee token
             feeTokenAmount = costs.l2l3TokenBridgeCost;
         } else {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l1l2FeeTokenBridgeCost + costs.l2ForwarderFactoryCost;
+            // non-fee token to custom fee type requires: 
+            // 1 retryable to L2 paid for in ETH
+            // 1 retryable to L3 paid for in fee token
+            ethAmount += costs.l1l2FeeTokenBridgeCost;
             feeTokenAmount = costs.l2l3TokenBridgeCost;
         }
     }
