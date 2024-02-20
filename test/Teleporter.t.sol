@@ -233,6 +233,66 @@ contract L1TeleporterTest is BaseTest {
             );
         }
 
+        {
+            // test standard mode with hardcoded values
+            // test standard mode
+            IL1Teleporter.TeleportParams memory standardParams = IL1Teleporter.TeleportParams({
+                l1Token: address(l1Token),
+                l3FeeTokenL1Addr: address(0),
+                l1l2Router: address(ethGatewayRouter),
+                l2l3RouterOrInbox: l2l3RouterOrInbox,
+                to: address(1),
+                amount: 10,
+                gasParams: IL1Teleporter.RetryableGasParams({
+                    l2GasPriceBid: 1,
+                    l3GasPriceBid: 2,
+                    l2ForwarderFactoryGasLimit: 3,
+                    l1l2FeeTokenBridgeGasLimit: 4,
+                    l1l2TokenBridgeGasLimit: 5,
+                    l2l3TokenBridgeGasLimit: 6,
+                    l2ForwarderFactoryMaxSubmissionCost: 7,
+                    l1l2FeeTokenBridgeMaxSubmissionCost: 8,
+                    l1l2TokenBridgeMaxSubmissionCost: 9,
+                    l2l3TokenBridgeMaxSubmissionCost: 10
+                })
+            });
+            (
+                uint256 standardEth,
+                uint256 standardFeeToken,
+                TeleportationType standardType,
+                IL1Teleporter.RetryableGasCosts memory standardCosts
+            ) = teleporter.determineTypeAndFees(standardParams);
+            assertTrue(standardType == TeleportationType.Standard, "standardType");
+            assertEq(standardFeeToken, 0, "standardFeeToken");
+            assertEq(
+                standardEth,
+                46, // (5 * 1 + 9) + (3 * 1 + 7) + (6 * 2 + 10)
+                "standardEth"
+            );
+
+            // we only check RetryableGasCosts once because it'll be the same for all modes
+            assertEq(
+                standardCosts.l1l2FeeTokenBridgeCost,
+                12,
+                "l1l2FeeTokenBridgeCost"
+            );
+            assertEq(
+                standardCosts.l1l2TokenBridgeCost,
+                14,
+                "l1l2TokenBridgeCost"
+            );
+            assertEq(
+                standardCosts.l2ForwarderFactoryCost,
+                10,
+                "l2ForwarderFactoryCost"
+            );
+            assertEq(
+                standardCosts.l2l3TokenBridgeCost,
+                22,
+                "l2l3TokenBridgeCost"
+            );
+        }
+
         // test fee token mode
         IL1Teleporter.TeleportParams memory feeTokenParams = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
