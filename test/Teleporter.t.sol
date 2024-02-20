@@ -264,33 +264,13 @@ contract L1TeleporterTest is BaseTest {
             ) = teleporter.determineTypeAndFees(standardParams);
             assertTrue(standardType == TeleportationType.Standard, "standardType");
             assertEq(standardFeeToken, 0, "standardFeeToken");
-            assertEq(
-                standardEth,
-                46, // (5 * 1 + 9) + (3 * 1 + 7) + (6 * 2 + 10)
-                "standardEth"
-            );
+            assertEq(standardEth, 46, "standardEth");
 
             // we only check RetryableGasCosts once because it'll be the same for all modes
-            assertEq(
-                standardCosts.l1l2FeeTokenBridgeCost,
-                12,
-                "l1l2FeeTokenBridgeCost"
-            );
-            assertEq(
-                standardCosts.l1l2TokenBridgeCost,
-                14,
-                "l1l2TokenBridgeCost"
-            );
-            assertEq(
-                standardCosts.l2ForwarderFactoryCost,
-                10,
-                "l2ForwarderFactoryCost"
-            );
-            assertEq(
-                standardCosts.l2l3TokenBridgeCost,
-                22,
-                "l2l3TokenBridgeCost"
-            );
+            assertEq(standardCosts.l1l2FeeTokenBridgeCost, 12, "l1l2FeeTokenBridgeCost");
+            assertEq(standardCosts.l1l2TokenBridgeCost, 14, "l1l2TokenBridgeCost");
+            assertEq(standardCosts.l2ForwarderFactoryCost, 10, "l2ForwarderFactoryCost");
+            assertEq(standardCosts.l2l3TokenBridgeCost, 22, "l2l3TokenBridgeCost");
         }
 
         // test fee token mode
