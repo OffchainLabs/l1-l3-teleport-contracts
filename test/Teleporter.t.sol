@@ -149,6 +149,7 @@ contract L1TeleporterTest is BaseTest {
 
         // test NonFeeTokenToCustomFee
         params.l3FeeTokenL1Addr = address(0x1234);
+        vm.assume(params.l1Token != address(0x1234));
         address feeToken = ethGatewayRouter.calculateL2TokenAddress(params.l3FeeTokenL1Addr);
         IL2Forwarder.L2ForwarderParams memory feeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
         if (l2Owner.code.length == 0) {
