@@ -34,7 +34,8 @@ contract L2Forwarder is IL2Forwarder {
     function bridgeToL3(L2ForwarderParams calldata params) external payable {
         if (msg.sender != l2ForwarderFactory) revert OnlyL2ForwarderFactory();
 
-        TeleportationType teleportationType = toTeleportationType({token: params.l2Token, feeToken: params.l3FeeTokenL2Addr});
+        TeleportationType teleportationType =
+            toTeleportationType({token: params.l2Token, feeToken: params.l3FeeTokenL2Addr});
 
         if (teleportationType == TeleportationType.Standard) {
             _bridgeToEthFeeL3(params);
