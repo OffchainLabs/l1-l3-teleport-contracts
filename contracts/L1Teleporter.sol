@@ -24,8 +24,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation, address _admin, address _pauser)
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
     {
-        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
-        _setupRole(PAUSER_ROLE, _pauser);
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(PAUSER_ROLE, _pauser);
     }
 
     /// @notice Pause the contract
