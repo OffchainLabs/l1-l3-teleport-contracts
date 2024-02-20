@@ -80,6 +80,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @dev    2 retryables will be created: one to send tokens and ETH to the L2Forwarder, and one to call the L2ForwarderFactory.
     ///         If TeleportationType is NonFeeTokenToCustomFeeL3, a third retryable will be created to send the L3's fee token to the L2Forwarder.
     ///         ETH used to pay for the L2 -> L3 retryable is sent through the l2CallValue of the call to the L2ForwarderFactory.
+    ///         Contracts that call teleport should have the ability to create retryables in case they need to call rescueFunds on the L2Forwarder.
     function teleport(TeleportParams calldata params) external payable;
 
     /// @notice Given some teleportation parameters, calculate the total cost of retryables in ETH and the L3's fee token.
