@@ -60,15 +60,17 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         } else if (teleportationType == TeleportationType.NonFeeTokenToCustomFee) {
             // teleporting a non-fee token to a custom (non-eth) fee L3
             // pull in and send fee tokens through the bridge to predicted forwarder
-            _pullAndBridgeToken({
-                router: params.l1l2Router,
-                token: params.l3FeeTokenL1Addr,
-                to: l2Forwarder,
-                amount: requiredFeeToken,
-                gasLimit: params.gasParams.l1l2FeeTokenBridgeGasLimit,
-                gasPriceBid: params.gasParams.l2GasPriceBid,
-                maxSubmissionCost: params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost
-            });
+            if (requiredFeeToken > 0) {
+                _pullAndBridgeToken({
+                    router: params.l1l2Router,
+                    token: params.l3FeeTokenL1Addr,
+                    to: l2Forwarder,
+                    amount: requiredFeeToken,
+                    gasLimit: params.gasParams.l1l2FeeTokenBridgeGasLimit,
+                    gasPriceBid: params.gasParams.l2GasPriceBid,
+                    maxSubmissionCost: params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost
+                });
+            }
         }
 
         _teleportCommon(params, retryableCosts, l2Forwarder);
@@ -145,6 +147,13 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             // only custom fee type requires 1 retryable to L3 paid for in fee token
             feeTokenAmount = costs.l2l3TokenBridgeCost;
         } else {
+            if (
+                (costs.l1l2FeeTokenBridgeCost == 0 && costs.l2l3TokenBridgeCost > 0)
+                    || (costs.l1l2FeeTokenBridgeCost > 0 && costs.l2l3TokenBridgeCost == 0)
+            ) {
+                revert InvalidCosts(costs.l1l2FeeTokenBridgeCost, costs.l2l3TokenBridgeCost);
+            }
+
             // non-fee token to custom fee type requires:
             // 1 retryable to L2 paid for in ETH
             // 1 retryable to L3 paid for in fee token

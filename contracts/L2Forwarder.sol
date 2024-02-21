@@ -123,8 +123,10 @@ contract L2Forwarder is IL2Forwarder {
         uint256 totalFeeAmount = params.gasLimit * params.gasPriceBid + params.maxSubmissionCost;
 
         // send feeToken to the inbox
-        address inbox = L1GatewayRouter(params.routerOrInbox).inbox();
-        IERC20(params.l3FeeTokenL2Addr).safeTransfer(inbox, totalFeeAmount);
+        if (totalFeeAmount > 0) {
+            address inbox = L1GatewayRouter(params.routerOrInbox).inbox();
+            IERC20(params.l3FeeTokenL2Addr).safeTransfer(inbox, totalFeeAmount);
+        }
 
         // send tokens through the bridge to intended recipient
         // use user supplied max submission fee instead of sending all the fee token balance
