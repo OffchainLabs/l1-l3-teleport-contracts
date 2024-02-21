@@ -340,8 +340,7 @@ contract L1TeleporterTest is BaseTest {
         assertEq(skipFeeTokenFeeToken, 0, "skipFeeTokenFeeToken");
         assertEq(
             skipFeeTokenEth,
-            skipFeeTokenGasCosts.l1l2TokenBridgeCost
-                + skipFeeTokenGasCosts.l2ForwarderFactoryCost,
+            skipFeeTokenGasCosts.l1l2TokenBridgeCost + skipFeeTokenGasCosts.l2ForwarderFactoryCost,
             "skipFeeTokenEth"
         );
 
@@ -359,8 +358,7 @@ contract L1TeleporterTest is BaseTest {
         assertEq(skipFeeTokenFeeToken2, 0, "skipFeeTokenFeeToken2");
         assertEq(
             skipFeeTokenEth2,
-            skipFeeTokenGasCosts2.l1l2TokenBridgeCost
-                + skipFeeTokenGasCosts2.l2ForwarderFactoryCost,
+            skipFeeTokenGasCosts2.l1l2TokenBridgeCost + skipFeeTokenGasCosts2.l2ForwarderFactoryCost,
             "skipFeeTokenEth2"
         );
     }
@@ -572,9 +570,7 @@ contract L1TeleporterTest is BaseTest {
             _data: ""
         });
         _expectTokenBridgeRetryable(msgCount, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata);
-        _expectFactoryRetryable(
-            msgCount + 1, params, retryableCosts, l2ForwarderParams, l2Forwarder, 0
-        );
+        _expectFactoryRetryable(msgCount + 1, params, retryableCosts, l2ForwarderParams, l2Forwarder, 0);
         teleporter.teleport{value: requiredEth}(params);
 
         _sanityCheckZeroTeleporterBalances();
