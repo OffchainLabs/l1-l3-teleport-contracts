@@ -62,6 +62,18 @@ flowchart TD
             1. Send entire token balance through the token bridge to the recipient
             2. `maxSubmissionCost` equals the forwarder’s entire ETH balance minus L3 execution fee. This ensures entire ETH balance makes it to the recipient on L3.
 
+### Retryable Failures and Out of Order Redemption
+
+The token bridge retryables to L2 and L3 should always succeed (if auto redeem fails, manual redeem should succeed).
+
+The second step can fail for a number of reasons, mostly due to bad parameters:
+* Not enough ETH is sent to cover L2 -> L3 retryable submission cost + relayer payment
+* Incorrect `l2l3Router`, `token`, etc
+
+If for some reason the second step cannot succeed, TOKEN and ETH or FEETOKEN will be stuck at the `L2Forwarder`. As long as the `owner` parameter of the forwarder is correct, the `owner` can call `rescue` on the forwarder to recover funds.
+
+It is possible that two L1 -> L3 transfers use the same `L2Forwarder` if they have the same `L2ForwarderParams`. Because of this, it is also possible that the second and third step of one of the transfers are not executed. It's okay if there are two simultaneous transfers A and B, where steps A1-B1-A2-A3 are executed since TOKEN from both A1 and B1 are transferred during A2.
+
 ## Testing and Deploying
 
 To test: 
