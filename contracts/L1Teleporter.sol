@@ -21,6 +21,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     /// @notice Accounts with this role can pause and unpause the contract
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
+    address public constant SKIP_FEE_TOKEN_MAGIC_ADDRESS = address(bytes20(keccak256("SKIP_FEE_TOKEN")));
+
     constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation, address _admin, address _pauser)
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
     {
@@ -142,18 +144,10 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         if (teleportationType == TeleportationType.Standard) {
             // standard type requires 1 retryable to L3 paid for in ETH
             ethAmount += costs.l2l3TokenBridgeCost;
-            feeTokenAmount = 0;
         } else if (teleportationType == TeleportationType.OnlyCustomFee) {
             // only custom fee type requires 1 retryable to L3 paid for in fee token
             feeTokenAmount = costs.l2l3TokenBridgeCost;
-        } else {
-            if (
-                (costs.l1l2FeeTokenBridgeCost == 0 && costs.l2l3TokenBridgeCost > 0)
-                    || (costs.l1l2FeeTokenBridgeCost > 0 && costs.l2l3TokenBridgeCost == 0)
-            ) {
-                revert InvalidCosts(costs.l1l2FeeTokenBridgeCost, costs.l2l3TokenBridgeCost);
-            }
-
+        } else if (params.l3FeeTokenL1Addr != SKIP_FEE_TOKEN_MAGIC_ADDRESS && costs.l2l3TokenBridgeCost != 0) {
             // non-fee token to custom fee type requires:
             // 1 retryable to L2 paid for in ETH
             // 1 retryable to L3 paid for in fee token

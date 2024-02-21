@@ -319,6 +319,50 @@ contract L1TeleporterTest is BaseTest {
                 + feeTokenGasCosts2.l2ForwarderFactoryCost,
             "feeTokenEth2"
         );
+
+        // test skip fee token mode triggered by magic address
+        IL1Teleporter.TeleportParams memory skipFeeTokenParams = IL1Teleporter.TeleportParams({
+            l1Token: address(l1Token),
+            l3FeeTokenL1Addr: teleporter.SKIP_FEE_TOKEN_MAGIC_ADDRESS(),
+            l1l2Router: address(ethGatewayRouter),
+            l2l3RouterOrInbox: l2l3RouterOrInbox,
+            to: address(1),
+            amount: 10,
+            gasParams: gasParams
+        });
+        (
+            uint256 skipFeeTokenEth,
+            uint256 skipFeeTokenFeeToken,
+            TeleportationType skipFeeType,
+            IL1Teleporter.RetryableGasCosts memory skipFeeTokenGasCosts
+        ) = teleporter.determineTypeAndFees(skipFeeTokenParams);
+        assertTrue(skipFeeType == TeleportationType.NonFeeTokenToCustomFee, "skipFeeType");
+        assertEq(skipFeeTokenFeeToken, 0, "skipFeeTokenFeeToken");
+        assertEq(
+            skipFeeTokenEth,
+            skipFeeTokenGasCosts.l1l2TokenBridgeCost
+                + skipFeeTokenGasCosts.l2ForwarderFactoryCost,
+            "skipFeeTokenEth"
+        );
+
+        // test skip fee token mode triggered by 0 gaslimit and submission fee
+        skipFeeTokenParams.gasParams.l2l3TokenBridgeGasLimit = 0;
+        skipFeeTokenParams.gasParams.l2l3TokenBridgeMaxSubmissionCost = 0;
+        skipFeeTokenParams.l3FeeTokenL1Addr = address(0x1234);
+        (
+            uint256 skipFeeTokenEth2,
+            uint256 skipFeeTokenFeeToken2,
+            TeleportationType skipFeeType2,
+            IL1Teleporter.RetryableGasCosts memory skipFeeTokenGasCosts2
+        ) = teleporter.determineTypeAndFees(skipFeeTokenParams);
+        assertTrue(skipFeeType2 == TeleportationType.NonFeeTokenToCustomFee, "skipFeeType2");
+        assertEq(skipFeeTokenFeeToken2, 0, "skipFeeTokenFeeToken2");
+        assertEq(
+            skipFeeTokenEth2,
+            skipFeeTokenGasCosts2.l1l2TokenBridgeCost
+                + skipFeeTokenGasCosts2.l2ForwarderFactoryCost,
+            "skipFeeTokenEth2"
+        );
     }
 
     function testStandardTeleport(IL1Teleporter.RetryableGasParams memory gasParams, address receiver, uint256 amount)
@@ -485,6 +529,52 @@ contract L1TeleporterTest is BaseTest {
             );
         }
         _expectFactoryRetryable(msgCount + 2, params, retryableCosts, l2ForwarderParams, l2Forwarder, 0);
+        teleporter.teleport{value: requiredEth}(params);
+
+        _sanityCheckZeroTeleporterBalances();
+    }
+
+    function testNonFeeTokenTeleportSkipFeeToken(
+        IL1Teleporter.RetryableGasParams memory gasParams,
+        address receiver,
+        uint256 amount
+    ) public {
+        gasParams = _boundGasParams(gasParams);
+        amount = bound(amount, 1, 100 ether);
+
+        IL1Teleporter.TeleportParams memory params = IL1Teleporter.TeleportParams({
+            l1Token: address(l1Token),
+            l3FeeTokenL1Addr: teleporter.SKIP_FEE_TOKEN_MAGIC_ADDRESS(),
+            l1l2Router: address(ethGatewayRouter),
+            l2l3RouterOrInbox: l2l3RouterOrInbox,
+            to: receiver,
+            amount: amount,
+            gasParams: gasParams
+        });
+
+        (uint256 requiredEth,,, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
+            teleporter.determineTypeAndFees(params);
+        IL2Forwarder.L2ForwarderParams memory l2ForwarderParams =
+            teleporter.buildL2ForwarderParams(params, AddressAliasHelper.applyL1ToL2Alias(address(this)));
+        address l2Forwarder = teleporter.l2ForwarderAddress(
+            l2ForwarderParams.owner, l2ForwarderParams.routerOrInbox, l2ForwarderParams.to
+        );
+
+        l1Token.approve(address(teleporter), amount);
+
+        // token bridge, indicating an actual bridge tx has been initiated
+        uint256 msgCount = ethBridge.delayedMessageCount();
+        bytes memory l1l2TokenBridgeRetryableCalldata = ethDefaultGateway.getOutboundCalldata({
+            _token: address(l1Token),
+            _from: address(teleporter),
+            _to: l2Forwarder,
+            _amount: amount,
+            _data: ""
+        });
+        _expectTokenBridgeRetryable(msgCount, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata);
+        _expectFactoryRetryable(
+            msgCount + 1, params, retryableCosts, l2ForwarderParams, l2Forwarder, 0
+        );
         teleporter.teleport{value: requiredEth}(params);
 
         _sanityCheckZeroTeleporterBalances();
