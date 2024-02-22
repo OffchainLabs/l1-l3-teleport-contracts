@@ -320,7 +320,7 @@ contract L1TeleporterTest is BaseTest {
             "feeTokenEth2"
         );
 
-        // test skip fee token mode triggered by magic address
+        // test skip fee token mode
         IL1Teleporter.TeleportParams memory skipFeeTokenParams = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
             l3FeeTokenL1Addr: teleporter.SKIP_FEE_TOKEN_MAGIC_ADDRESS(),
@@ -330,6 +330,11 @@ contract L1TeleporterTest is BaseTest {
             amount: 10,
             gasParams: gasParams
         });
+        skipFeeTokenParams.gasParams.l3GasPriceBid = 0;
+        skipFeeTokenParams.gasParams.l2l3TokenBridgeGasLimit = 0;
+        skipFeeTokenParams.gasParams.l2l3TokenBridgeMaxSubmissionCost = 0;
+        skipFeeTokenParams.gasParams.l1l2FeeTokenBridgeGasLimit = 0;
+        skipFeeTokenParams.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost = 0;
         (
             uint256 skipFeeTokenEth,
             uint256 skipFeeTokenFeeToken,
@@ -344,23 +349,32 @@ contract L1TeleporterTest is BaseTest {
             "skipFeeTokenEth"
         );
 
-        // test skip fee token mode triggered by 0 gaslimit and submission fee
+        // should revert if any of the 0 set fields above are nonzero
+        skipFeeTokenParams.gasParams.l3GasPriceBid = 1;
+        vm.expectRevert(IL1Teleporter.NonZeroFeeTokenAmount.selector);
+        teleporter.determineTypeAndFees(skipFeeTokenParams);
+        skipFeeTokenParams.gasParams.l3GasPriceBid = 0;
+
+        skipFeeTokenParams.gasParams.l2l3TokenBridgeGasLimit = 1;
+        vm.expectRevert(IL1Teleporter.NonZeroFeeTokenAmount.selector);
+        teleporter.determineTypeAndFees(skipFeeTokenParams);
         skipFeeTokenParams.gasParams.l2l3TokenBridgeGasLimit = 0;
+
+        skipFeeTokenParams.gasParams.l2l3TokenBridgeMaxSubmissionCost = 1;
+        vm.expectRevert(IL1Teleporter.NonZeroFeeTokenAmount.selector);
+        teleporter.determineTypeAndFees(skipFeeTokenParams);
         skipFeeTokenParams.gasParams.l2l3TokenBridgeMaxSubmissionCost = 0;
-        skipFeeTokenParams.l3FeeTokenL1Addr = address(0x1234);
-        (
-            uint256 skipFeeTokenEth2,
-            uint256 skipFeeTokenFeeToken2,
-            TeleportationType skipFeeType2,
-            IL1Teleporter.RetryableGasCosts memory skipFeeTokenGasCosts2
-        ) = teleporter.determineTypeAndFees(skipFeeTokenParams);
-        assertTrue(skipFeeType2 == TeleportationType.NonFeeTokenToCustomFee, "skipFeeType2");
-        assertEq(skipFeeTokenFeeToken2, 0, "skipFeeTokenFeeToken2");
-        assertEq(
-            skipFeeTokenEth2,
-            skipFeeTokenGasCosts2.l1l2TokenBridgeCost + skipFeeTokenGasCosts2.l2ForwarderFactoryCost,
-            "skipFeeTokenEth2"
-        );
+
+        skipFeeTokenParams.gasParams.l1l2FeeTokenBridgeGasLimit = 1;
+        vm.expectRevert(IL1Teleporter.NonZeroFeeTokenAmount.selector);
+        teleporter.determineTypeAndFees(skipFeeTokenParams);
+        skipFeeTokenParams.gasParams.l1l2FeeTokenBridgeGasLimit = 0;
+
+        skipFeeTokenParams.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost = 1;
+        vm.expectRevert(IL1Teleporter.NonZeroFeeTokenAmount.selector);
+        teleporter.determineTypeAndFees(skipFeeTokenParams);
+        skipFeeTokenParams.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost = 0;
+
     }
 
     function testStandardTeleport(IL1Teleporter.RetryableGasParams memory gasParams, address receiver, uint256 amount)
@@ -539,6 +553,12 @@ contract L1TeleporterTest is BaseTest {
     ) public {
         gasParams = _boundGasParams(gasParams);
         amount = bound(amount, 1, 100 ether);
+
+        gasParams.l3GasPriceBid = 0;
+        gasParams.l2l3TokenBridgeGasLimit = 0;
+        gasParams.l2l3TokenBridgeMaxSubmissionCost = 0;
+        gasParams.l1l2FeeTokenBridgeGasLimit = 0;
+        gasParams.l1l2FeeTokenBridgeMaxSubmissionCost = 0;
 
         IL1Teleporter.TeleportParams memory params = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
