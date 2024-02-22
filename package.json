@@ -1,6 +1,6 @@
 {
   "name": "@offchainlabs/l1-l3-teleport-contracts",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "license": "Apache-2.0",
   "description": "Contracts enabling direct ERC20 bridging from L1 to L3",
   "author": "Offchain Labs, Inc.",
