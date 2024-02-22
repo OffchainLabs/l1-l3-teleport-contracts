@@ -374,7 +374,6 @@ contract L1TeleporterTest is BaseTest {
         vm.expectRevert(IL1Teleporter.NonZeroFeeTokenAmount.selector);
         teleporter.determineTypeAndFees(skipFeeTokenParams);
         skipFeeTokenParams.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost = 0;
-
     }
 
     function testStandardTeleport(IL1Teleporter.RetryableGasParams memory gasParams, address receiver, uint256 amount)
