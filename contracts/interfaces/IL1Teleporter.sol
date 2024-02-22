@@ -72,6 +72,8 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     error IncorrectValue(uint256 required, uint256 provided);
     /// @notice Thrown when TeleportationType is OnlyCustomFee and the amount of fee tokens to send is less than the cost of the retryable to L3
     error InsufficientFeeToken(uint256 required, uint256 provided);
+    /// @notice Thrown when the SKIP_FEE_TOKEN magic is passed for l3FeeTokenL1Addr and at least one fee token related gas parameter is nonzero
+    error NonZeroFeeTokenAmount();
 
     /// @notice Start an L1 -> L3 transfer. msg.value sent must equal the total ETH cost of all retryables.
     ///         Call `determineTypeAndFees` to calculate the total cost of retryables in ETH and the L3's fee token.

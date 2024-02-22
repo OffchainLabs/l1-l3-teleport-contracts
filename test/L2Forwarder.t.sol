@@ -170,14 +170,15 @@ contract L2ForwarderTest is BaseTest {
     // - All TOKEN from A2 and B2 are sent to L3 by A3
     // - Some FEETOKEN may be left in the forwarder
     // - B3 cannot redeem because of zero TOKEN balance
-    function testNonFeeTokenToCustomFeeHappyCase(
+    function _testNonFeeTokenToCustomFeeHappyCase(
+        IERC20 _nativeToken,
         uint256 tokenAmount,
         uint256 feeTokenAmount,
         uint256 tokenBridgeEthRefunds,
         uint256 factoryCallMsgValue,
         uint256 gasLimit,
         uint256 gasPriceBid
-    ) public {
+    ) internal {
         address l2ForwarderAddress = factory.l2ForwarderAddress(owner, address(erc20GatewayRouter), l3Recipient);
         uint256 expectedSubmissionCost = _getExpectedTokenBridgeSubmissionCost(
             IInbox(address(erc20Inbox)), address(erc20GatewayRouter), l2ForwarderAddress, tokenAmount
@@ -186,8 +187,10 @@ contract L2ForwarderTest is BaseTest {
             tokenAmount = bound(tokenAmount, 2, 10 ether);
             tokenBridgeEthRefunds = bound(tokenBridgeEthRefunds, 0, 0.01 ether);
             factoryCallMsgValue = bound(factoryCallMsgValue, 0, 0.001 ether);
-            gasLimit = bound(gasLimit, 21000, 1_000_000);
-            gasPriceBid = bound(gasPriceBid, 0.1 gwei, 0.2 gwei);
+            if (gasPriceBid != 0 || gasLimit != 0) {
+                gasLimit = bound(gasLimit, 21000, 1_000_000);
+                gasPriceBid = bound(gasPriceBid, 0.1 gwei, 0.2 gwei);
+            }
             feeTokenAmount = expectedSubmissionCost + gasLimit * gasPriceBid + bound(feeTokenAmount, 0, 0.001 ether);
         }
 
@@ -206,7 +209,7 @@ contract L2ForwarderTest is BaseTest {
         vm.deal(l2ForwarderAddress, tokenBridgeEthRefunds);
 
         // simulate A1 and B1
-        nativeToken.transfer(l2ForwarderAddress, feeTokenAmount);
+        if (feeTokenAmount > 0) _nativeToken.transfer(l2ForwarderAddress, feeTokenAmount);
 
         // simulate A2 and B2
         l2Token.transfer(l2ForwarderAddress, tokenAmount);
@@ -224,6 +227,29 @@ contract L2ForwarderTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(IL2Forwarder.ZeroTokenBalance.selector, l2Token));
         vm.prank(aliasedL1Teleporter);
         factory.callForwarder{value: factoryCallMsgValue}(params);
+    }
+
+    function testNonFeeTokenToCustomFeeHappyCase(
+        uint256 tokenAmount,
+        uint256 feeTokenAmount,
+        uint256 tokenBridgeEthRefunds,
+        uint256 factoryCallMsgValue,
+        uint256 gasLimit,
+        uint256 gasPriceBid
+    ) public {
+        _testNonFeeTokenToCustomFeeHappyCase(
+            nativeToken, tokenAmount, feeTokenAmount, tokenBridgeEthRefunds, factoryCallMsgValue, gasLimit, gasPriceBid
+        );
+    }
+
+    function testNonFeeTokenToCustomFeeSkipFeeToken(
+        uint256 tokenAmount,
+        uint256 tokenBridgeEthRefunds,
+        uint256 factoryCallMsgValue
+    ) public {
+        _testNonFeeTokenToCustomFeeHappyCase(
+            IERC20(address(0x345678901)), tokenAmount, 0, tokenBridgeEthRefunds, factoryCallMsgValue, 0, 0
+        );
     }
 
     // NonFeeTokenToCustomFee

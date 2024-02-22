@@ -21,6 +21,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     /// @notice Accounts with this role can pause and unpause the contract
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
+    address public constant SKIP_FEE_TOKEN_MAGIC_ADDRESS = address(bytes20(keccak256("SKIP_FEE_TOKEN")));
+
     constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation, address _admin, address _pauser)
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
     {
@@ -60,15 +62,17 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         } else if (teleportationType == TeleportationType.NonFeeTokenToCustomFee) {
             // teleporting a non-fee token to a custom (non-eth) fee L3
             // pull in and send fee tokens through the bridge to predicted forwarder
-            _pullAndBridgeToken({
-                router: params.l1l2Router,
-                token: params.l3FeeTokenL1Addr,
-                to: l2Forwarder,
-                amount: requiredFeeToken,
-                gasLimit: params.gasParams.l1l2FeeTokenBridgeGasLimit,
-                gasPriceBid: params.gasParams.l2GasPriceBid,
-                maxSubmissionCost: params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost
-            });
+            if (requiredFeeToken > 0) {
+                _pullAndBridgeToken({
+                    router: params.l1l2Router,
+                    token: params.l3FeeTokenL1Addr,
+                    to: l2Forwarder,
+                    amount: requiredFeeToken,
+                    gasLimit: params.gasParams.l1l2FeeTokenBridgeGasLimit,
+                    gasPriceBid: params.gasParams.l2GasPriceBid,
+                    maxSubmissionCost: params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost
+                });
+            }
         }
 
         _teleportCommon(params, retryableCosts, l2Forwarder);
@@ -129,6 +133,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             RetryableGasCosts memory costs
         )
     {
+        _requireZeroFeeTokenIfSkipping(params);
+
         costs = _calculateRetryableGasCosts(params.gasParams);
 
         teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l3FeeTokenL1Addr});
@@ -140,11 +146,10 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         if (teleportationType == TeleportationType.Standard) {
             // standard type requires 1 retryable to L3 paid for in ETH
             ethAmount += costs.l2l3TokenBridgeCost;
-            feeTokenAmount = 0;
         } else if (teleportationType == TeleportationType.OnlyCustomFee) {
             // only custom fee type requires 1 retryable to L3 paid for in fee token
             feeTokenAmount = costs.l2l3TokenBridgeCost;
-        } else {
+        } else if (costs.l2l3TokenBridgeCost > 0) {
             // non-fee token to custom fee type requires:
             // 1 retryable to L2 paid for in ETH
             // 1 retryable to L3 paid for in fee token
@@ -234,6 +239,20 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             + (gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid);
         results.l2l3TokenBridgeCost =
             gasParams.l2l3TokenBridgeMaxSubmissionCost + (gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid);
+    }
+
+    /// @dev If the fee token is being skipped, ensure that all fee-related gas parameters are zero
+    function _requireZeroFeeTokenIfSkipping(TeleportParams calldata params) internal pure {
+        if (
+            params.l3FeeTokenL1Addr == SKIP_FEE_TOKEN_MAGIC_ADDRESS
+                && (
+                    params.gasParams.l2l3TokenBridgeMaxSubmissionCost > 0 || params.gasParams.l2l3TokenBridgeGasLimit > 0
+                        || params.gasParams.l1l2FeeTokenBridgeGasLimit > 0
+                        || params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost > 0 || params.gasParams.l3GasPriceBid > 0
+                )
+        ) {
+            revert NonZeroFeeTokenAmount();
+        }
     }
 
     /// @dev Alias the address if it has code, otherwise return the address as is
