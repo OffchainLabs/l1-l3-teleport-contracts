@@ -9,6 +9,8 @@ There are 3 steps to an L1 -> L3 teleportation:
 2. Create the `L2Forwarder` if it doesn't already exist and start the third step
 3. Send tokens and ETH from the `L2Forwarder` to the recipient on L3
 
+For more information see [info.md](./docs/info.md)
+
 ## Testing and Deploying
 
 To test: 
