@@ -149,6 +149,7 @@ contract L1TeleporterTest is BaseTest {
 
         // test NonFeeTokenToCustomFee
         params.l3FeeTokenL1Addr = address(0x1234);
+        vm.assume(params.l1Token != address(0x1234));
         address feeToken = ethGatewayRouter.calculateL2TokenAddress(params.l3FeeTokenL1Addr);
         IL2Forwarder.L2ForwarderParams memory feeParams = teleporter.buildL2ForwarderParams(params, l2Owner);
         if (l2Owner.code.length == 0) {
@@ -208,26 +209,68 @@ contract L1TeleporterTest is BaseTest {
             // we only check RetryableGasCosts once because it'll be the same for all modes
             assertEq(
                 standardCosts.l1l2FeeTokenBridgeCost,
-                gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid
+                (gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid)
                     + gasParams.l1l2FeeTokenBridgeMaxSubmissionCost,
                 "l1l2FeeTokenBridgeCost"
             );
             assertEq(
                 standardCosts.l1l2TokenBridgeCost,
-                gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPriceBid + gasParams.l1l2TokenBridgeMaxSubmissionCost,
+                (gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPriceBid)
+                    + gasParams.l1l2TokenBridgeMaxSubmissionCost,
                 "l1l2TokenBridgeCost"
             );
             assertEq(
                 standardCosts.l2ForwarderFactoryCost,
-                gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid
+                (gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid)
                     + gasParams.l2ForwarderFactoryMaxSubmissionCost,
                 "l2ForwarderFactoryCost"
             );
             assertEq(
                 standardCosts.l2l3TokenBridgeCost,
-                gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid + gasParams.l2l3TokenBridgeMaxSubmissionCost,
+                (gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid)
+                    + gasParams.l2l3TokenBridgeMaxSubmissionCost,
                 "l2l3TokenBridgeCost"
             );
+        }
+
+        {
+            // test standard mode with hardcoded values
+            // test standard mode
+            IL1Teleporter.TeleportParams memory standardParams = IL1Teleporter.TeleportParams({
+                l1Token: address(l1Token),
+                l3FeeTokenL1Addr: address(0),
+                l1l2Router: address(ethGatewayRouter),
+                l2l3RouterOrInbox: l2l3RouterOrInbox,
+                to: address(1),
+                amount: 10,
+                gasParams: IL1Teleporter.RetryableGasParams({
+                    l2GasPriceBid: 1,
+                    l3GasPriceBid: 2,
+                    l2ForwarderFactoryGasLimit: 3,
+                    l1l2FeeTokenBridgeGasLimit: 4,
+                    l1l2TokenBridgeGasLimit: 5,
+                    l2l3TokenBridgeGasLimit: 6,
+                    l2ForwarderFactoryMaxSubmissionCost: 7,
+                    l1l2FeeTokenBridgeMaxSubmissionCost: 8,
+                    l1l2TokenBridgeMaxSubmissionCost: 9,
+                    l2l3TokenBridgeMaxSubmissionCost: 10
+                })
+            });
+            (
+                uint256 standardEth,
+                uint256 standardFeeToken,
+                TeleportationType standardType,
+                IL1Teleporter.RetryableGasCosts memory standardCosts
+            ) = teleporter.determineTypeAndFees(standardParams);
+            assertTrue(standardType == TeleportationType.Standard, "standardType");
+            assertEq(standardFeeToken, 0, "standardFeeToken");
+            assertEq(standardEth, 46, "standardEth");
+
+            // we only check RetryableGasCosts once because it'll be the same for all modes
+            assertEq(standardCosts.l1l2FeeTokenBridgeCost, 12, "l1l2FeeTokenBridgeCost");
+            assertEq(standardCosts.l1l2TokenBridgeCost, 14, "l1l2TokenBridgeCost");
+            assertEq(standardCosts.l2ForwarderFactoryCost, 10, "l2ForwarderFactoryCost");
+            assertEq(standardCosts.l2l3TokenBridgeCost, 22, "l2l3TokenBridgeCost");
         }
 
         // test fee token mode

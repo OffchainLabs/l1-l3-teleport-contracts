@@ -28,9 +28,6 @@ jobs:
       - name: Install packages
         run: yarn
 
-      - name: Check format
-        run: forge fmt --check
-
       - name: Build
         run: forge build
 

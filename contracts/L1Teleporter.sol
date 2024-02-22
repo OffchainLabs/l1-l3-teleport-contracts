@@ -24,8 +24,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     constructor(address _l2ForwarderFactory, address _l2ForwarderImplementation, address _admin, address _pauser)
         L2ForwarderPredictor(_l2ForwarderFactory, _l2ForwarderImplementation)
     {
-        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
-        _setupRole(PAUSER_ROLE, _pauser);
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(PAUSER_ROLE, _pauser);
     }
 
     /// @notice Pause the contract
@@ -133,14 +133,22 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
 
         teleportationType = toTeleportationType({token: params.l1Token, feeToken: params.l3FeeTokenL1Addr});
 
+        // all teleportation types require at least these 2 retryables to L2
+        ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
+
+        // in addition to the above ETH amount, more fee token and/or ETH is required depending on the teleportation type
         if (teleportationType == TeleportationType.Standard) {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost + costs.l2l3TokenBridgeCost;
+            // standard type requires 1 retryable to L3 paid for in ETH
+            ethAmount += costs.l2l3TokenBridgeCost;
             feeTokenAmount = 0;
         } else if (teleportationType == TeleportationType.OnlyCustomFee) {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
+            // only custom fee type requires 1 retryable to L3 paid for in fee token
             feeTokenAmount = costs.l2l3TokenBridgeCost;
         } else {
-            ethAmount = costs.l1l2TokenBridgeCost + costs.l1l2FeeTokenBridgeCost + costs.l2ForwarderFactoryCost;
+            // non-fee token to custom fee type requires:
+            // 1 retryable to L2 paid for in ETH
+            // 1 retryable to L3 paid for in fee token
+            ethAmount += costs.l1l2FeeTokenBridgeCost;
             feeTokenAmount = costs.l2l3TokenBridgeCost;
         }
     }
@@ -219,13 +227,13 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
         returns (RetryableGasCosts memory results)
     {
         results.l1l2FeeTokenBridgeCost = gasParams.l1l2FeeTokenBridgeMaxSubmissionCost
-            + gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid;
+            + (gasParams.l1l2FeeTokenBridgeGasLimit * gasParams.l2GasPriceBid);
         results.l1l2TokenBridgeCost =
-            gasParams.l1l2TokenBridgeMaxSubmissionCost + gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPriceBid;
+            gasParams.l1l2TokenBridgeMaxSubmissionCost + (gasParams.l1l2TokenBridgeGasLimit * gasParams.l2GasPriceBid);
         results.l2ForwarderFactoryCost = gasParams.l2ForwarderFactoryMaxSubmissionCost
-            + gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid;
+            + (gasParams.l2ForwarderFactoryGasLimit * gasParams.l2GasPriceBid);
         results.l2l3TokenBridgeCost =
-            gasParams.l2l3TokenBridgeMaxSubmissionCost + gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid;
+            gasParams.l2l3TokenBridgeMaxSubmissionCost + (gasParams.l2l3TokenBridgeGasLimit * gasParams.l3GasPriceBid);
     }
 
     /// @dev Alias the address if it has code, otherwise return the address as is
