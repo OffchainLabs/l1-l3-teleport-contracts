@@ -1,6 +1,6 @@
 {
   "name": "@offchainlabs/l1-l3-teleport-contracts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "Apache-2.0",
   "description": "Contracts enabling direct ERC20 bridging from L1 to L3",
   "author": "Offchain Labs, Inc.",
@@ -9,7 +9,6 @@
     "url": "git+https://github.com/OffchainLabs/l1-l3-teleport-contracts.git"
   },
   "files": [
-    "hardhat.config.js",
     "contracts/",
     "build/contracts/contracts"
   ],
@@ -18,7 +17,7 @@
     "hardhat": "^2.18.0"
   },
   "dependencies": {
-    "@arbitrum/nitro-contracts": "^1.1.0",
+    "@arbitrum/nitro-contracts": "1.1.0",
     "@arbitrum/token-bridge-contracts": "1.2.0",
     "@openzeppelin/contracts": "4.9.4"
   },
