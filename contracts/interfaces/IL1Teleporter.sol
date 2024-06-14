@@ -76,6 +76,8 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     error InsufficientFeeToken(uint256 required, uint256 provided);
     /// @notice Thrown when the SKIP_FEE_TOKEN magic is passed for l3FeeTokenL1Addr and at least one fee token related gas parameter is nonzero
     error NonZeroFeeTokenAmount();
+    /// @notice Thrown when there is non empty l3Calldata but the teleportation type is not OnlyCustomFee
+    error L3CalldataNotAllowedForType(TeleportationType teleportationType);
 
     /// @notice Start an L1 -> L3 transfer. msg.value sent must equal the total ETH cost of all retryables.
     ///         Call `determineTypeAndFees` to calculate the total cost of retryables in ETH and the L3's fee token.
@@ -101,8 +103,8 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @notice Given some teleportation parameters, build the L2ForwarderParams for the L2ForwarderFactory.
     /// @dev    If the caller address has no code, the owner is the caller address,
     ///         otherwise the owner is the caller address's alias.
-    function buildL2ForwarderParams(TeleportParams calldata params, address caller) 
+    function buildL2ForwarderParams(TeleportParams calldata params, address caller)
         external
-        view 
+        view
         returns (IL2Forwarder.L2ForwarderParams memory);
 }
