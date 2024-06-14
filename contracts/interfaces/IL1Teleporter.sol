@@ -18,6 +18,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @param  to                L3 address that will receive the tokens
     /// @param  amount            Amount of tokens being teleported
     /// @param  gasParams         Gas parameters for each retryable ticket
+    /// @param  l3Calldata        Calldata for the L2ForwarderFactory call on L2 to L3 retryable
     struct TeleportParams {
         address l1Token;
         address l3FeeTokenL1Addr;
@@ -26,6 +27,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
         address to;
         uint256 amount;
         RetryableGasParams gasParams;
+        bytes l3Calldata;
     }
 
     /// @notice Gas parameters for each retryable ticket.
@@ -99,8 +101,8 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @notice Given some teleportation parameters, build the L2ForwarderParams for the L2ForwarderFactory.
     /// @dev    If the caller address has no code, the owner is the caller address,
     ///         otherwise the owner is the caller address's alias.
-    function buildL2ForwarderParams(TeleportParams calldata params, address caller)
+    function buildL2ForwarderParams(TeleportParams calldata params, address caller) 
         external
-        view
+        view 
         returns (IL2Forwarder.L2ForwarderParams memory);
 }

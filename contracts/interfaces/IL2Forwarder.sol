@@ -17,6 +17,7 @@ interface IL2Forwarder {
     /// @param  gasLimit            Gas limit for the L2 -> L3 retryable
     /// @param  gasPriceBid         Gas price for the L2 -> L3 retryable
     /// @param  maxSubmissionCost   Max submission fee for the L2 -> L3 retryable. Is ignored for Standard and OnlyCustomFee teleportation types.
+    /// @param  l3Calldata          Calldata for the L2ForwarderFactory call on L2 to L3 retryable
     struct L2ForwarderParams {
         address owner;
         address l2Token;
@@ -26,6 +27,7 @@ interface IL2Forwarder {
         uint256 gasLimit;
         uint256 gasPriceBid;
         uint256 maxSubmissionCost;
+        bytes l3Calldata;
     }
 
     /// @notice Emitted after a successful call to rescue

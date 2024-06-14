@@ -86,7 +86,8 @@ contract L2ForwarderTest is BaseTest {
             to: l3Recipient,
             gasLimit: gasLimit,
             gasPriceBid: gasPriceBid,
-            maxSubmissionCost: 0
+            maxSubmissionCost: 0,
+            l3Calldata: ""
         });
 
         // simulate A1 and B1 (bridging TOKEN to L2)
@@ -133,7 +134,8 @@ contract L2ForwarderTest is BaseTest {
             to: l3Recipient,
             gasLimit: gasLimit,
             gasPriceBid: gasPriceBid,
-            maxSubmissionCost: 0
+            maxSubmissionCost: 0,
+            l3Calldata: ""
         });
 
         // simulate A1 and B1 (bridging TOKEN to L2)
@@ -202,7 +204,8 @@ contract L2ForwarderTest is BaseTest {
             to: l3Recipient,
             gasLimit: gasLimit,
             gasPriceBid: gasPriceBid,
-            maxSubmissionCost: expectedSubmissionCost
+            maxSubmissionCost: expectedSubmissionCost,
+            l3Calldata: ""
         });
 
         // simulate ETH refunds from A1, A2, B1, B2
@@ -288,7 +291,8 @@ contract L2ForwarderTest is BaseTest {
             to: l3Recipient,
             gasLimit: gasLimitA,
             gasPriceBid: gasPriceBidA,
-            maxSubmissionCost: expectedSubmissionCostA
+            maxSubmissionCost: expectedSubmissionCostA,
+            l3Calldata: ""
         });
 
         // skip simulating ETH refunds from A1, A2, B1
@@ -319,7 +323,8 @@ contract L2ForwarderTest is BaseTest {
             to: l3Recipient,
             gasLimit: gasLimitB,
             gasPriceBid: gasPriceBidB,
-            maxSubmissionCost: expectedSubmissionCostB
+            maxSubmissionCost: expectedSubmissionCostB,
+            l3Calldata: ""
         });
         _expectNonFeeTokenToCustomFeeEvents(paramsB, tokenAmountB);
         vm.prank(aliasedL1Teleporter);

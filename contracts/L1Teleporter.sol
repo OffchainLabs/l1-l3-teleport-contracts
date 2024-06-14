@@ -118,7 +118,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             to: params.to,
             gasLimit: params.gasParams.l2l3TokenBridgeGasLimit,
             gasPriceBid: params.gasParams.l3GasPriceBid,
-            maxSubmissionCost: maxSubmissionCost
+            maxSubmissionCost: maxSubmissionCost,
+            l3Calldata: params.l3Calldata
         });
     }
 

@@ -189,7 +189,8 @@ contract L1TeleporterTest is BaseTest {
                 l2l3RouterOrInbox: l2l3RouterOrInbox,
                 to: address(1),
                 amount: 10,
-                gasParams: gasParams
+                gasParams: gasParams,
+                l3Calldata: ""
             });
             (
                 uint256 standardEth,
@@ -254,7 +255,8 @@ contract L1TeleporterTest is BaseTest {
                     l1l2FeeTokenBridgeMaxSubmissionCost: 8,
                     l1l2TokenBridgeMaxSubmissionCost: 9,
                     l2l3TokenBridgeMaxSubmissionCost: 10
-                })
+                }),
+                l3Calldata: ""
             });
             (
                 uint256 standardEth,
@@ -281,7 +283,8 @@ contract L1TeleporterTest is BaseTest {
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: address(1),
             amount: 10,
-            gasParams: gasParams
+            gasParams: gasParams,
+            l3Calldata: ""
         });
         (
             uint256 feeTokenEth,
@@ -303,7 +306,8 @@ contract L1TeleporterTest is BaseTest {
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: address(1),
             amount: 10,
-            gasParams: gasParams
+            gasParams: gasParams,
+            l3Calldata: ""
         });
         (
             uint256 feeTokenEth2,
@@ -328,7 +332,8 @@ contract L1TeleporterTest is BaseTest {
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: address(1),
             amount: 10,
-            gasParams: gasParams
+            gasParams: gasParams,
+            l3Calldata: ""
         });
         skipFeeTokenParams.gasParams.l3GasPriceBid = 0;
         skipFeeTokenParams.gasParams.l2l3TokenBridgeGasLimit = 0;
@@ -389,7 +394,8 @@ contract L1TeleporterTest is BaseTest {
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: receiver,
             amount: amount,
-            gasParams: gasParams
+            gasParams: gasParams,
+            l3Calldata: ""
         });
 
         (uint256 requiredEth,,, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
@@ -440,7 +446,8 @@ contract L1TeleporterTest is BaseTest {
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: receiver,
             amount: amount,
-            gasParams: gasParams
+            gasParams: gasParams,
+            l3Calldata: ""
         });
 
         (uint256 requiredEth, uint256 requiredFeeTokenAmount,, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
@@ -498,7 +505,8 @@ contract L1TeleporterTest is BaseTest {
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: receiver,
             amount: amount,
-            gasParams: gasParams
+            gasParams: gasParams,
+            l3Calldata: ""
         });
 
         (uint256 requiredEth, uint256 requiredFeeTokenAmount,, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
@@ -566,7 +574,8 @@ contract L1TeleporterTest is BaseTest {
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: receiver,
             amount: amount,
-            gasParams: gasParams
+            gasParams: gasParams,
+            l3Calldata: ""
         });
 
         (uint256 requiredEth,,, IL1Teleporter.RetryableGasCosts memory retryableCosts) =
