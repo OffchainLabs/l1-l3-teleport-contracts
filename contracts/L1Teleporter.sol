@@ -118,7 +118,8 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
             to: params.to,
             gasLimit: params.gasParams.l2l3TokenBridgeGasLimit,
             gasPriceBid: params.gasParams.l3GasPriceBid,
-            maxSubmissionCost: maxSubmissionCost
+            maxSubmissionCost: maxSubmissionCost,
+            l3Calldata: params.l3Calldata
         });
     }
 
@@ -141,6 +142,11 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
 
         // all teleportation types require at least these 2 retryables to L2
         ethAmount = costs.l1l2TokenBridgeCost + costs.l2ForwarderFactoryCost;
+
+        // OnlyCustomFee is the only type that supports L3 calldata
+        if (teleportationType != TeleportationType.OnlyCustomFee && params.l3Calldata.length > 0) {
+            revert L3CalldataNotAllowedForType(teleportationType);
+        }
 
         // in addition to the above ETH amount, more fee token and/or ETH is required depending on the teleportation type
         if (teleportationType == TeleportationType.Standard) {

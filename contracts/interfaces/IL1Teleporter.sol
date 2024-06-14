@@ -18,6 +18,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     /// @param  to                L3 address that will receive the tokens
     /// @param  amount            Amount of tokens being teleported
     /// @param  gasParams         Gas parameters for each retryable ticket
+    /// @param  l3Calldata        Calldata for the L2ForwarderFactory call on L2 to L3 retryable
     struct TeleportParams {
         address l1Token;
         address l3FeeTokenL1Addr;
@@ -26,6 +27,7 @@ interface IL1Teleporter is IL2ForwarderPredictor {
         address to;
         uint256 amount;
         RetryableGasParams gasParams;
+        bytes l3Calldata;
     }
 
     /// @notice Gas parameters for each retryable ticket.
@@ -74,6 +76,8 @@ interface IL1Teleporter is IL2ForwarderPredictor {
     error InsufficientFeeToken(uint256 required, uint256 provided);
     /// @notice Thrown when the SKIP_FEE_TOKEN magic is passed for l3FeeTokenL1Addr and at least one fee token related gas parameter is nonzero
     error NonZeroFeeTokenAmount();
+    /// @notice Thrown when there is non empty l3Calldata but the teleportation type is not OnlyCustomFee
+    error L3CalldataNotAllowedForType(TeleportationType teleportationType);
 
     /// @notice Start an L1 -> L3 transfer. msg.value sent must equal the total ETH cost of all retryables.
     ///         Call `determineTypeAndFees` to calculate the total cost of retryables in ETH and the L3's fee token.

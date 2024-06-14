@@ -108,7 +108,7 @@ contract L2Forwarder is IL2Forwarder {
             gasLimit: params.gasLimit,
             maxFeePerGas: params.gasPriceBid,
             tokenTotalFeeAmount: tokenBalance,
-            data: ""
+            data: params.l3Calldata
         });
 
         emit BridgedToL3(callValue, totalFeeAmount);
