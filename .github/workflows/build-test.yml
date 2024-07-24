@@ -31,8 +31,8 @@ jobs:
       - name: Run foundry tests
         run: yarn test:unit
 
-  test-unit:
-    name: Test unit
+  test-symbolic:
+    name: Test symbolic
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
