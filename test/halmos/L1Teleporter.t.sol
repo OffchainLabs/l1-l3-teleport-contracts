@@ -42,7 +42,7 @@ contract L1TeleporterSymTest is SymTest, BaseTest {
         teleporter.teleport(params);
 
         assert(
-            IERC20(params.l1Token).balanceOf(address(teleporter)) == 1
+            IERC20(params.l1Token).balanceOf(address(teleporter)) == 0
         );
     }
 }
