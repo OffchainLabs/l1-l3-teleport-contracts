@@ -26,6 +26,6 @@
     "build": "hardhat compile",
     "format": "forge fmt",
     "test:unit": "forge test --match-path test/unit/**/*.t.sol",
-    "test:halmos": "halmos --solver-timeout-assertion 0 --test-parallel --solver-parallel"
+    "test:halmos": "halmos --test-parallel --solver-parallel --solver-timeout-assertion 600000"
   }
 }

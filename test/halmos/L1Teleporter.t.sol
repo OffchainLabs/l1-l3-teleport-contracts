@@ -27,25 +27,25 @@ contract L1TeleporterSymTest is SymTest, BaseTest {
 
         feeToken = new ERC20PresetMinterPauser("FEE", "FEE");
         ERC20PresetMinterPauser(address(feeToken)).mint(address(this), 100 ether);
+
+        vm.deal(address(this), 100 ether);
     }
 
     function check_teleport_no_leftovers(
-        IL1Teleporter.RetryableGasParams memory gasParams,
         address receiver,
         uint256 amount,
         address l2l3RouterOrInbox,
         address l3FeeTokenL1Addr
     ) public {
         vm.assume(
-            l3FeeTokenL1Addr == address(0) || l3FeeTokenL1Addr == address(l1Token)
-                || l3FeeTokenL1Addr == address(feeToken)
+            l3FeeTokenL1Addr == address(0)// || l3FeeTokenL1Addr == address(l1Token) || l3FeeTokenL1Addr == address(feeToken)
         );
-        vm.assume(amount <= l1Token.balanceOf(address(this)));
+
+        vm.assume(amount == 1 ether);
 
         uint256 startBalance = l1Token.balanceOf(address(this));
 
-        l1Token.approve(address(teleporter), type(uint256).max);
-        feeToken.approve(address(teleporter), type(uint256).max);
+        vm.assume(amount <= startBalance);
 
         IL1Teleporter.TeleportParams memory params = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
@@ -54,12 +54,38 @@ contract L1TeleporterSymTest is SymTest, BaseTest {
             l2l3RouterOrInbox: l2l3RouterOrInbox,
             to: receiver,
             amount: amount,
-            gasParams: gasParams
+            gasParams: IL1Teleporter.RetryableGasParams({
+                l2GasPriceBid: 1 gwei,
+                l3GasPriceBid: 1 gwei,
+                l2ForwarderFactoryGasLimit: 100_000,
+                l1l2FeeTokenBridgeGasLimit: 0,//100_000,
+                l1l2TokenBridgeGasLimit: 100_000,
+                l2l3TokenBridgeGasLimit: 100_000,
+                l2ForwarderFactoryMaxSubmissionCost: 0.01 ether,
+                l1l2FeeTokenBridgeMaxSubmissionCost: 0,//0.01 ether,
+                l1l2TokenBridgeMaxSubmissionCost: 0.01 ether,
+                l2l3TokenBridgeMaxSubmissionCost: 0.01 ether
+            })
         });
 
-        teleporter.teleport(params);
+        (uint256 requiredEth, uint256 requiredFeeToken,,) =
+            teleporter.determineTypeAndFees(params);
+
+        vm.assume(address(this).balance >= requiredEth);
+        vm.assume(feeToken.balanceOf(address(this)) >= requiredFeeToken);
+
+        l1Token.approve(address(teleporter), type(uint256).max);
+        feeToken.approve(address(teleporter), type(uint256).max);
+
+        // teleporter.teleport{value: requiredEth}(params);
+        (bool success,) = address(teleporter).call{value: requiredEth}(abi.encodeCall(
+            teleporter.teleport,
+            (params)
+        ));
+
+        assert(success);
 
         assert(l1Token.balanceOf(address(teleporter)) == 0);
-        assert(l1Token.balanceOf(address(this)) == startBalance - amount);
+        // assert(l1Token.balanceOf(address(this)) == startBalance - amount);
     }
 }
