@@ -54,6 +54,9 @@ jobs:
       - name: Install packages
         run: yarn
 
+      - name: Install halmos
+        run: pip install halmos
+
       - name: Run symbolic tests
         run: yarn test:halmos
 
