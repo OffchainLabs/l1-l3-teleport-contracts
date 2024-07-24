@@ -40,6 +40,12 @@ contract L1TeleporterSymTest is SymTest, BaseTest {
             l3FeeTokenL1Addr == address(0) || l3FeeTokenL1Addr == address(l1Token)
                 || l3FeeTokenL1Addr == address(feeToken)
         );
+        vm.assume(amount <= l1Token.balanceOf(address(this)));
+
+        uint256 startBalance = l1Token.balanceOf(address(this));
+
+        l1Token.approve(address(teleporter), type(uint256).max);
+        feeToken.approve(address(teleporter), type(uint256).max);
 
         IL1Teleporter.TeleportParams memory params = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
@@ -53,6 +59,7 @@ contract L1TeleporterSymTest is SymTest, BaseTest {
 
         teleporter.teleport(params);
 
-        assert(IERC20(params.l1Token).balanceOf(address(teleporter)) == 0);
+        assert(l1Token.balanceOf(address(teleporter)) == 0);
+        assert(l1Token.balanceOf(address(this)) == startBalance - amount);
     }
 }
