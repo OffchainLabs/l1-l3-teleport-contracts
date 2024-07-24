@@ -14,7 +14,7 @@ contract L1TeleporterSymTest is SymTest, BaseTest {
 
     function setUp() public override {
         super.setUp();
-        
+
         address l2ForwarderFactory = svm.createAddress("l2ForwarderFactory");
         address l2ForwarderImplementation = svm.createAddress("l2ForwarderImplementation");
         address admin = svm.createAddress("admin");
@@ -26,9 +26,12 @@ contract L1TeleporterSymTest is SymTest, BaseTest {
     }
 
     function check_teleport_no_leftovers(
-        IL1Teleporter.RetryableGasParams memory gasParams, address receiver, uint256 amount, address l2l3RouterOrInbox
+        IL1Teleporter.RetryableGasParams memory gasParams,
+        address receiver,
+        uint256 amount,
+        address l2l3RouterOrInbox
     ) public {
-
+        // vm.assume()
         IL1Teleporter.TeleportParams memory params = IL1Teleporter.TeleportParams({
             l1Token: address(l1Token),
             l3FeeTokenL1Addr: address(0),
@@ -38,11 +41,9 @@ contract L1TeleporterSymTest is SymTest, BaseTest {
             amount: amount,
             gasParams: gasParams
         });
-        
+
         teleporter.teleport(params);
 
-        assert(
-            IERC20(params.l1Token).balanceOf(address(teleporter)) == 0
-        );
+        assert(IERC20(params.l1Token).balanceOf(address(teleporter)) == 0);
     }
 }
