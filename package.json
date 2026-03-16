@@ -24,6 +24,8 @@
   "scripts": {
     "prepublishOnly": "hardhat clean && hardhat compile",
     "build": "hardhat compile",
-    "format": "forge fmt"
+    "format": "forge fmt",
+    "test:unit": "forge test --match-path test/unit/**/*.t.sol",
+    "test:halmos": "halmos --test-parallel --solver-parallel --solver-timeout-assertion 600000"
   }
 }

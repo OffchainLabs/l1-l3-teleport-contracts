@@ -2,18 +2,18 @@
 pragma solidity ^0.8.13;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {L1Teleporter} from "../contracts/L1Teleporter.sol";
-import {IL1Teleporter} from "../contracts/interfaces/IL1Teleporter.sol";
-import {IL2Forwarder} from "../contracts/interfaces/IL2Forwarder.sol";
-import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
-import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
-import {TeleportationType, InvalidTeleportation} from "../contracts/lib/TeleportationType.sol";
+import {L1Teleporter} from "../../contracts/L1Teleporter.sol";
+import {IL1Teleporter} from "../../contracts/interfaces/IL1Teleporter.sol";
+import {IL2Forwarder} from "../../contracts/interfaces/IL2Forwarder.sol";
+import {L2ForwarderFactory} from "../../contracts/L2ForwarderFactory.sol";
+import {L2ForwarderPredictor} from "../../contracts/L2ForwarderPredictor.sol";
+import {TeleportationType, InvalidTeleportation} from "../../contracts/lib/TeleportationType.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {L1ArbitrumGateway} from
     "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
-import {BaseTest} from "./Base.t.sol";
+import {BaseTest} from "../util/Base.t.sol";
 
 contract L1TeleporterTest is BaseTest {
     address immutable l2l3RouterOrInbox = vm.addr(0x10);

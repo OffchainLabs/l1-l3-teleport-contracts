@@ -28,11 +28,37 @@ jobs:
       - name: Install packages
         run: yarn
 
-      - name: Build
-        run: forge build
-
       - name: Run foundry tests
-        run: forge test
+        run: yarn test:unit
+
+  test-symbolic:
+    name: Test symbolic
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup node/yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install packages
+        run: yarn
+
+      - name: Install halmos
+        run: pip install halmos
+
+      - name: Run symbolic tests
+        run: yarn test:halmos
 
   test-format:
     name: Test format

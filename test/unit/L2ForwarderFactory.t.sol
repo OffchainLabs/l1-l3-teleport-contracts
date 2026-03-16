@@ -2,11 +2,11 @@
 pragma solidity ^0.8.13;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {L2ForwarderContractsDeployer} from "../contracts/L2ForwarderContractsDeployer.sol";
-import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
-import {L2Forwarder} from "../contracts/L2Forwarder.sol";
-import {IL2Forwarder} from "../contracts/interfaces/IL2Forwarder.sol";
-import {IL2ForwarderFactory} from "../contracts/interfaces/IL2ForwarderFactory.sol";
+import {L2ForwarderContractsDeployer} from "../../contracts/L2ForwarderContractsDeployer.sol";
+import {L2ForwarderFactory} from "../../contracts/L2ForwarderFactory.sol";
+import {L2Forwarder} from "../../contracts/L2Forwarder.sol";
+import {IL2Forwarder} from "../../contracts/interfaces/IL2Forwarder.sol";
+import {IL2ForwarderFactory} from "../../contracts/interfaces/IL2ForwarderFactory.sol";
 
 contract L2ForwarderFactoryTest is Test {
     L2ForwarderFactory factory;
