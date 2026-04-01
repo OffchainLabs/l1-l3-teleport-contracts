@@ -1,0 +1,133 @@
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "low": true,
+  "allowlist": [
+    // OpenZeppelin Contracts duplicated Multicall subcalls in v4.9.4; not used in this project
+    "GHSA-699g-q6qh-q4v8",
+    // OpenZeppelin Contracts base64 encoding may read from potentially dirty memory; not used in this project
+    "GHSA-9vx6-7xxf-x967",
+    // OpenZeppelin Contracts governor proposal creation may be blocked by frontrunning
+    "GHSA-5h3x-9wvq-w4m2",
+    // OpenZeppelin Contracts vulnerable to Improper Escaping of Output
+    "GHSA-g4vp-m682-qqmp",
+    // OpenZeppelin Contracts using MerkleProof multiproofs may allow proving arbitrary leaves
+    "GHSA-wprv-93r4-jj2p",
+    // OpenZeppelin GovernorCompatibilityBravo may trim proposal calldata
+    "GHSA-93hq-5wgc-jc82",
+    // OpenZeppelin Contracts TransparentUpgradeableProxy clashing selector calls
+    "GHSA-mx2q-35m2-x2rh",
+    // OpenZeppelin Contracts's SignatureChecker may revert on invalid EIP-1271 signers
+    "GHSA-4g63-c64m-25w9",
+    // OpenZeppelin Contracts vulnerable to ECDSA signature malleability
+    "GHSA-4h98-2769-gh6h",
+    // OpenZeppelin Contracts ERC165Checker unbounded gas consumption
+    "GHSA-7grf-83vw-6f5x",
+    // OpenZeppelin Contracts's ERC165Checker may revert instead of returning false
+    "GHSA-qh9x-gcfh-pcrw",
+    // OpenZeppelin Contracts's GovernorVotesQuorumFraction updates to quorum
+    "GHSA-xrc4-737v-9q75",
+    // Elliptic's private key extraction in ECDSA upon signing malformed input; via hardhat
+    "GHSA-vjh7-7g9h-fjfh",
+    // Elliptic Uses a Cryptographic Primitive with a Risky Implementation; via hardhat
+    "GHSA-848j-6mx2-7j84",
+    // pbkdf2 returns predictable uninitialized/zero-filled memory; via hardhat (dev dep)
+    "GHSA-h7cp-r72f-jxh6",
+    // pbkdf2 silently disregards Uint8Array input; via hardhat (dev dep)
+    "GHSA-v62p-rq8g-8h59",
+    // sha.js missing type checks leading to hash rewind; via hardhat (dev dep)
+    "GHSA-95m3-7q98-8xr5",
+    // cipher-base missing type checks leading to hash rewind; via hardhat (dev dep)
+    "GHSA-cpq7-6gpm-g9rc",
+    // form-data uses unsafe random function; via sol2uml>axios>form-data
+    "GHSA-fjxv-7rqg-78g4",
+    // ws affected by DoS when handling request with many HTTP headers; via hardhat (dev dep)
+    "GHSA-3h5v-q93c-6h6q",
+    // minimatch ReDoS via repeated wildcards; via hardhat (dev dep)
+    "GHSA-3ppc-4f35-3m26",
+    // minimatch ReDoS via multiple non-adjacent GLOBSTAR segments; via hardhat (dev dep)
+    "GHSA-7r86-cg39-jmmj",
+    // minimatch ReDoS via nested extglobs; via hardhat (dev dep)
+    "GHSA-23c5-xmqv-rm74",
+    // serialize-javascript Vulnerable to RCE; via hardhat>mocha (dev dep)
+    "GHSA-5c6j-r48x-rmvq",
+    // Undici Unbounded Memory Consumption in WebSocket; via hardhat (dev dep)
+    "GHSA-vrm6-8vpv-qv8q",
+    // Undici Unhandled Exception in WebSocket Client; via hardhat (dev dep)
+    "GHSA-v9p9-hfj2-hcw8",
+    // tar-fs symlink validation bypass; via sol2uml>puppeteer
+    "GHSA-vj76-c3g6-qr5v",
+    // tar-fs can extract outside specified dir; via sol2uml>puppeteer
+    "GHSA-8cj5-5rvv-wf4v",
+    // tar-fs Link Following and Path Traversal; via sol2uml>puppeteer
+    "GHSA-pq67-2wwv-3xjx",
+    // axios Cross-Site Request Forgery; via sol2uml>axios
+    "GHSA-wf5p-g6vw-rhxx",
+    // axios Requests Vulnerable to SSRF and Credential Leakage; via sol2uml>axios
+    "GHSA-jr5f-v2jv-69x6",
+    // axios Vulnerable to DoS via __proto__ Key in mergeConfig; via sol2uml>axios
+    "GHSA-43fc-jf86-j433",
+    // cookie accepts out of bounds characters; via hardhat (dev dep)
+    "GHSA-pxg6-pf52-xh8x",
+    // tmp allows arbitrary temporary file/directory write via symlink; via hardhat (dev dep)
+    "GHSA-52f5-9888-hmc6",
+    // Undici unbounded decompression chain; via hardhat (dev dep)
+    "GHSA-g9mf-h72j-4rw9",
+    // Undici HTTP Request/Response Smuggling; via hardhat (dev dep)
+    "GHSA-2mjp-6q6p-2qxm",
+    // Undici CRLF Injection via upgrade option; via hardhat (dev dep)
+    "GHSA-4992-7rv2-5pvq",
+    // brace-expansion zero-step sequence causes hang; via hardhat (dev dep)
+    "GHSA-f886-m6hf-6m8v",
+    // jsdiff has a Denial of Service vulnerability in parsePatch and applyPatch; via hardhat>mocha (dev dep)
+    "GHSA-73rr-hh4g-fpgx",
+    // bn.js infinite loop; via hardhat (dev dep)
+    "GHSA-378v-28hj-76wf",
+    // Lodash Prototype Pollution in _.unset and _.omit; via hardhat (dev dep)
+    "GHSA-xxjr-mmjv-4gpg",
+    // micromatch ReDoS; via nitro-contracts>patch-package
+    "GHSA-952p-6rrq-rcjv",
+    // yaml Stack Overflow via deeply nested collections; via nitro-contracts>patch-package
+    "GHSA-48c2-rrv3-qjmp",
+    // follow-redirects Proxy-Authorization header kept across hosts; via hardhat>solc
+    "GHSA-cxjh-pqwp-8mfp",
+    // follow-redirects improperly handles URLs in url.parse(); via hardhat>solc
+    "GHSA-jchw-25xp-jwwc",
+    // serialize-javascript CPU Exhaustion DoS; via hardhat>mocha (dev dep)
+    "GHSA-qj8w-gfj5-8c6v",
+    // nanoid predictable results with non-integer values; via hardhat>mocha (dev dep)
+    "GHSA-mwcw-c2x4-8c55",
+    // js-yaml prototype pollution in merge; via hardhat>mocha (dev dep)
+    "GHSA-mh29-5h37-fv8m",
+    // picomatch Method Injection in POSIX Character Classes; via hardhat (dev dep)
+    "GHSA-3v7f-55p6-f55p",
+    // Undici request smuggling via line feeds; via hardhat (dev dep)
+    "GHSA-c76h-2ccp-4975",
+    // Undici Fetch API request smuggling; via hardhat (dev dep)
+    "GHSA-wf6x-7x77-mvgw",
+    // semver ReDoS; via hardhat (dev dep)
+    "GHSA-c2c7-rcm5-vvqj",
+    // undici request smuggling in pipeline; via hardhat (dev dep)
+    "GHSA-3787-6prv-h9w3",
+    // undici cookie leak on cross-origin redirect; via hardhat (dev dep)
+    "GHSA-xq7p-g2vc-g82p",
+    // undici request smuggling via content-type / content-length; via hardhat (dev dep)
+    "GHSA-m4v8-wqvr-p9f7",
+    // undici vulnerable to CRLF injection; via hardhat (dev dep)
+    "GHSA-f7q4-pwc6-w24p",
+    // json5 Prototype Pollution via parse method; via hardhat (dev dep)
+    "GHSA-9qxr-qj54-h672",
+    // cross-spawn shell injection on Windows; via hardhat (dev dep)
+    "GHSA-3xgq-45jj-v275",
+    // Chromium/Puppeteer vulnerabilities; via sol2uml>puppeteer
+    "GHSA-584q-6j8j-r5pm",
+    "GHSA-434g-2637-qmqr",
+    "GHSA-cxrh-j4jr-qwg3",
+    "GHSA-49q7-c7j4-3p7m",
+    "GHSA-76p7-773f-r4q5",
+    "GHSA-977x-g7h5-7qgw",
+    "GHSA-fc9h-whq2-v747",
+    "GHSA-grv7-fg5c-xmjg",
+    "GHSA-p6mc-m468-83gw",
+    "GHSA-v6h2-p8h4-qcjw"
+  ]
+}
