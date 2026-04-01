@@ -7,10 +7,12 @@ import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2Forwarder} from "../contracts/L2Forwarder.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
 import {BaseTest} from "./Base.t.sol";
-import {L1ArbitrumGateway} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
-import {L1GatewayRouter} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
+import {
+    L1ArbitrumGateway
+} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
+import {
+    L1GatewayRouter
+} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {IL2Forwarder} from "../contracts/interfaces/IL2Forwarder.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -438,12 +440,9 @@ contract L2ForwarderTest is BaseTest {
         returns (bytes memory)
     {
         address l1Gateway = L1GatewayRouter(gatewayRouter).getGateway(address(l2Token));
-        bytes memory l1l2TokenBridgeRetryableCalldata = L1ArbitrumGateway(l1Gateway).getOutboundCalldata({
-            _l1Token: address(l2Token),
-            _from: address(l2Forwarder),
-            _to: l3Recipient,
-            _amount: tokenAmount,
-            _data: ""
+        bytes memory l1l2TokenBridgeRetryableCalldata = L1ArbitrumGateway(l1Gateway)
+            .getOutboundCalldata({
+            _l1Token: address(l2Token), _from: address(l2Forwarder), _to: l3Recipient, _amount: tokenAmount, _data: ""
         });
         return l1l2TokenBridgeRetryableCalldata;
     }

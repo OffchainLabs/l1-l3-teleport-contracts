@@ -5,7 +5,6 @@ enum TeleportationType {
     Standard, // Teleporting a token to an ETH fee L3
     OnlyCustomFee, // Teleporting a L3's custom fee token to a custom (non-eth) fee L3
     NonFeeTokenToCustomFee // Teleporting a non-fee token to a custom (non-eth) fee L3
-
 }
 
 error InvalidTeleportation();

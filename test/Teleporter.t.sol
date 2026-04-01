@@ -9,8 +9,9 @@ import {L2ForwarderFactory} from "../contracts/L2ForwarderFactory.sol";
 import {L2ForwarderPredictor} from "../contracts/L2ForwarderPredictor.sol";
 import {TeleportationType, InvalidTeleportation} from "../contracts/lib/TeleportationType.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
-import {L1ArbitrumGateway} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
+import {
+    L1ArbitrumGateway
+} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1ArbitrumGateway.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import {BaseTest} from "./Base.t.sol";
@@ -411,11 +412,7 @@ contract L1TeleporterTest is BaseTest {
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();
         bytes memory l1l2TokenBridgeRetryableCalldata = ethDefaultGateway.getOutboundCalldata({
-            _token: address(l1Token),
-            _from: address(teleporter),
-            _to: l2Forwarder,
-            _amount: amount,
-            _data: ""
+            _token: address(l1Token), _from: address(teleporter), _to: l2Forwarder, _amount: amount, _data: ""
         });
         _expectTokenBridgeRetryable(msgCount, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata);
         _expectFactoryRetryable(
@@ -582,11 +579,7 @@ contract L1TeleporterTest is BaseTest {
         // token bridge, indicating an actual bridge tx has been initiated
         uint256 msgCount = ethBridge.delayedMessageCount();
         bytes memory l1l2TokenBridgeRetryableCalldata = ethDefaultGateway.getOutboundCalldata({
-            _token: address(l1Token),
-            _from: address(teleporter),
-            _to: l2Forwarder,
-            _amount: amount,
-            _data: ""
+            _token: address(l1Token), _from: address(teleporter), _to: l2Forwarder, _amount: amount, _data: ""
         });
         _expectTokenBridgeRetryable(msgCount, params, retryableCosts, l2Forwarder, l1l2TokenBridgeRetryableCalldata);
         _expectFactoryRetryable(msgCount + 1, params, retryableCosts, l2ForwarderParams, l2Forwarder, 0);
