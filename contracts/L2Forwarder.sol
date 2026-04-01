@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.13;
 
-import {L1GatewayRouter} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
+import {
+    L1GatewayRouter
+} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import {IERC20Inbox} from "@arbitrum/nitro-contracts/src/bridge/IERC20Inbox.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -99,7 +100,8 @@ contract L2Forwarder is IL2Forwarder {
         uint256 maxSubmissionCost = IERC20Inbox(params.routerOrInbox).calculateRetryableSubmissionFee(0, 0);
         uint256 totalFeeAmount = maxSubmissionCost + (params.gasLimit * params.gasPriceBid);
         uint256 callValue = tokenBalance - totalFeeAmount;
-        IERC20Inbox(params.routerOrInbox).createRetryableTicket({
+        IERC20Inbox(params.routerOrInbox)
+            .createRetryableTicket({
             to: params.to,
             l2CallValue: callValue,
             maxSubmissionCost: maxSubmissionCost,
@@ -130,15 +132,16 @@ contract L2Forwarder is IL2Forwarder {
 
         // send tokens through the bridge to intended recipient
         // use user supplied max submission fee instead of sending all the fee token balance
-        L1GatewayRouter(params.routerOrInbox).outboundTransferCustomRefund(
-            params.l2Token,
-            params.to,
-            params.to,
-            tokenBalance,
-            params.gasLimit,
-            params.gasPriceBid,
-            abi.encode(params.maxSubmissionCost, bytes(""), totalFeeAmount)
-        );
+        L1GatewayRouter(params.routerOrInbox)
+            .outboundTransferCustomRefund(
+                params.l2Token,
+                params.to,
+                params.to,
+                tokenBalance,
+                params.gasLimit,
+                params.gasPriceBid,
+                abi.encode(params.maxSubmissionCost, bytes(""), totalFeeAmount)
+            );
 
         emit BridgedToL3(tokenBalance, totalFeeAmount);
     }

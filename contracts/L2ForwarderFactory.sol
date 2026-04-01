@@ -28,8 +28,9 @@ contract L2ForwarderFactory is L2ForwarderPredictor, IL2ForwarderFactory {
 
     /// @inheritdoc IL2ForwarderFactory
     function createL2Forwarder(address owner, address routerOrInbox, address to) public returns (IL2Forwarder) {
-        IL2Forwarder l2Forwarder =
-            IL2Forwarder(payable(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(owner, routerOrInbox, to))));
+        IL2Forwarder l2Forwarder = IL2Forwarder(
+            payable(Clones.cloneDeterministic(l2ForwarderImplementation, _salt(owner, routerOrInbox, to)))
+        );
 
         l2Forwarder.initialize(owner);
 

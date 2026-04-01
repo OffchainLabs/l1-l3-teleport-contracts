@@ -5,8 +5,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Pausable} from "@openzeppelin/contracts/security/Pausable.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {AddressAliasHelper} from "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
-import {L1GatewayRouter} from
-    "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
+import {
+    L1GatewayRouter
+} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 import {IInbox} from "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {L2ForwarderPredictor} from "./L2ForwarderPredictor.sol";
@@ -245,11 +246,11 @@ contract L1Teleporter is Pausable, AccessControl, L2ForwarderPredictor, IL1Telep
     function _requireZeroFeeTokenIfSkipping(TeleportParams calldata params) internal pure {
         if (
             params.l3FeeTokenL1Addr == SKIP_FEE_TOKEN_MAGIC_ADDRESS
-                && (
-                    params.gasParams.l2l3TokenBridgeMaxSubmissionCost > 0 || params.gasParams.l2l3TokenBridgeGasLimit > 0
-                        || params.gasParams.l1l2FeeTokenBridgeGasLimit > 0
-                        || params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost > 0 || params.gasParams.l3GasPriceBid > 0
-                )
+                && (params.gasParams.l2l3TokenBridgeMaxSubmissionCost > 0
+                    || params.gasParams.l2l3TokenBridgeGasLimit > 0
+                    || params.gasParams.l1l2FeeTokenBridgeGasLimit > 0
+                    || params.gasParams.l1l2FeeTokenBridgeMaxSubmissionCost > 0
+                    || params.gasParams.l3GasPriceBid > 0)
         ) {
             revert NonZeroFeeTokenAmount();
         }
